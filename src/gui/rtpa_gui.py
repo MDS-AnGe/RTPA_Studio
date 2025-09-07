@@ -153,9 +153,9 @@ class RTAPGUIWindow:
     def create_dashboard_tab(self):
         """Création de l'onglet Tableau de Bord complet (état du jeu + recommandations + statistiques)"""
         
-        # Frame principal optimisé
+        # Frame principal optimisé (plus compact)
         main_container = ttk.Frame(self.dashboard_tab)
-        main_container.pack(fill='both', expand=True, padx=15, pady=15)
+        main_container.pack(fill='both', expand=True, padx=10, pady=10)
         
         # SECTION 1: CARTES (Main et Board côte à côte)
         cards_container = ttk.Frame(main_container)
@@ -166,7 +166,7 @@ class RTAPGUIWindow:
         hero_frame.pack(side='left', padx=(0, 10), fill='y')
         
         self.hero_cards_frame = ttk.Frame(hero_frame)
-        self.hero_cards_frame.pack(padx=10, pady=15)
+        self.hero_cards_frame.pack(padx=8, pady=10)
         
         # Cartes visuelles (gardées identiques)
         self.hero_card1_frame = tk.Frame(
@@ -199,7 +199,7 @@ class RTAPGUIWindow:
         board_frame.pack(side='left', fill='both', expand=True)
         
         self.board_cards_frame = ttk.Frame(board_frame)
-        self.board_cards_frame.pack(anchor='w', padx=10, pady=15)
+        self.board_cards_frame.pack(anchor='w', padx=8, pady=10)
         
         self.board_cards = []
         self.board_card_frames = []
@@ -223,16 +223,16 @@ class RTAPGUIWindow:
         main_layout = ttk.Frame(main_container)
         main_layout.pack(fill='both', expand=True, pady=(0, 10))
         
-        # Colonne gauche: Informations table et recommandations
+        # Colonne gauche: Informations table et recommandations (réduite)
         left_column = ttk.Frame(main_layout)
-        left_column.pack(side='left', fill='both', expand=True, padx=(0, 10))
+        left_column.pack(side='left', fill='both', expand=True, padx=(0, 5))
         
         # Encadré dédié: Informations de table
         table_info_frame = ttk.LabelFrame(left_column, text="📊 INFORMATIONS TABLE", style='Card.TFrame')
         table_info_frame.pack(fill='x', pady=(0, 10))
         
         table_content = ttk.Frame(table_info_frame)
-        table_content.pack(fill='x', padx=15, pady=10)
+        table_content.pack(fill='x', padx=10, pady=8)
         
         # Ligne 1: Pot + Stack
         row1 = ttk.Frame(table_content)
@@ -260,16 +260,16 @@ class RTAPGUIWindow:
         # Labels cachés pour compatibilité
         self.antes_label = ttk.Label(table_content, text="")
         
-        # Colonne droite: Informations joueurs
+        # Colonne droite: Informations joueurs (plus proche)
         right_column = ttk.Frame(main_layout)
-        right_column.pack(side='right', fill='y', padx=(10, 0))
+        right_column.pack(side='right', fill='y', padx=(5, 0))
         
         # SECTION 3: RECOMMANDATION PRINCIPALE (dans colonne gauche)
         rec_frame = ttk.LabelFrame(left_column, text="🎯 RECOMMANDATION", style='Card.TFrame')
         rec_frame.pack(fill='x', pady=(0, 10))
         
         rec_content = ttk.Frame(rec_frame)
-        rec_content.pack(fill='x', padx=15, pady=10)
+        rec_content.pack(fill='x', padx=10, pady=8)
         
         # Action + détails en ligne
         action_line = ttk.Frame(rec_content)
@@ -308,7 +308,7 @@ class RTAPGUIWindow:
         hero_frame.pack(fill='x', pady=(0, 10))
         
         hero_content = ttk.Frame(hero_frame)
-        hero_content.pack(fill='x', padx=10, pady=8)
+        hero_content.pack(fill='x', padx=8, pady=6)
         
         # Pseudo du joueur (récupéré via OCR)
         ttk.Label(hero_content, text="Pseudo:", style='Heading.TLabel').pack(anchor='w')
@@ -330,7 +330,7 @@ class RTAPGUIWindow:
         players_frame.pack(fill='both', expand=True, pady=(10, 0))
         
         players_content = ttk.Frame(players_frame)
-        players_content.pack(fill='both', expand=True, padx=10, pady=8)
+        players_content.pack(fill='both', expand=True, padx=8, pady=6)
         
         # Info générale
         players_info = ttk.Frame(players_content)
@@ -355,7 +355,7 @@ class RTAPGUIWindow:
         stats_frame.pack(fill='x')
         
         stats_content = ttk.Frame(stats_frame)
-        stats_content.pack(fill='x', padx=15, pady=8)
+        stats_content.pack(fill='x', padx=10, pady=6)
         
         # Ligne 1
         stats_line1 = ttk.Frame(stats_content)
