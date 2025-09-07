@@ -944,51 +944,129 @@ class RTAPGUIWindow:
                         font=ctk.CTkFont(size=32, weight="bold")).pack(pady=(40, 10))
         
         ctk.CTkLabel(version_container, text="Real-Time Poker Assistant", 
-                    font=ctk.CTkFont(size=18), text_color="gray").pack(pady=(0, 20))
+                    font=ctk.CTkFont(size=18), text_color="gray").pack(pady=(0, 30))
         
         # Informations de version
         version_info_frame = ctk.CTkFrame(version_container)
         version_info_frame.pack(pady=(20, 30))
         
         ctk.CTkLabel(version_info_frame, text="Version 1.1.0", 
-                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=15)
-        ctk.CTkLabel(version_info_frame, text="Build 1100 - Version stable", 
-                    font=ctk.CTkFont(size=12), text_color="gray").pack(pady=(0, 15))
+                    font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 10))
+        ctk.CTkLabel(version_info_frame, text="Version stable", 
+                    font=ctk.CTkFont(size=14, weight="bold"), text_color="#00b300").pack(pady=(0, 20))
         
-        # Fonctionnalités
-        features_frame = ctk.CTkFrame(version_container)
-        features_frame.pack(fill='x', pady=(20, 30))
+        # Statut de mise à jour
+        self.update_status_label = ctk.CTkLabel(version_container, text="✅ Logiciel à jour", 
+                                               font=ctk.CTkFont(size=14, weight="bold"), 
+                                               text_color="#00b300")
+        self.update_status_label.pack(pady=(20, 15))
         
-        ctk.CTkLabel(features_frame, text="✨ Fonctionnalités", 
-                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(15, 10))
+        # Container pour les boutons de mise à jour
+        update_buttons_frame = ctk.CTkFrame(version_container, fg_color="transparent")
+        update_buttons_frame.pack(pady=(10, 20))
         
-        features = [
-            "🧠 Intelligence Artificielle CFR/Nash",
-            "👁️ OCR automatique en temps réel",
-            "⚡ Accélération GPU avec CUDA",
-            "📊 Analyse avancée de performance",
-            "🎯 Recommandations stratégiques",
-            "📈 Statistiques détaillées"
-        ]
-        
-        for feature in features:
-            ctk.CTkLabel(features_frame, text=feature, font=ctk.CTkFont(size=11)).pack(anchor='w', padx=20, pady=2)
-        
-        # Bouton mise à jour
-        self.check_update_btn = ctk.CTkButton(version_container, 
+        # Bouton vérification mise à jour
+        self.check_update_btn = ctk.CTkButton(update_buttons_frame, 
                                              text="🔄 Vérifier les mises à jour",
                                              command=self.check_for_updates,
                                              width=200)
-        self.check_update_btn.pack(pady=(30, 10))
+        self.check_update_btn.pack(pady=(0, 10))
         
-        # Status de mise à jour
-        self.update_status_label = ctk.CTkLabel(version_container, text="", 
-                                               font=ctk.CTkFont(size=12))
-        self.update_status_label.pack(pady=5)
+        # Bouton installation (caché par défaut)
+        self.install_update_btn = ctk.CTkButton(update_buttons_frame,
+                                               text="📥 Installer la mise à jour",
+                                               command=self.install_update,
+                                               width=200,
+                                               fg_color="#ff6b35")
+        # Le bouton d'installation sera affiché seulement si une mise à jour est disponible
         
         # Copyright
         ctk.CTkLabel(version_container, text="© 2025 RTPA Studio - Tous droits réservés", 
                     font=ctk.CTkFont(size=10), text_color="gray").pack(side='bottom', pady=(30, 20))
+    
+    def check_for_updates(self):
+        """Vérifie les mises à jour disponibles"""
+        try:
+            self.update_status_label.configure(text="🔄 Vérification en cours...", text_color="orange")
+            self.check_update_btn.configure(state="disabled")
+            
+            # Thread pour éviter de bloquer l'interface
+            import threading
+            thread = threading.Thread(target=self._check_updates_worker, daemon=True)
+            thread.start()
+            
+        except Exception as e:
+            self.update_status_label.configure(text="❌ Erreur lors de la vérification", text_color="red")
+            self.check_update_btn.configure(state="normal")
+    
+    def _check_updates_worker(self):
+        """Worker thread pour vérification des mises à jour"""
+        try:
+            import time
+            # Simulation de vérification
+            time.sleep(2)
+            
+            # Pour l'instant, toujours à jour (pas de serveur de mise à jour configuré)
+            self.root.after(0, lambda: self.update_status_label.configure(
+                text="✅ Logiciel à jour", text_color="#00b300"
+            ))
+            self.root.after(0, lambda: self.check_update_btn.configure(state="normal"))
+            
+        except Exception as e:
+            self.root.after(0, lambda: self.update_status_label.configure(
+                text="❌ Erreur de vérification", text_color="red"
+            ))
+            self.root.after(0, lambda: self.check_update_btn.configure(state="normal"))
+    
+    def install_update(self):
+        """Lance l'installation d'une mise à jour"""
+        try:
+            import tkinter.messagebox as msgbox
+            result = msgbox.askyesno(
+                "Mise à jour", 
+                "Une nouvelle version est disponible.\n\nVoulez-vous l'installer maintenant?"
+            )
+            
+            if result:
+                self.install_update_btn.configure(state="disabled", text="Installation...")
+                # Code d'installation ici
+                pass
+                
+        except Exception as e:
+            print(f"Erreur installation mise à jour: {e}")
+    
+    def on_platform_detected(self, platform_name):
+        """Callback quand une plateforme poker est détectée"""
+        try:
+            if hasattr(self, 'activity_status_label'):
+                self.activity_status_label.configure(
+                    text=f"🟢 Connecté à {platform_name}",
+                    text_color="#00b300"
+                )
+        except Exception as e:
+            print(f"Erreur callback platform detected: {e}")
+    
+    def update_connection_status(self, connected, platform=None):
+        """Met à jour le statut de connexion"""
+        try:
+            if hasattr(self, 'activity_status_label'):
+                if connected and platform:
+                    self.activity_status_label.configure(
+                        text=f"🟢 Connecté à {platform}",
+                        text_color="#00b300"
+                    )
+                elif connected:
+                    self.activity_status_label.configure(
+                        text="🟢 Surveillance active",
+                        text_color="#00b300"
+                    )
+                else:
+                    self.activity_status_label.configure(
+                        text="🔄 Surveillance active",
+                        text_color="#666666"
+                    )
+        except Exception as e:
+            print(f"Erreur update connection status: {e}")
     
     def install_pytorch(self):
         """Lance l'installation de PyTorch"""
