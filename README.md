@@ -97,11 +97,14 @@
 
 ### Démarrage Rapide
 ```bash
-# Test des composants
-python test_rtpa.py
+# Test automatique complet
+python test_final.py
 
-# Lancement complet
-python main.py
+# Lancement interface graphique
+python main_gui.py
+
+# Démonstration console temps réel
+python main_headless.py
 ```
 
 ### Interface Principale
@@ -193,8 +196,9 @@ python main.py
 
 ### Étape 1 : Téléchargement
 ```bash
-# Cloner le repository ou télécharger l'archive
-cd rtpa-studio
+# Cloner le repository GitHub
+git clone https://github.com/MDS-AnGe/RTPA_Studio.git
+cd RTPA_Studio
 ```
 
 ### Étape 2 : Installation Automatique
@@ -213,9 +217,13 @@ L'installateur va automatiquement :
 
 ### Étape 3 : Lancement
 ```bash
-# Interface graphique complète
-python rtpa_studio.py
-# OU directement
+# Lancement recommandé (Windows)
+RTPA_Studio.bat
+
+# OU lancement Python cross-platform  
+python launch_rtpa.py
+
+# OU lancement direct
 python main_gui.py
 ```
 
@@ -317,8 +325,14 @@ pip install torch>=2.8.0 torchvision>=0.23.0
 
 #### Mode Interface Graphique
 ```bash
-python main_gui.py        # Interface complète
-python rtpa_studio.py     # Raccourci créé par l'installateur
+# Méthode recommandée (Windows)
+RTPA_Studio.bat
+
+# Lanceur cross-platform
+python launch_rtpa.py
+
+# Lancement direct
+python main_gui.py
 ```
 
 #### Mode Console/Démo
@@ -419,7 +433,7 @@ python -c "import mss; print('Capture OK')"
 ## 📂 Structure Fichiers
 
 ```
-rtpa-studio/
+RTPA_Studio/
 ├── src/
 │   ├── algorithms/          # Moteur CFR et Nash
 │   ├── core/               # Gestionnaire principal  
@@ -489,6 +503,7 @@ deep_cfr_enabled = False # Activation conditionnelle
 
 ---
 
-*Dernière mise à jour : Septembre 2025 - Version 1.0.0*  
+*Dernière mise à jour : Septembre 2025 - Version 1.1.0*  
 *Statut : ✅ Stable et Opérationnel*  
-*IA : 🤖 CFR Hybride + Deep Learning PyTorch*
+*IA : 🤖 CFR Hybride + Deep Learning PyTorch*  
+*Windows : 🖥️ Application native 'RTPA Studio' dans le Gestionnaire des tâches*
