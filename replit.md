@@ -1,67 +1,134 @@
-# Overview
+# RTPA Studio - Real-Time Poker Assistant
 
-RTPA Studio is a comprehensive real-time poker analysis application designed for educational and training purposes. The system analyzes poker game states using sophisticated algorithms including CFR (Counterfactual Regret Minimization) and Nash equilibrium calculations to provide optimal playing recommendations. 
+**Assistant Poker Temps Réel avec Intelligence Artificielle Hybride**
+
+RTPA Studio est un système d'analyse poker avancé combinant algorithmes CFR traditionnels et réseaux de neurones Deep CFR pour des recommandations stratégiques optimales en temps réel. Conçu pour l'éducation et l'entraînement, le système utilise l'équilibre de Nash pour fournir des conseils de jeu mathématiquement parfaits.
 
 **Status: ✅ COMPLETED AND FULLY FUNCTIONAL**
 
-The application features:
-- Advanced OCR system for automatic screen capture and game state detection
-- High-performance CFR/CFR+ algorithms for Nash equilibrium calculations
-- In-memory database optimized for real-time processing
-- Modern bilingual GUI (French/English) built with CustomTkinter
-- Comprehensive resource management (CPU/GPU/RAM optimization)
-- Support for both cash games and tournaments with ICM adjustments
-- Real-time probability calculations and strategic recommendations
-- Performance tracking with professional player benchmarking
+## 🎯 Fonctionnalités Principales
+
+### 🧠 Intelligence Hybride CFR + Deep Learning
+- **CFR/CFR+ Engine**: Algorithmes Counterfactual Regret Minimization pour calcul d'équilibre Nash
+- **Deep CFR Neural Networks**: Réseaux de neurones PyTorch pour reconnaissance de patterns complexes
+- **Basculement Dynamique CPU/GPU**: Optimisation automatique selon les ressources disponibles
+- **Apprentissage Continu 24/7**: Amélioration perpétuelle sans interruption
+
+### 🎮 Interface et Intégration
+- **Détection Automatique**: Surveillance temps réel des plateformes poker (PokerStars, Winamax, PMU)
+- **OCR Avancé**: Capture d'écran et reconnaissance automatique des états de jeu
+- **Interface Bilingue**: Support complet Français/Anglais avec thèmes personnalisables
+- **Cartes Réalistes**: Affichage visuel avec symboles authentiques (♠ ♥ ♦ ♣)
+
+### ⚡ Performance et Optimisation
+- **GPU Acceleration**: Support CUDA pour calculs massifs en parallèle
+- **Base de Données Mémoire**: Stockage haute performance avec fallback SQLite
+- **Gestion Ressources**: Monitoring CPU/RAM/GPU avec throttling automatique
+- **Cache Intelligent**: Optimisation des calculs d'équité et abstractions de cartes
+
+### 📊 Analyses et Statistiques
+- **Probabilités Temps Réel**: Calculs Monte Carlo pour estimations de victoire
+- **Recommandations Nash**: Actions optimales basées sur théorie des jeux
+- **Tracking Performance**: Comparaison avec joueurs professionnels
+- **Support ICM**: Ajustements tournois avec Independent Chip Model
 
 Date completed: September 7, 2025
 
-## Recent Updates (September 7, 2025)
+---
 
-### Interface Automatique Intelligente (NOUVEAU)
+## 🔬 Comment Fonctionne le Système CFR/Nash
+
+### CFR = Algorithme pour Calculer Nash
+
+**CFR (Counterfactual Regret Minimization)** est l'algorithme mathématique qui permet de calculer l'**équilibre de Nash** au poker. Ce ne sont pas deux calculs séparés :
+
+1. **Calcul des Regrets** : CFR analyse chaque décision et calcule les "regrets" (différence entre l'action prise et la meilleure action possible)
+2. **Mise à Jour Stratégies** : Les regrets sont utilisés pour ajuster les probabilités d'actions futures
+3. **Convergence Nash** : Après de nombreuses itérations, la stratégie converge vers l'équilibre de Nash optimal
+
+### Apprentissage Continu en Temps Réel
+
+#### ✅ Utilisation Immédiate Possible
+- **Démarrage Instantané** : Le logiciel peut être utilisé dès le lancement
+- **Recommandations Immédiates** : Basées sur les calculs CFR déjà effectués
+- **Amélioration Progressive** : Chaque nouvelle main améliore la précision
+- **Pas d'Attente** : Aucun besoin d'attendre la fin de l'apprentissage
+
+#### 🔄 Fonctionnement de l'Apprentissage
+```
+Génération Continue : 25 mains toutes les 200ms (450 mains/minute)
+↓
+Intégration CFR : Mise à jour immédiate tables regrets/stratégies
+↓
+Amélioration Nash : Convergence progressive vers stratégie optimale
+↓
+Recommandations : Conseils de plus en plus précis en temps réel
+```
+
+#### 📈 Sources d'Apprentissage Multiples
+- **Mains Historiques** : Chargement de bases de données existantes
+- **Génération Synthétique** : Création continue de nouveaux scénarios
+- **Parties en Direct** : Intégration des mains jouées par l'utilisateur
+- **Simulation Monte Carlo** : Exploration massive d'espaces de jeu
+
+### GPU vs CPU : Basculement Intelligent
+- **Petits Calculs** : CPU pour efficacité et réactivité
+- **Gros Batches** : GPU pour puissance de calcul parallèle
+- **Seuil Automatique** : Basculement à 50+ mains simultanées
+- **Fallback Sécurisé** : Retour CPU si GPU indisponible
+
+---
+
+## 🆕 Mises à Jour Récentes (September 7, 2025)
+
+### 🤖 Interface Automatique Intelligente (NOUVEAU)
 - **Détection automatique**: Surveillance continue des plateformes poker (PokerStars, Winamax, PMU)
 - **Démarrage automatique**: Lancement automatique dès qu'une plateforme est détectée
 - **Arrêt automatique**: Pause automatique quand aucune plateforme n'est active
 - **Indicateur d'état**: Affichage temps réel en haut à droite (attente/actif/pause)
 - **Suppression boutons**: Plus de boutons manuels démarrer/arrêter - tout est géré automatiquement
 
-### Logo et Branding
+### 🎨 Logo et Branding
 - **Logo officiel**: Intégration du logo RTPA Studio dans l'interface
 - **Icône application**: Icône personnalisée pour la fenêtre principale
 - **Identité visuelle**: Design cohérent et professionnel
 
-### Détection Plateformes Avancée
+### 🔍 Détection Plateformes Avancée
 - **Surveillance processus**: Détection par nom de processus (PokerStars.exe, Winamax.exe, etc.)
 - **Détection fenêtres**: Reconnaissance par titre de fenêtre
 - **Support multi-plateformes**: PokerStars, Winamax, PMU, PartyPoker
 - **Callback temps réel**: Notifications instantanées des changements d'état
 
-### Visual Interface Improvements
+### 🎴 Améliorations Interface Visuelle
 - **Cartes réalistes**: Système d'affichage de cartes avec couleurs rouge/noir et symboles réels (♠ ♥ ♦ ♣)
 - **Renommage**: "Cartes du Héros" renommé en "Main" pour meilleure ergonomie
 - **Format visuel**: Cartes affichées dans des cadres blancs avec bordures, format "K♠" "A♥" etc.
 
-### Configuration avancée CFR
+### ⚙️ Configuration Avancée CFR
 - **Descriptions détaillées**: Explications précises de chaque paramètre CFR
 - **Nouveaux paramètres**: Profondeur CFR, Epsilon Exploration, CFR+
 - **Options étendues**: Plus de contrôles fins pour optimisation algorithmes
 
-### Gestion PyTorch
+### 🔥 Gestion PyTorch & GPU
 - **Vérification automatique**: Status PyTorch affiché dans onglet Performance
 - **Installation directe**: Bouton pour installer PyTorch depuis l'interface
 - **Support CUDA**: Détection et indication du support GPU
+- **Basculement Dynamique**: Choix automatique CPU/GPU selon charge de travail
+- **Optimisation Mémoire**: Gestion intelligente de la mémoire GPU (limite configurable)
 
-### Export/Import Base CFR (NOUVEAU)
+### 💾 Export/Import Base CFR (NOUVEAU)
 - **Export complet**: Sauvegarde base CFR + données + statistiques + apprentissage Nash
 - **Import sécurisé**: Restauration complète avec confirmation utilisateur
 - **Préservation apprentissage**: Evite de repartir à zéro après mises à jour
 - **Format JSON**: Fichiers lisibles et compatibles entre versions
+- **Compression Intelligente**: Optimisation taille fichiers pour stockage/transfert
 
-### Personnalisation interface
-- **Couleurs d'accent**: Choix entre 5 couleurs (bleu, vert, rouge, violet, orange) - FONCTIONNEL
-- **Opacité réglable**: Transparence fenêtre ajustable 70-100% - FONCTIONNEL  
-- **Polices personnalisées**: Sélection police interface (Arial, Helvetica, Times, Courier) - FONCTIONNEL
-- **Thèmes avancés**: Options étendues dark/light mode - FONCTIONNEL
+### 🎨 Personnalisation Interface
+- **Couleurs d'accent**: Choix entre 5 couleurs (bleu, vert, rouge, violet, orange) - ✅ FONCTIONNEL
+- **Opacité réglable**: Transparence fenêtre ajustable 70-100% - ✅ FONCTIONNEL  
+- **Polices personnalisées**: Sélection police interface (Arial, Helvetica, Times, Courier) - ✅ FONCTIONNEL
+- **Thèmes avancés**: Options étendues dark/light mode - ✅ FONCTIONNEL
+- **Layouts adaptatifs**: Interface responsive pour différentes résolutions d'écran
 
 # User Preferences
 
