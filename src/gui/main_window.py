@@ -144,20 +144,8 @@ class RTAPMainWindow:
                 font=ctk.CTkFont(size=20, weight="bold")
             )
         
-        # Informations de version (centre haut)
-        self.version_frame = ctk.CTkFrame(self.header_frame)
-        self.version_label = ctk.CTkLabel(
-            self.version_frame,
-            text=f"Version {self.version_info['version']}",
-            font=ctk.CTkFont(size=12, weight="bold"),
-            text_color="cyan"
-        )
-        self.update_date_label = ctk.CTkLabel(
-            self.version_frame,
-            text=f"Mise à jour: {self.version_info['last_update']}",
-            font=ctk.CTkFont(size=10),
-            text_color="gray"
-        )
+        # Panel d'informations système (sera ajouté plus tard dans setup_layout)
+        self.info_panel = None
 
         # Indicateur d'état automatique (haut droite)
         self.status_indicator = ctk.CTkFrame(self.header_frame)
@@ -312,9 +300,6 @@ class RTAPMainWindow:
         # En-tête avec logo et status
         self.header_frame.pack(fill="x", pady=(0, 10))
         self.logo_label.pack(side="left", padx=(10, 0))
-        self.version_frame.pack(side="left", padx=(30, 0))
-        self.version_label.pack(pady=1)
-        self.update_date_label.pack(pady=0)
         
         # Indicateur d'état à droite
         self.status_indicator.pack(side="right", padx=(0, 10))
@@ -326,7 +311,86 @@ class RTAPMainWindow:
         self.status_text.pack(anchor="w")
         self.platform_label.pack(anchor="w")
         
-        # Frame de contenu (3 colonnes)
+        # Création du panel d'informations système à droite
+        self.info_panel = ctk.CTkFrame(self.main_frame)
+        self.info_panel.pack(side="right", fill="y", padx=(5, 0))
+        self.info_panel.configure(width=280)
+        
+        # Titre du panel
+        self.info_panel_title = ctk.CTkLabel(
+            self.info_panel,
+            text="📋 Informations Système",
+            font=ctk.CTkFont(size=14, weight="bold")
+        )
+        self.info_panel_title.pack(pady=(10, 5))
+        
+        # Section version
+        self.version_info_frame = ctk.CTkFrame(self.info_panel)
+        self.version_info_frame.pack(fill="x", padx=10, pady=5)
+        
+        self.version_label = ctk.CTkLabel(
+            self.version_info_frame,
+            text=f"Version: {self.version_info['version']}",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color="cyan"
+        )
+        self.version_label.pack(pady=2)
+        
+        self.update_date_label = ctk.CTkLabel(
+            self.version_info_frame,
+            text=f"Mise à jour: {self.version_info['last_update']}",
+            font=ctk.CTkFont(size=10),
+            text_color="gray"
+        )
+        self.update_date_label.pack(pady=1)
+        
+        self.build_label = ctk.CTkLabel(
+            self.version_info_frame,
+            text=f"Build: {self.version_info['build']}",
+            font=ctk.CTkFont(size=10),
+            text_color="gray"
+        )
+        self.build_label.pack(pady=1)
+        
+        # Section système
+        self.system_info_frame = ctk.CTkFrame(self.info_panel)
+        self.system_info_frame.pack(fill="x", padx=10, pady=5)
+        
+        self.system_title = ctk.CTkLabel(
+            self.system_info_frame,
+            text="⚙️ Système",
+            font=ctk.CTkFont(size=12, weight="bold")
+        )
+        self.system_title.pack(pady=(5, 2))
+        
+        self.cpu_label = ctk.CTkLabel(
+            self.system_info_frame,
+            text="CPU: --",
+            font=ctk.CTkFont(size=10)
+        )
+        self.cpu_label.pack(pady=1)
+        
+        self.memory_label = ctk.CTkLabel(
+            self.system_info_frame,
+            text="RAM: --",
+            font=ctk.CTkFont(size=10)
+        )
+        self.memory_label.pack(pady=1)
+        
+        self.cfr_status_label = ctk.CTkLabel(
+            self.system_info_frame,
+            text="CFR: Initialisation...",
+            font=ctk.CTkFont(size=10),
+            text_color="orange"
+        )
+        self.cfr_status_label.pack(pady=1)
+
+        # Frame de contenu principal (réduit pour laisser place au panel)
+        self.main_content_frame = ctk.CTkFrame(self.main_frame)
+        self.main_content_frame.pack(side="left", fill="both", expand=True, padx=(0, 5))
+        
+        # Frame de contenu (3 colonnes dans main_content_frame)
+        self.content_frame = ctk.CTkFrame(self.main_content_frame)
         self.content_frame.pack(fill="both", expand=True)
         
         # Colonne 1: État du jeu
@@ -430,6 +494,33 @@ class RTAPMainWindow:
         # Les boutons ont été remplacés par l'indicateur automatique
         pass
     
+    def _update_system_info(self):
+        """Met à jour les informations système dans le panel"""
+        try:
+            import psutil
+            
+            # CPU usage
+            cpu_percent = psutil.cpu_percent(interval=None)
+            self.cpu_label.configure(text=f"CPU: {cpu_percent:.1f}%")
+            
+            # Memory usage  
+            memory = psutil.virtual_memory()
+            memory_percent = memory.percent
+            memory_gb = memory.used / (1024**3)
+            self.memory_label.configure(text=f"RAM: {memory_gb:.1f}GB ({memory_percent:.1f}%)")
+            
+            # CFR Status
+            if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine:
+                if hasattr(self.app_manager.cfr_engine, 'training_active') and self.app_manager.cfr_engine.training_active:
+                    self.cfr_status_label.configure(text="CFR: Entraînement actif", text_color="green")
+                else:
+                    self.cfr_status_label.configure(text="CFR: Prêt", text_color="cyan")
+            else:
+                self.cfr_status_label.configure(text="CFR: Initialisation...", text_color="orange")
+                
+        except Exception as e:
+            self.logger.warning(f"Erreur mise à jour infos système: {e}")
+
     def _load_version_info(self):
         """Charge les informations de version depuis le fichier version.json"""
         try:
@@ -546,6 +637,9 @@ class RTAPMainWindow:
                 performance_ratio = stats.get('performance_ratio', 0.0)
                 self.performance_value.configure(text=f"{performance_ratio:.1f}%")
                 self.performance_progress.set(min(performance_ratio / 100.0, 1.0))
+            
+            # Mise à jour des informations système dans le panel
+            self._update_system_info()
                 
         except Exception as e:
             self.logger.error(f"Erreur mise à jour interface: {e}")
