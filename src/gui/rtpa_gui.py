@@ -1192,27 +1192,19 @@ class RTAPGUIWindow:
                     if hasattr(self.app_manager, 'get_display_data'):
                         data = self.app_manager.get_display_data()
                     else:
-                        # Utiliser des données simulées avec joueurs pour le test
+                        # Données vides quand aucune partie n'est détectée
                         data = {
-                            'hero_cards': ['Ac', '7d'],
-                            'board_cards': ['Ah', '7h', '2c', '9s', 'Kh'],
-                            'pot': '861.89€',
-                            'stack': '1133.62€',
-                            'action': 'BET_SMALL',
-                            'bet_size': '103.48€',
-                            'win_probability': '1.0%',
-                            'risk_level': '53%',
-                            'confidence': '15%',
-                            'reasoning': 'Recommandation bet_small basée sur: Main forte, position milieu',
-                            'players_info': [
-                                {"name": "PokerPro", "stack": 1847, "vpip": 15, "pfr": 12, "status": "actif", "position": 0, "position_name": "UTG", "is_button": False, "is_sb": False, "is_bb": False},
-                                {"name": "AliceBluff", "stack": 2156, "vpip": 28, "pfr": 22, "status": "actif", "position": 2, "position_name": "MP1", "is_button": False, "is_sb": False, "is_bb": False},
-                                {"name": "BobNuts", "stack": 1023, "vpip": 35, "pfr": 8, "status": "fold", "position": 4, "position_name": "MP3", "is_button": False, "is_sb": False, "is_bb": False},
-                                {"name": "DianaAce", "stack": 3421, "vpip": 12, "pfr": 10, "status": "actif", "position": 5, "position_name": "CO", "is_button": False, "is_sb": False, "is_bb": False},
-                                {"name": "EdRaise", "stack": 956, "vpip": 35, "pfr": 25, "status": "actif", "position": 6, "position_name": "BTN", "is_button": True, "is_sb": False, "is_bb": False},
-                                {"name": "FionaCall", "stack": 1540, "vpip": 22, "pfr": 18, "status": "actif", "position": 7, "position_name": "SB", "is_button": False, "is_sb": True, "is_bb": False},
-                                {"name": "GaryFold", "stack": 2890, "vpip": 18, "pfr": 14, "status": "actif", "position": 8, "position_name": "BB", "is_button": False, "is_sb": False, "is_bb": True}
-                            ]
+                            'hero_cards': [],
+                            'board_cards': [],
+                            'pot': '0.00€',
+                            'stack': '0.00€',
+                            'action': '',
+                            'bet_size': '',
+                            'win_probability': '',
+                            'risk_level': '',
+                            'confidence': '',
+                            'reasoning': 'En attente d\'analyse...',
+                            'players_info': []  # Aucun joueur affiché quand pas de partie active
                         }
                     
                     # Ne mettre à jour que si les données ont changé
