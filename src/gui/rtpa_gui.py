@@ -357,25 +357,44 @@ class RTAPGUIWindow:
         
         # SECTION 4B: AUTRES JOUEURS ACTIFS
         players_frame = ttk.LabelFrame(right_column, text="👥 AUTRES JOUEURS", style='Card.TFrame')
-        players_frame.pack(fill='both', expand=True, pady=(10, 0))  # Suppression des contraintes de largeur
+        players_frame.pack(fill='both', expand=True, pady=(10, 0))
         
         players_content = ttk.Frame(players_frame)
-        players_content.pack(fill='both', expand=True, padx=8, pady=6)
+        players_content.pack(fill='both', expand=True, padx=5, pady=3)
         
-        # Info générale - Table 9-max
+        # Info générale - Table 9-max (compacte)
         players_info = ttk.Frame(players_content)
-        players_info.pack(fill='x', pady=(0, 8))
+        players_info.pack(fill='x', pady=(0, 3))
         
-        ttk.Label(players_info, text="Actifs:", style='Heading.TLabel').pack(side='left')
-        self.active_players_count = ttk.Label(players_info, text="8/9", style='Card.TLabel', font=('Arial', 11, 'bold'))
-        self.active_players_count.pack(side='left', padx=(5, 0))
+        ttk.Label(players_info, text="Actifs:", font=('Arial', 9, 'bold')).pack(side='left')
+        self.active_players_count = ttk.Label(players_info, text="8/9", font=('Arial', 9, 'bold'))
+        self.active_players_count.pack(side='left', padx=(3, 0))
         
-        # Scroll pour la liste des joueurs
-        players_scroll_frame = ttk.Frame(players_content)
-        players_scroll_frame.pack(fill='both', expand=True)
+        # Canvas avec scrollbar pour la liste des joueurs
+        canvas_frame = ttk.Frame(players_content)
+        canvas_frame.pack(fill='both', expand=True)
         
-        self.players_list_frame = ttk.Frame(players_scroll_frame)
-        self.players_list_frame.pack(fill='both', expand=True)
+        # Créer le canvas et la scrollbar
+        self.players_canvas = tk.Canvas(canvas_frame, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.players_canvas.yview)
+        self.players_scrollable_frame = ttk.Frame(self.players_canvas)
+        
+        # Configuration du scroll
+        self.players_scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.players_canvas.configure(scrollregion=self.players_canvas.bbox("all"))
+        )
+        
+        # Placer le frame dans le canvas
+        self.players_canvas.create_window((0, 0), window=self.players_scrollable_frame, anchor="nw")
+        self.players_canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Pack canvas et scrollbar
+        self.players_canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Référence pour compatibilité
+        self.players_list_frame = self.players_scrollable_frame
         
         # Créer la liste des joueurs
         self.create_players_display()
@@ -443,60 +462,58 @@ class RTAPGUIWindow:
         # Trier par position pour affichage dans l'ordre de la table
         sorted_players = sorted(players_data, key=lambda p: p.get('position', 0))
         
-        # Affichage vertical compact pour les autres joueurs avec positions
+        # Affichage ultra-compact pour les autres joueurs
         for i, player in enumerate(sorted_players):
             player_frame = ttk.Frame(self.players_list_frame)
-            player_frame.pack(fill='x', pady=2, padx=5)
+            player_frame.pack(fill='x', pady=1, padx=2)
             
             # Couleur de statut
             status_color = '#28a745' if player['status'] == 'actif' else '#6c757d'
-            status_icon = "✅" if player['status'] == 'actif' else "⏸️"
+            status_icon = "●" if player['status'] == 'actif' else "○"
             
             # Déterminer icône de position
             position_icon = ""
-            position_color = '#495057'
             if player.get('is_button'):
-                position_icon = " 🔴"  # Button
-                position_color = '#dc3545'
+                position_icon = "🔴"  # Button
             elif player.get('is_sb'):
-                position_icon = " 🟡"  # Small Blind
-                position_color = '#ffc107'
+                position_icon = "🟡"  # Small Blind
             elif player.get('is_bb'):
-                position_icon = " 🔵"  # Big Blind
-                position_color = '#007bff'
+                position_icon = "🔵"  # Big Blind
             
-            # Ligne principale: Position + Nom + Stack
+            # Ligne unique ultra-compacte: Position Nom Stack (Stats)
             main_line = ttk.Frame(player_frame)
             main_line.pack(fill='x')
             
-            # Position et statut
-            position_text = f"{player.get('position_name', 'POS')}{position_icon}"
-            ttk.Label(main_line, text=position_text, font=('Arial', 9, 'bold'), foreground=position_color).pack(side='left')
+            # Position (3 chars max)
+            pos_text = player.get('position_name', 'POS')[:3]
+            if position_icon:
+                pos_text = f"{pos_text}{position_icon}"
+            ttk.Label(main_line, text=pos_text, font=('Arial', 8, 'bold')).pack(side='left')
             
-            ttk.Label(main_line, text=status_icon, font=('Arial', 10)).pack(side='left', padx=(5, 8))
+            # Statut
+            ttk.Label(main_line, text=status_icon, font=('Arial', 8), foreground=status_color).pack(side='left', padx=(2, 3))
             
-            # Nom du joueur
-            name_label = ttk.Label(main_line, text=player['name'], 
-                                 font=('Arial', 11, 'bold'), foreground=status_color)
-            name_label.pack(side='left', padx=(5, 0))
+            # Nom (tronqué si nécessaire)
+            name = player['name'][:8] + "." if len(player['name']) > 8 else player['name']
+            ttk.Label(main_line, text=name, font=('Arial', 8, 'bold'), foreground=status_color).pack(side='left')
             
-            # Stack
-            stack_text = f"{player.get('stack', 0):.0f}€" if isinstance(player.get('stack'), (int, float)) else str(player.get('stack', '0€'))
-            stack_label = ttk.Label(main_line, text=stack_text, 
-                                  font=('Arial', 10, 'bold'), foreground='#28a745')
-            stack_label.pack(side='right')
-            
-            # Ligne secondaire: VPIP/PFR (stats poker)
-            stats_line = ttk.Frame(player_frame)
-            stats_line.pack(fill='x', pady=(2, 0))
-            
+            # Stats compactes au centre
             vpip = player.get('vpip', 0)
             pfr = player.get('pfr', 0)
-            vpip_text = f"{vpip}%" if isinstance(vpip, (int, float)) else str(vpip)
-            pfr_text = f"{pfr}%" if isinstance(pfr, (int, float)) else str(pfr)
+            stats_text = f"{vpip}/{pfr}"
+            ttk.Label(main_line, text=stats_text, font=('Arial', 7), foreground='#6c757d').pack(side='left', padx=(5, 0))
             
-            ttk.Label(stats_line, text=f"VPIP: {vpip_text}", font=('Arial', 8), foreground='#6c757d').pack(side='left')
-            ttk.Label(stats_line, text=f"PFR: {pfr_text}", font=('Arial', 8), foreground='#6c757d').pack(side='left', padx=(10, 0))
+            # Stack à droite
+            stack_value = player.get('stack', 0)
+            if isinstance(stack_value, (int, float)):
+                if stack_value >= 1000:
+                    stack_text = f"{stack_value/1000:.1f}k"
+                else:
+                    stack_text = f"{stack_value:.0f}"
+            else:
+                stack_text = str(stack_value)
+            
+            ttk.Label(main_line, text=stack_text, font=('Arial', 8, 'bold'), foreground='#28a745').pack(side='right')
     
     def create_options_tab(self):
         """Création de l'onglet Options"""
