@@ -357,10 +357,10 @@ class RTAPGUIWindow:
         
         # SECTION 4B: AUTRES JOUEURS ACTIFS
         players_frame = ttk.LabelFrame(right_column, text="👥 AUTRES JOUEURS", style='Card.TFrame')
-        players_frame.pack(fill='both', expand=True, pady=(10, 0))
+        players_frame.pack(fill='x', pady=(10, 0))  # fill='x' au lieu de 'both' et pas expand
         
         players_content = ttk.Frame(players_frame)
-        players_content.pack(fill='both', expand=True, padx=5, pady=3)
+        players_content.pack(fill='x', padx=5, pady=3)
         
         # Info générale - Table 9-max (compacte)
         players_info = ttk.Frame(players_content)
@@ -370,31 +370,9 @@ class RTAPGUIWindow:
         self.active_players_count = ttk.Label(players_info, text="8/9", font=('Arial', 9, 'bold'))
         self.active_players_count.pack(side='left', padx=(3, 0))
         
-        # Canvas avec scrollbar pour la liste des joueurs
-        canvas_frame = ttk.Frame(players_content)
-        canvas_frame.pack(fill='both', expand=True)
-        
-        # Créer le canvas et la scrollbar
-        self.players_canvas = tk.Canvas(canvas_frame, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.players_canvas.yview)
-        self.players_scrollable_frame = ttk.Frame(self.players_canvas)
-        
-        # Configuration du scroll
-        self.players_scrollable_frame.bind(
-            "<Configure>",
-            lambda e: self.players_canvas.configure(scrollregion=self.players_canvas.bbox("all"))
-        )
-        
-        # Placer le frame dans le canvas
-        self.players_canvas.create_window((0, 0), window=self.players_scrollable_frame, anchor="nw")
-        self.players_canvas.configure(yscrollcommand=scrollbar.set)
-        
-        # Pack canvas et scrollbar
-        self.players_canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-        
-        # Référence pour compatibilité
-        self.players_list_frame = self.players_scrollable_frame
+        # Frame simple pour la liste des joueurs (sans scroll)
+        self.players_list_frame = ttk.Frame(players_content)
+        self.players_list_frame.pack(fill='x')
         
         # Créer la liste des joueurs
         self.create_players_display()
