@@ -194,7 +194,7 @@ class RTAPGUIWindow:
         board_frame.pack(side='left', fill='both', expand=True, padx=(10, 0))
         
         self.board_cards_frame = ttk.Frame(board_frame)
-        self.board_cards_frame.pack(anchor='e', padx=8, pady=10)
+        self.board_cards_frame.pack(anchor='center', padx=8, pady=10)
         
         # Calculer la largeur optimale pour 5 cartes (90px + padding)
         optimal_board_width = (5 * 90) + (4 * 5) + 16  # 5 cartes + 4 espacements + padding
