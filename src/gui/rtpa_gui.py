@@ -1157,7 +1157,7 @@ class RTAPGUIWindow:
                     self.app_manager.cfr_trainer.configure_generation_resources(
                         cpu_percent=cpu_value
                     )
-                    print(f"Limite CPU CFR appliquée: {cpu_value}%")
+                    print(f"✅ Limite CPU CFR appliquée: {cpu_value}%")
         except Exception as e:
             print(f"Erreur mise à jour CPU: {e}")
     
@@ -1175,7 +1175,7 @@ class RTAPGUIWindow:
                     self.app_manager.cfr_trainer.configure_generation_resources(
                         memory_mb=ram_mb
                     )
-                    print(f"Limite RAM CFR appliquée: {ram_value:.1f} GB")
+                    print(f"✅ Limite RAM CFR appliquée: {ram_value:.1f} GB")
         except Exception as e:
             print(f"Erreur mise à jour RAM: {e}")
     
@@ -1199,7 +1199,7 @@ class RTAPGUIWindow:
                     self.app_manager.cfr_trainer.configure_generation_resources(
                         rate_per_second=rate_per_second
                     )
-                    print(f"Vitesse génération appliquée: {rate_per_second} mains/s")
+                    print(f"✅ Vitesse génération appliquée: {rate_per_second} mains/s")
         except Exception as e:
             print(f"Erreur mise à jour vitesse génération: {e}")
     
@@ -1215,7 +1215,7 @@ class RTAPGUIWindow:
                     self.app_manager.cfr_trainer.configure_generation_resources(
                         cpu_percent=cpu_value
                     )
-                    print(f"Limite CPU génération appliquée: {cpu_value}%")
+                    print(f"✅ Limite CPU génération appliquée: {cpu_value}%")
         except Exception as e:
             print(f"Erreur mise à jour CPU génération: {e}")
     
