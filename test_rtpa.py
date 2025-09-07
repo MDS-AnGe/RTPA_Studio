@@ -11,6 +11,19 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent
 sys.path.append(str(PROJECT_ROOT))
 
+# Auto-installation des dépendances
+print("🚀 RTPA Studio - Test de démarrage")
+print("=" * 50)
+
+try:
+    # Import et exécution de l'auto-installation
+    from src.utils.auto_install import auto_install_dependencies
+    auto_install_dependencies()
+    print()
+except Exception as e:
+    print(f"⚠️  Auto-installation échouée: {e}")
+    print("📝 Tentative de poursuite du test...")
+
 try:
     # Test des imports principaux
     print("🔄 Test des imports...")

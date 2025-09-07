@@ -12,6 +12,21 @@ sys.path.append(str(PROJECT_ROOT))
 
 def main():
     """Lance RTPA Studio avec interface graphique"""
+    
+    # Auto-installation des dépendances
+    print("🚀 RTPA Studio - Interface Graphique")
+    print("=" * 45)
+    
+    try:
+        from src.utils.auto_install import auto_install_dependencies
+        if auto_install_dependencies():
+            print("✅ Dépendances vérifiées/installées avec succès!\n")
+        else:
+            print("⚠️  Problème avec l'installation automatique\n")
+    except Exception as e:
+        print(f"⚠️  Auto-installation échouée: {e}")
+        print("📝 Tentative de poursuite...\n")
+    
     try:
         from src.core.app_manager import RTAPStudioManager
         from src.gui.rtpa_gui import RTAPGUIWindow

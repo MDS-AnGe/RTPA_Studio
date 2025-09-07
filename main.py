@@ -14,6 +14,20 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent
 sys.path.append(str(PROJECT_ROOT))
 
+# Auto-installation des dépendances au premier lancement
+print("🚀 RTPA Studio - Démarrage")
+print("=" * 40)
+
+try:
+    from src.utils.auto_install import auto_install_dependencies
+    if auto_install_dependencies():
+        print("✅ Dépendances vérifiées/installées avec succès!\n")
+    else:
+        print("⚠️  Problème avec l'installation automatique\n")
+except Exception as e:
+    print(f"⚠️  Auto-installation échouée: {e}")
+    print("📝 Tentative de poursuite...\n")
+
 # Import des modules principaux
 from src.core.app_manager import RTAPStudioManager
 from src.gui.main_window import RTAPMainWindow
