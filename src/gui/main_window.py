@@ -710,10 +710,10 @@ class RTAPMainWindow:
         
         # Valeurs par défaut si le fichier n'est pas trouvé
         return {
-            "version": "1.0.0",
+            "version": "1.1.0",
             "release_date": "2025-09-07",
             "last_update": "2025-09-07",
-            "build": "1000",
+            "build": "1100",
             "status": "stable"
         }
 

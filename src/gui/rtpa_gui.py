@@ -782,9 +782,9 @@ class RTAPGUIWindow:
         version_info_frame = ctk.CTkFrame(version_container)
         version_info_frame.pack(pady=(20, 30))
         
-        ctk.CTkLabel(version_info_frame, text="Version 1.0.0", 
+        ctk.CTkLabel(version_info_frame, text="Version 1.1.0", 
                     font=ctk.CTkFont(size=16, weight="bold")).pack(pady=15)
-        ctk.CTkLabel(version_info_frame, text="Build 1000 - Version stable", 
+        ctk.CTkLabel(version_info_frame, text="Build 1100 - Version stable", 
                     font=ctk.CTkFont(size=12), text_color="gray").pack(pady=(0, 15))
         
         # Fonctionnalités
