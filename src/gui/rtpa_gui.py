@@ -386,10 +386,10 @@ class RTAPGUIWindow:
         
         # SOUS-SECTION: Statistiques compactes
         stats_frame = ttk.LabelFrame(left_column, text="📈 STATISTIQUES", style='Card.TFrame')
-        stats_frame.pack(fill='both', expand=True)
+        stats_frame.pack(fill='x', pady=(0, 5))  # Hauteur fixe pour éviter les problèmes d'affichage
         
         stats_content = tk.Frame(stats_frame, bg='#dbdbdb')
-        stats_content.pack(fill='both', expand=True, padx=6, pady=4)
+        stats_content.pack(fill='x', padx=6, pady=4)
         
         # Taux de victoire principal - centré et plus compact
         main_rate_frame = tk.Frame(stats_content, bg='#dbdbdb')
@@ -401,38 +401,38 @@ class RTAPGUIWindow:
         
         # Statistiques détaillées en grille compacte
         details_frame = tk.Frame(stats_content, bg='#dbdbdb')
-        details_frame.pack(fill='both', expand=True, pady=(0, 2))
+        details_frame.pack(fill='x', pady=(0, 2))
         
-        # Ligne 1: Mains jouées + gagnées - plus compact
+        # Ligne 1: Mains jouées + gagnées - VISIBLE et bien espacé
         hands_row = tk.Frame(details_frame, bg='#dbdbdb')
-        hands_row.pack(fill='x', pady=(0, 2))
+        hands_row.pack(fill='x', pady=(2, 4))  # Plus d'espace vertical
         
         played_frame = tk.Frame(hands_row, bg='#dbdbdb')
         played_frame.pack(side='left', fill='x', expand=True)
-        tk.Label(played_frame, text="🎲 Jouées", font=('Arial', 8, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.hands_played_value = tk.Label(played_frame, text="0", font=('Arial', 10, 'bold'), fg='#495057', bg='#dbdbdb')
+        tk.Label(played_frame, text="🎲 Jouées", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
+        self.hands_played_value = tk.Label(played_frame, text="0", font=('Arial', 11, 'bold'), fg='#495057', bg='#dbdbdb')
         self.hands_played_value.pack()
         
         won_frame = tk.Frame(hands_row, bg='#dbdbdb')
         won_frame.pack(side='right', fill='x', expand=True)
-        tk.Label(won_frame, text="🏆 Gagnées", font=('Arial', 8, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.hands_won_value = tk.Label(won_frame, text="0", font=('Arial', 10, 'bold'), fg='#28a745', bg='#dbdbdb')
+        tk.Label(won_frame, text="🏆 Gagnées", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
+        self.hands_won_value = tk.Label(won_frame, text="0", font=('Arial', 11, 'bold'), fg='#28a745', bg='#dbdbdb')
         self.hands_won_value.pack()
         
-        # Ligne 2: Comparaison performance - plus compact
+        # Ligne 2: Comparaison performance - VISIBLE et bien espacé
         perf_row = tk.Frame(details_frame, bg='#dbdbdb')
-        perf_row.pack(fill='x')
+        perf_row.pack(fill='x', pady=(2, 4))  # Plus d'espace vertical
         
         pro_frame = tk.Frame(perf_row, bg='#dbdbdb')
         pro_frame.pack(side='left', fill='x', expand=True)
-        tk.Label(pro_frame, text="👑 Pro", font=('Arial', 8, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.expected_rate_value = tk.Label(pro_frame, text="--", font=('Arial', 9, 'bold'), fg='#6c757d', bg='#dbdbdb')
+        tk.Label(pro_frame, text="👑 Pro", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
+        self.expected_rate_value = tk.Label(pro_frame, text="--", font=('Arial', 10, 'bold'), fg='#6c757d', bg='#dbdbdb')
         self.expected_rate_value.pack()
         
         performance_frame = tk.Frame(perf_row, bg='#dbdbdb')
         performance_frame.pack(side='right', fill='x', expand=True)
-        tk.Label(performance_frame, text="📈 Perf", font=('Arial', 8, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.performance_ratio_value = tk.Label(performance_frame, text="0.0%", font=('Arial', 9, 'bold'), fg='#fd7e14', bg='#dbdbdb')
+        tk.Label(performance_frame, text="📈 Perf", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
+        self.performance_ratio_value = tk.Label(performance_frame, text="0.0%", font=('Arial', 10, 'bold'), fg='#fd7e14', bg='#dbdbdb')
         self.performance_ratio_value.pack()
         
         # Colonne droite: Informations joueurs
