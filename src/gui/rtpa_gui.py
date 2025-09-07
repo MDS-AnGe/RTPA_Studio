@@ -611,7 +611,20 @@ class RTAPGUIWindow:
         perf_container.pack(fill='both', expand=True, padx=20, pady=20)
         
         ctk.CTkLabel(perf_container, text="⚡ Monitoring des performances", 
-                    font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 30))
+                    font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 15))
+        
+        # Notice PyTorch
+        notice_frame = ctk.CTkFrame(perf_container)
+        notice_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(notice_frame, text="ℹ️ Information importante", 
+                    font=ctk.CTkFont(size=14, weight="bold"), 
+                    text_color="#1f538d").pack(pady=(15, 5))
+        
+        ctk.CTkLabel(notice_frame, 
+                    text="Le monitoring GPU avancé nécessite PyTorch installé.\nSans PyTorch, seules les métriques CPU et RAM basiques sont disponibles.", 
+                    font=ctk.CTkFont(size=12), 
+                    text_color="gray").pack(pady=(0, 15))
         
         # === MÉTRIQUES SYSTÈME ===
         system_frame = ctk.CTkFrame(perf_container)
@@ -637,12 +650,16 @@ class RTAPGUIWindow:
         self.ram_usage_label = ctk.CTkLabel(ram_metric_frame, text="0 GB", font=ctk.CTkFont(size=16, weight="bold"))
         self.ram_usage_label.pack(pady=5)
         
-        # GPU (si disponible)
+        # GPU (si disponible avec PyTorch)
         gpu_metric_frame = ctk.CTkFrame(metrics_grid)
         gpu_metric_frame.pack(side='right', fill='x', expand=True, padx=(10, 0))
-        ctk.CTkLabel(gpu_metric_frame, text="GPU", font=ctk.CTkFont(weight="bold")).pack(pady=5)
+        ctk.CTkLabel(gpu_metric_frame, text="GPU*", font=ctk.CTkFont(weight="bold")).pack(pady=5)
         self.gpu_usage_label = ctk.CTkLabel(gpu_metric_frame, text="N/A", font=ctk.CTkFont(size=16, weight="bold"))
         self.gpu_usage_label.pack(pady=5)
+        
+        # Note pour GPU
+        ctk.CTkLabel(gpu_metric_frame, text="*PyTorch requis", 
+                    font=ctk.CTkFont(size=8), text_color="gray").pack()
         
         # === MÉTRIQUES CFR ===
         cfr_metrics_frame = ctk.CTkFrame(perf_container)
