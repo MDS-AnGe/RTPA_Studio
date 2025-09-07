@@ -156,126 +156,39 @@ class RTAPGUIWindow:
         self.create_performance_tab()
     
     def create_game_tab(self):
-        """Création de l'onglet État du Jeu - Interface Moderne Style Poker"""
+        """Création de l'onglet État du Jeu avec recommandations intégrées"""
         
-        # Container principal avec fond style poker
-        main_container = tk.Frame(self.game_tab, bg='#0d4d20')  # Vert poker foncé
-        main_container.pack(fill='both', expand=True)
+        # Frame principal
+        main_container = ttk.Frame(self.game_tab)
+        main_container.pack(fill='both', expand=True, padx=20, pady=20)
         
-        # Header avec titre stylé
-        header_frame = tk.Frame(main_container, bg='#0d4d20', height=50)
-        header_frame.pack(fill='x', pady=(10, 0))
-        header_frame.pack_propagate(False)
+        # Partie haute : Cartes et informations
+        top_container = ttk.Frame(main_container)
+        top_container.pack(fill='x', pady=(0, 15))
         
-        title_label = tk.Label(
-            header_frame,
-            text="🃏 TABLE DE POKER RTPA 🎯",
-            font=('Arial', 18, 'bold'),
-            fg='#ffdd44',
-            bg='#0d4d20'
-        )
-        title_label.pack(pady=10)
+        # Section Main
+        hero_frame = ttk.LabelFrame(top_container, text="🂡 Main", style='Card.TFrame')
+        hero_frame.pack(fill='x', pady=(0, 15))
         
-        # Zone de jeu centrale style table elliptique
-        game_area = tk.Frame(main_container, bg='#2d5a3d', relief='raised', bd=4)
-        game_area.pack(fill='both', expand=True, padx=20, pady=10)
+        self.hero_cards_frame = ttk.Frame(hero_frame)
+        self.hero_cards_frame.pack(pady=15)
         
-        # Section Board (centre de la table)
-        board_section = tk.Frame(game_area, bg='#2d5a3d')
-        board_section.pack(pady=30)
-        
-        board_title = tk.Label(
-            board_section,
-            text="🎯 BOARD COMMUNAUTAIRE 🎯",
-            font=('Arial', 14, 'bold'),
-            fg='#ffdd44',
-            bg='#2d5a3d'
-        )
-        board_title.pack(pady=(0, 15))
-        
-        self.board_cards_frame = tk.Frame(board_section, bg='#2d5a3d')
-        self.board_cards_frame.pack()
-        
-        self.board_cards = []
-        self.board_card_frames = []
-        
-        # Labels pour les streets
-        street_names = ['FLOP', '', '', 'TURN', 'RIVER']
-        
-        for i in range(5):
-            # Container pour carte + label
-            card_container = tk.Frame(self.board_cards_frame, bg='#2d5a3d')
-            card_container.pack(side='left', padx=8)
-            
-            # Label street
-            if street_names[i]:
-                street_label = tk.Label(
-                    card_container, 
-                    text=street_names[i], 
-                    font=('Arial', 8, 'bold'), 
-                    fg='#ffdd44', 
-                    bg='#2d5a3d'
-                )
-                street_label.pack()
-            
-            # Frame carte avec effet 3D
-            card_frame = tk.Frame(
-                card_container,
-                bg='white',
-                relief='raised',
-                bd=3,
-                width=90,
-                height=120
-            )
-            card_frame.pack(pady=2)
-            card_frame.pack_propagate(False)
-            
-            # Label carte avec ombrage
-            card_label = tk.Label(
-                card_frame,
-                text="🂠",
-                font=('Arial', 32, 'bold'),
-                fg='gray',
-                bg='white',
-                anchor='center'
-            )
-            card_label.pack(expand=True, fill='both')
-            
-            self.board_cards.append(card_label)
-            self.board_card_frames.append(card_frame)
-        
-        # Section Hero Cards (en bas de la table)
-        hero_section = tk.Frame(game_area, bg='#2d5a3d')
-        hero_section.pack(side='bottom', pady=(20, 30))
-        
-        hero_title = tk.Label(
-            hero_section,
-            text="🂡 VOS CARTES 🂡",
-            font=('Arial', 16, 'bold'),
-            fg='#ff6b6b',
-            bg='#2d5a3d'
-        )
-        hero_title.pack(pady=(0, 15))
-        
-        self.hero_cards_frame = tk.Frame(hero_section, bg='#2d5a3d')
-        self.hero_cards_frame.pack()
-        
-        # Cartes Hero plus grandes et élégantes
+        # Cartes visuelles améliorées (gardées du nouveau design)
         self.hero_card1_frame = tk.Frame(
             self.hero_cards_frame, 
             bg='white',
             relief='raised',
-            bd=5,
-            width=110,
-            height=150
+            bd=3,
+            width=90,
+            height=120
         )
-        self.hero_card1_frame.pack(side='left', padx=20)
+        self.hero_card1_frame.pack(side='left', padx=10)
         self.hero_card1_frame.pack_propagate(False)
         
         self.hero_card1 = tk.Label(
             self.hero_card1_frame,
             text="🂠",
-            font=('Arial', 40, 'bold'),
+            font=('Arial', 28, 'bold'),
             fg='gray',
             bg='white',
             anchor='center'
@@ -286,184 +199,188 @@ class RTAPGUIWindow:
             self.hero_cards_frame,
             bg='white',
             relief='raised',
-            bd=5,
-            width=110,
-            height=150
+            bd=3,
+            width=90,
+            height=120
         )
-        self.hero_card2_frame.pack(side='left', padx=20)
+        self.hero_card2_frame.pack(side='left', padx=10)
         self.hero_card2_frame.pack_propagate(False)
         
         self.hero_card2 = tk.Label(
             self.hero_card2_frame,
             text="🂠",
-            font=('Arial', 40, 'bold'),
+            font=('Arial', 28, 'bold'),
             fg='gray',
             bg='white',
             anchor='center'
         )
         self.hero_card2.pack(expand=True, fill='both')
         
-        # Section Informations de Jeu - Style Dashboard
-        info_container = tk.Frame(main_container, bg='#1a1a1a')
-        info_container.pack(fill='x', padx=20, pady=(0, 10))
+        # Section Board
+        board_frame = ttk.LabelFrame(top_container, text="🃏 Board", style='Card.TFrame')
+        board_frame.pack(fill='x', pady=(0, 15))
         
-        # Dashboard avec 4 colonnes d'informations
-        dashboard = tk.Frame(info_container, bg='#1a1a1a', relief='raised', bd=2)
-        dashboard.pack(fill='x', pady=10)
+        self.board_cards_frame = ttk.Frame(board_frame)
+        self.board_cards_frame.pack(pady=15)
         
-        # Pot (avec effet lumineux)
-        pot_frame = tk.Frame(dashboard, bg='#2d5a3d', relief='raised', bd=3, width=150, height=80)
-        pot_frame.pack(side='left', fill='y', padx=10, pady=10)
-        pot_frame.pack_propagate(False)
+        self.board_cards = []
+        self.board_card_frames = []
+        for i in range(5):
+            # Frame pour chaque carte améliorée
+            card_frame = tk.Frame(
+                self.board_cards_frame,
+                bg='white',
+                relief='raised',
+                bd=2,
+                width=70,
+                height=95
+            )
+            card_frame.pack(side='left', padx=3)
+            card_frame.pack_propagate(False)
+            
+            # Label carte amélioré
+            card_label = tk.Label(
+                card_frame,
+                text="🂠",
+                font=('Arial', 22, 'bold'),
+                fg='gray',
+                bg='white',
+                anchor='center'
+            )
+            card_label.pack(expand=True, fill='both')
+            
+            self.board_cards.append(card_label)
+            self.board_card_frames.append(card_frame)
         
-        tk.Label(pot_frame, text="💰 POT", font=('Arial', 10, 'bold'), fg='#ffdd44', bg='#2d5a3d').pack(pady=5)
-        self.pot_label = tk.Label(pot_frame, text="0.00€", font=('Arial', 16, 'bold'), fg='white', bg='#2d5a3d')
-        self.pot_label.pack()
+        # Section Informations de Jeu
+        info_container = ttk.Frame(top_container)
+        info_container.pack(fill='x', pady=(0, 15))
+        
+        # Colonne gauche
+        left_info = ttk.Frame(info_container)
+        left_info.pack(side='left', fill='both', expand=True, padx=(0, 10))
+        
+        # Pot
+        pot_frame = ttk.LabelFrame(left_info, text="💰 Pot", style='Card.TFrame')
+        pot_frame.pack(fill='x', pady=(0, 10))
+        
+        self.pot_label = ttk.Label(pot_frame, text="0.00€", style='Big.TLabel')
+        self.pot_label.pack(pady=15)
         
         # Stack
-        stack_frame = tk.Frame(dashboard, bg='#2d5a3d', relief='raised', bd=3, width=150, height=80)
-        stack_frame.pack(side='left', fill='y', padx=10, pady=10)
-        stack_frame.pack_propagate(False)
+        stack_frame = ttk.LabelFrame(left_info, text="💵 Stack", style='Card.TFrame')
+        stack_frame.pack(fill='x', pady=(0, 10))
         
-        tk.Label(stack_frame, text="💵 STACK", font=('Arial', 10, 'bold'), fg='#ffdd44', bg='#2d5a3d').pack(pady=5)
-        self.stack_label = tk.Label(stack_frame, text="0.00€", font=('Arial', 16, 'bold'), fg='white', bg='#2d5a3d')
-        self.stack_label.pack()
+        self.stack_label = ttk.Label(stack_frame, text="0.00€", style='Big.TLabel')
+        self.stack_label.pack(pady=15)
         
-        # Blinds
-        blinds_frame = tk.Frame(dashboard, bg='#2d5a3d', relief='raised', bd=3, width=180, height=80)
-        blinds_frame.pack(side='left', fill='y', padx=10, pady=10)
-        blinds_frame.pack_propagate(False)
+        # Colonne droite
+        right_info = ttk.Frame(info_container)
+        right_info.pack(side='right', fill='both', expand=True, padx=(10, 0))
         
-        tk.Label(blinds_frame, text="🎲 BLINDS", font=('Arial', 10, 'bold'), fg='#ffdd44', bg='#2d5a3d').pack(pady=5)
-        self.blinds_label = tk.Label(blinds_frame, text="0.00€ / 0.00€", font=('Arial', 12, 'bold'), fg='white', bg='#2d5a3d')
-        self.blinds_label.pack()
-        self.antes_label = tk.Label(blinds_frame, text="", font=('Arial', 9), fg='#cccccc', bg='#2d5a3d')
-        self.antes_label.pack()
+        # Blinds & Antes
+        blinds_frame = ttk.LabelFrame(right_info, text="🎲 Blinds & Antes", style='Card.TFrame')
+        blinds_frame.pack(fill='x', pady=(0, 10))
         
-        # Type de table
-        type_frame = tk.Frame(dashboard, bg='#2d5a3d', relief='raised', bd=3, width=120, height=80)
-        type_frame.pack(side='right', fill='y', padx=10, pady=10)
-        type_frame.pack_propagate(False)
+        self.blinds_label = ttk.Label(blinds_frame, text="0.00€ / 0.00€", style='Big.TLabel')
+        self.blinds_label.pack(pady=10)
         
-        tk.Label(type_frame, text="🏟️ TYPE", font=('Arial', 10, 'bold'), fg='#ffdd44', bg='#2d5a3d').pack(pady=5)
-        self.table_type_label = tk.Label(type_frame, text="Cash Game", font=('Arial', 12, 'bold'), fg='white', bg='#2d5a3d')
-        self.table_type_label.pack()
+        self.antes_label = ttk.Label(blinds_frame, text="", style='Card.TLabel')
+        self.antes_label.pack(pady=(0, 10))
         
-        # SECTION RECOMMANDATIONS MODERNISÉE
-        recommendations_frame = tk.Frame(main_container, bg='#1a1a1a', relief='raised', bd=3)
-        recommendations_frame.pack(fill='x', padx=20, pady=(0, 10))
+        # Type de Table (petit, dans le coin)
+        self.table_type_label = ttk.Label(right_info, text="Cash Game", font=('Arial', 9), foreground='gray')
+        self.table_type_label.pack(anchor='ne', pady=5)
         
-        # Header recommandations
-        rec_header = tk.Frame(recommendations_frame, bg='#333333', height=40)
-        rec_header.pack(fill='x')
-        rec_header.pack_propagate(False)
+        # SECTION RECOMMANDATIONS INTÉGRÉES
+        recommendations_frame = ttk.LabelFrame(main_container, text="🎯 RECOMMANDATIONS", style='Card.TFrame')
+        recommendations_frame.pack(fill='x', pady=(0, 15))
         
-        tk.Label(
-            rec_header, 
-            text="🎯 RECOMMANDATION NASH-CFR", 
-            font=('Arial', 14, 'bold'), 
-            fg='#ffdd44', 
-            bg='#333333'
-        ).pack(pady=10)
+        # Action principale (grande)
+        action_container = ttk.Frame(recommendations_frame)
+        action_container.pack(fill='x', pady=15)
         
-        # Action principale avec glow effect
-        action_container = tk.Frame(recommendations_frame, bg='#1a1a1a')
-        action_container.pack(fill='x', pady=20)
-        
-        self.main_action_display = tk.Label(
+        self.main_action_display = ttk.Label(
             action_container, 
             text="ATTENDRE", 
-            font=('Arial', 32, 'bold'),
-            fg='#ff9900',
-            bg='#1a1a1a'
+            font=('Arial', 28, 'bold'),
+            foreground='orange'
         )
         self.main_action_display.pack()
         
-        self.main_bet_size_label = tk.Label(
-            action_container, 
-            text="", 
-            font=('Arial', 16, 'bold'),
-            fg='#ffdd44',
-            bg='#1a1a1a'
-        )
-        self.main_bet_size_label.pack(pady=(10, 0))
+        self.main_bet_size_label = ttk.Label(action_container, text="", style='Heading.TLabel')
+        self.main_bet_size_label.pack(pady=(5, 0))
         
-        # Détails avec barres de progression
-        details_container = tk.Frame(recommendations_frame, bg='#1a1a1a')
+        # Détails en ligne
+        details_container = ttk.Frame(recommendations_frame)
         details_container.pack(fill='x', padx=15, pady=(0, 15))
         
-        # Grid 3 colonnes
-        for i in range(3):
-            details_container.grid_columnconfigure(i, weight=1)
+        # Probabilité de victoire
+        prob_frame = ttk.Frame(details_container)
+        prob_frame.pack(side='left', fill='x', expand=True)
         
-        # Probabilité de victoire avec barre
-        prob_frame = tk.Frame(details_container, bg='#2d5a3d', relief='raised', bd=2)
-        prob_frame.grid(row=0, column=0, padx=10, pady=10, sticky='ew')
+        ttk.Label(prob_frame, text="💪 Prob. Victoire:", style='Heading.TLabel').pack(anchor='w')
+        self.main_win_prob_label = ttk.Label(prob_frame, text="50%", font=('Arial', 16, 'bold'))
+        self.main_win_prob_label.pack(anchor='w')
         
-        tk.Label(prob_frame, text="💪 VICTOIRE", font=('Arial', 10, 'bold'), fg='#ffdd44', bg='#2d5a3d').pack(pady=5)
-        self.main_win_prob_label = tk.Label(prob_frame, text="50%", font=('Arial', 16, 'bold'), fg='white', bg='#2d5a3d')
-        self.main_win_prob_label.pack()
+        # Risque
+        risk_frame = ttk.Frame(details_container)
+        risk_frame.pack(side='left', fill='x', expand=True, padx=(20, 0))
         
-        # Barre de progression victoire
-        win_bar_frame = tk.Frame(prob_frame, bg='#2d5a3d')
-        win_bar_frame.pack(pady=5)
-        self.win_progress_bar = tk.Frame(win_bar_frame, bg='green', height=8, width=80)
-        self.win_progress_bar.pack()
+        ttk.Label(risk_frame, text="⚠️ Niveau Risque:", style='Heading.TLabel').pack(anchor='w')
+        self.main_risk_label = ttk.Label(risk_frame, text="50%", font=('Arial', 16, 'bold'))
+        self.main_risk_label.pack(anchor='w')
         
-        # Risque avec barre
-        risk_frame = tk.Frame(details_container, bg='#2d5a3d', relief='raised', bd=2)
-        risk_frame.grid(row=0, column=1, padx=10, pady=10, sticky='ew')
+        # Confiance
+        conf_frame = ttk.Frame(details_container)
+        conf_frame.pack(side='left', fill='x', expand=True, padx=(20, 0))
         
-        tk.Label(risk_frame, text="⚠️ RISQUE", font=('Arial', 10, 'bold'), fg='#ffdd44', bg='#2d5a3d').pack(pady=5)
-        self.main_risk_label = tk.Label(risk_frame, text="50%", font=('Arial', 16, 'bold'), fg='white', bg='#2d5a3d')
-        self.main_risk_label.pack()
+        ttk.Label(conf_frame, text="🎯 Confiance:", style='Heading.TLabel').pack(anchor='w')
+        self.main_confidence_label = ttk.Label(conf_frame, text="85%", font=('Arial', 16, 'bold'))
+        self.main_confidence_label.pack(anchor='w')
         
-        # Barre de progression risque
-        risk_bar_frame = tk.Frame(risk_frame, bg='#2d5a3d')
-        risk_bar_frame.pack(pady=5)
-        self.risk_progress_bar = tk.Frame(risk_bar_frame, bg='orange', height=8, width=40)
-        self.risk_progress_bar.pack()
+        # Raisonnement
+        reasoning_frame = ttk.Frame(recommendations_frame)
+        reasoning_frame.pack(fill='x', padx=15, pady=(0, 15))
         
-        # Confiance avec barre
-        conf_frame = tk.Frame(details_container, bg='#2d5a3d', relief='raised', bd=2)
-        conf_frame.grid(row=0, column=2, padx=10, pady=10, sticky='ew')
-        
-        tk.Label(conf_frame, text="🎯 CONFIANCE", font=('Arial', 10, 'bold'), fg='#ffdd44', bg='#2d5a3d').pack(pady=5)
-        self.main_confidence_label = tk.Label(conf_frame, text="85%", font=('Arial', 16, 'bold'), fg='white', bg='#2d5a3d')
-        self.main_confidence_label.pack()
-        
-        # Barre de progression confiance
-        conf_bar_frame = tk.Frame(conf_frame, bg='#2d5a3d')
-        conf_bar_frame.pack(pady=5)
-        self.conf_progress_bar = tk.Frame(conf_bar_frame, bg='blue', height=8, width=68)
-        self.conf_progress_bar.pack()
-        
-        # Raisonnement avec style moderne
-        reasoning_frame = tk.Frame(recommendations_frame, bg='#333333', relief='sunken', bd=2)
-        reasoning_frame.pack(fill='x', padx=15, pady=(15, 15))
-        
-        tk.Label(reasoning_frame, text="🧠 RAISONNEMENT NASH:", font=('Arial', 12, 'bold'), fg='#ffdd44', bg='#333333').pack(anchor='w', padx=10, pady=5)
-        self.main_reasoning_label = tk.Label(
+        ttk.Label(reasoning_frame, text="🧠 Raisonnement:", style='Heading.TLabel').pack(anchor='w')
+        self.main_reasoning_label = ttk.Label(
             reasoning_frame, 
-            text="En attente d'analyse des équilibres Nash-CFR...", 
+            text="En attente d'analyse...", 
             font=('Arial', 11),
             wraplength=800,
-            justify='left',
-            fg='white',
-            bg='#333333'
+            justify='left'
         )
-        self.main_reasoning_label.pack(anchor='w', padx=10, pady=(0, 10))
+        self.main_reasoning_label.pack(anchor='w', pady=(5, 0))
         
-        # SECTION STATISTIQUES MODERNE
-        stats_frame = tk.Frame(main_container, bg='#1a1a1a', relief='raised', bd=3)
-        stats_frame.pack(fill='x', padx=20, pady=(0, 20))
+        # SECTION STATISTIQUES
+        stats_frame = ttk.LabelFrame(main_container, text="📊 STATISTIQUES", style='Card.TFrame')
+        stats_frame.pack(fill='x', pady=(0, 0))
         
-        # Header stats
-        stats_header = tk.Frame(stats_frame, bg='#333333', height=30)
-        stats_header.pack(fill='x')
-        stats_header.pack_propagate(False)
+        stats_grid = ttk.Frame(stats_frame)
+        stats_grid.pack(fill='x', padx=15, pady=10)
         
-        tk.Label(stats_header, text="📊 STATISTIQUES DE PERFORMANCE", font=('Arial', 12, 'bold'), fg='#ffdd44', bg='#333333').pack(pady=8)
+        # Ligne de statistiques
+        stats_left = ttk.Frame(stats_grid)
+        stats_left.pack(side='left', fill='x', expand=True)
+        
+        stats_right = ttk.Frame(stats_grid)
+        stats_right.pack(side='right', fill='x', expand=True)
+        
+        # Mains jouées/gagnées
+        ttk.Label(stats_left, text="Mains:", style='Heading.TLabel').grid(row=0, column=0, sticky='w', padx=5)
+        self.main_hands_label = ttk.Label(stats_left, text="0 / 0", style='Card.TLabel')
+        self.main_hands_label.grid(row=0, column=1, sticky='w', padx=5)
+        
+        # Taux victoire
+        ttk.Label(stats_left, text="Taux Victoire:", style='Heading.TLabel').grid(row=0, column=2, sticky='w', padx=(15, 5))
+        self.main_winrate_label = ttk.Label(stats_left, text="0%", style='Card.TLabel')
+        self.main_winrate_label.grid(row=0, column=3, sticky='w', padx=5)
+        
+        # Performance vs Pro
+        ttk.Label(stats_right, text="Performance vs Pro (68%):", style='Heading.TLabel').pack(side='left', padx=5)
+        self.main_performance_label = ttk.Label(stats_right, text="0%", style='Card.TLabel')
+        self.main_performance_label.pack(side='left', padx=5)
         
         stats_grid = ttk.Frame(stats_frame)
         stats_grid.pack(fill='x', padx=15, pady=10)
