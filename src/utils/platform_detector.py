@@ -6,7 +6,7 @@ Surveille les processus et fenêtres pour démarrage automatique
 import psutil
 import time
 import threading
-from typing import List, Dict, Optional, Callable
+from typing import List, Dict, Optional, Callable, Any
 try:
     from ..utils.logger import get_logger
 except ImportError:
@@ -110,8 +110,8 @@ class PlatformDetector:
             
             time.sleep(self.detection_interval)
     
-    def force_detection(self) -> dict:
-        """Force une détection immédiate pour tests"""
+    def get_detection_info(self) -> dict:
+        """Récupère des informations détaillées pour debug"""
         platforms = self._detect_active_platforms()
         result = {
             'detected_platforms': list(platforms),
@@ -126,7 +126,7 @@ class PlatformDetector:
                     if proc_name:
                         result['all_processes'].append(proc_name)
                         
-                        # Vérifier si correspond à Winamax
+                        # Vérifier si correspond à une plateforme
                         for platform_id, platform_info in self.supported_platforms.items():
                             for process_pattern in platform_info['processes']:
                                 pattern_base = process_pattern.lower().replace('.exe', '')
@@ -139,7 +139,7 @@ class PlatformDetector:
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
         except Exception as e:
-            self.logger.error(f"Erreur force_detection: {e}")
+            self.logger.error(f"Erreur get_detection_info: {e}")
         
         return result
     
@@ -169,17 +169,22 @@ class PlatformDetector:
             
             # Vérification supplémentaire par fenêtres (si disponible)
             try:
-                import pygetwindow as gw
-                windows = gw.getAllTitles()
-                
-                for window_title in windows:
-                    for platform_id, platform_info in self.supported_platforms.items():
-                        if any(title.lower() in window_title.lower() 
-                              for title in platform_info['window_titles']):
-                            active_platforms.add(platform_id)
-                            break
+                import importlib.util
+                spec = importlib.util.find_spec('pygetwindow')
+                if spec is not None:
+                    # Tentative d'import dynamique
+                    gw = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(gw)
+                    windows = gw.getAllTitles()
+                    
+                    for window_title in windows:
+                        for platform_id, platform_info in self.supported_platforms.items():
+                            if any(title.lower() in window_title.lower() 
+                                  for title in platform_info['window_titles']):
+                                active_platforms.add(platform_id)
+                                break
                             
-            except ImportError:
+            except (ImportError, ModuleNotFoundError, AttributeError):
                 # pygetwindow non disponible, utiliser seulement les processus
                 pass
             except Exception as e:
@@ -218,7 +223,7 @@ class PlatformDetector:
         # Retourner le premier disponible
         return next(iter(self.detected_platforms))
     
-    def force_detection(self) -> Dict[str, any]:
+    def force_detection(self) -> Dict[str, Any]:
         """Force une détection immédiate (pour tests)"""
         platforms = self._detect_active_platforms()
         return {
