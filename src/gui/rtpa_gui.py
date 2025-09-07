@@ -166,18 +166,43 @@ class RTAPGUIWindow:
         top_container = ttk.Frame(main_container)
         top_container.pack(fill='x', pady=(0, 15))
         
-        # Section Cartes du Héros
-        hero_frame = ttk.LabelFrame(top_container, text="🂡 Cartes du Héros", style='Card.TFrame')
+        # Section Main
+        hero_frame = ttk.LabelFrame(top_container, text="🂡 Main", style='Card.TFrame')
         hero_frame.pack(fill='x', pady=(0, 15))
         
         self.hero_cards_frame = ttk.Frame(hero_frame)
         self.hero_cards_frame.pack(pady=15)
         
-        self.hero_card1 = ttk.Label(self.hero_cards_frame, text="🂠", font=('Arial', 48))
-        self.hero_card1.pack(side='left', padx=10)
+        # Cartes visuelles réalistes
+        self.hero_card1_frame = ttk.Frame(self.hero_cards_frame, relief='raised', borderwidth=2)
+        self.hero_card1_frame.configure(style='Card.TFrame')
+        self.hero_card1_frame.pack(side='left', padx=10)
         
-        self.hero_card2 = ttk.Label(self.hero_cards_frame, text="🂠", font=('Arial', 48))
-        self.hero_card2.pack(side='left', padx=10)
+        self.hero_card1 = ttk.Label(
+            self.hero_card1_frame, 
+            text="[ ? ]",
+            font=('Courier New', 24, 'bold'),
+            foreground='black',
+            background='white',
+            width=6,
+            anchor='center'
+        )
+        self.hero_card1.pack(padx=8, pady=8)
+        
+        self.hero_card2_frame = ttk.Frame(self.hero_cards_frame, relief='raised', borderwidth=2)
+        self.hero_card2_frame.configure(style='Card.TFrame')
+        self.hero_card2_frame.pack(side='left', padx=10)
+        
+        self.hero_card2 = ttk.Label(
+            self.hero_card2_frame, 
+            text="[ ? ]",
+            font=('Courier New', 24, 'bold'),
+            foreground='black',
+            background='white',
+            width=6,
+            anchor='center'
+        )
+        self.hero_card2.pack(padx=8, pady=8)
         
         # Section Board
         board_frame = ttk.LabelFrame(top_container, text="🃏 Board", style='Card.TFrame')
@@ -187,10 +212,27 @@ class RTAPGUIWindow:
         self.board_cards_frame.pack(pady=15)
         
         self.board_cards = []
+        self.board_card_frames = []
         for i in range(5):
-            card = ttk.Label(self.board_cards_frame, text="🂠", font=('Arial', 36))
-            card.pack(side='left', padx=5)
-            self.board_cards.append(card)
+            # Frame pour chaque carte
+            card_frame = ttk.Frame(self.board_cards_frame, relief='raised', borderwidth=2)
+            card_frame.configure(style='Card.TFrame')
+            card_frame.pack(side='left', padx=3)
+            
+            # Label carte
+            card_label = ttk.Label(
+                card_frame, 
+                text="[ ? ]",
+                font=('Courier New', 18, 'bold'),
+                foreground='black',
+                background='white',
+                width=5,
+                anchor='center'
+            )
+            card_label.pack(padx=5, pady=5)
+            
+            self.board_cards.append(card_label)
+            self.board_card_frames.append(card_frame)
         
         # Section Informations de Jeu
         info_container = ttk.Frame(top_container)
@@ -801,17 +843,21 @@ class RTAPGUIWindow:
             # État du jeu
             game_state = self.app_manager.get_current_state()
             if game_state:
-                # Cartes héros
+                # Cartes héros avec couleurs
                 if game_state.hero_cards and game_state.hero_cards != ("", ""):
-                    self.hero_card1.configure(text=self.card_to_emoji(game_state.hero_cards[0]))
-                    self.hero_card2.configure(text=self.card_to_emoji(game_state.hero_cards[1]))
+                    card1_text, card1_color = self.card_to_visual(game_state.hero_cards[0])
+                    self.hero_card1.configure(text=card1_text, foreground=card1_color)
+                    
+                    card2_text, card2_color = self.card_to_visual(game_state.hero_cards[1])
+                    self.hero_card2.configure(text=card2_text, foreground=card2_color)
                 
-                # Board
+                # Board avec couleurs
                 for i, card_label in enumerate(self.board_cards):
-                    if i < len(game_state.board_cards):
-                        card_label.configure(text=self.card_to_emoji(game_state.board_cards[i]))
+                    if i < len(game_state.board_cards) and game_state.board_cards[i]:
+                        card_text, card_color = self.card_to_visual(game_state.board_cards[i])
+                        card_label.configure(text=card_text, foreground=card_color)
                     else:
-                        card_label.configure(text="🂠")
+                        card_label.configure(text="[ ? ]", foreground="black")
                 
                 # Informations
                 self.pot_label.configure(text=f"{game_state.pot_size:.2f}€")
@@ -906,25 +952,46 @@ class RTAPGUIWindow:
         except Exception as e:
             self.logger.error(f"Erreur mise à jour interface: {e}")
     
+    def card_to_visual(self, card_str):
+        """Convertit une carte string en affichage visuel réaliste"""
+        if not card_str or len(card_str) != 2:
+            return "[ ? ]", "black"
+        
+        rank = card_str[0].upper()
+        suit = card_str[1].lower()
+        
+        # Symboles des couleurs
+        suit_symbols = {
+            's': '♠',  # Piques (noir)
+            'h': '♥',  # Coeurs (rouge)
+            'd': '♦',  # Carreaux (rouge)
+            'c': '♣'   # Trèfles (noir)
+        }
+        
+        # Couleurs
+        suit_colors = {
+            's': 'black',
+            'h': 'red',
+            'd': 'red',
+            'c': 'black'
+        }
+        
+        # Conversion des rangs
+        rank_display = {
+            'T': '10'
+        }.get(rank, rank)
+        
+        if suit in suit_symbols:
+            symbol = suit_symbols[suit]
+            color = suit_colors[suit]
+            return f"{rank_display}{symbol}", color
+        
+        return "[ ? ]", "black"
+    
     def card_to_emoji(self, card: str) -> str:
-        """Convertit une carte en emoji"""
-        if not card or len(card) < 2:
-            return "🂠"
-        
-        rank = card[0].upper()
-        suit = card[1].lower()
-        
-        # Mapping simplfiié
-        if suit == 's':  # Spades
-            return "♠️"
-        elif suit == 'h':  # Hearts
-            return "♥️"
-        elif suit == 'd':  # Diamonds
-            return "♦️"
-        elif suit == 'c':  # Clubs
-            return "♣️"
-        
-        return "🂠"
+        """Conversion carte vers format texte pour compatibilité"""
+        card_text, color = self.card_to_visual(card)
+        return card_text
     
     def start_update_thread(self):
         """Démarre le thread de mise à jour"""
