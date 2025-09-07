@@ -498,33 +498,41 @@ class RTAPGUIWindow:
                                 hero_data.get('stack', '0€'), 
                                 hero_data.get('position', 'Unknown'))
         
-        # Mettre à jour le compteur de joueurs actifs (incluant le héros)
-        active_count = sum(1 for p in players_data if p.get('status') == 'actif')
-        if hero_data and hero_data.get('status') == 'actif':
-            active_count += 1
-        total_count = len(players_data) + (1 if hero_data else 0)
-        self.active_players_count.config(text=f"{active_count}/9")
+        # Compter uniquement les joueurs réellement détectés par OCR
+        real_active_count = 0
+        if players_data:
+            real_active_count = sum(1 for p in players_data if p.get('status') == 'actif')
+        if hero_data and hero_data.get('detected_by_ocr', False) and hero_data.get('status') == 'actif':
+            real_active_count += 1
         
-        # Recréer l'affichage des joueurs (incluant le héros)
-        all_players = list(players_data) if players_data else []
-        if hero_data:
-            # Ajouter le héros à la liste avec sa position
+        self.active_players_count.config(text=f"{real_active_count}/9")
+        
+        # Afficher les joueurs uniquement avec les vraies données OCR
+        # Ne pas créer de données factices - attendre les vraies données OCR
+        real_players = []
+        
+        # Ajouter les joueurs détectés par OCR (s'il y en a)
+        if players_data and len(players_data) > 0:
+            real_players.extend(players_data)
+        
+        # Ajouter le héros seulement s'il y a des vraies données OCR
+        if hero_data and hero_data.get('detected_by_ocr', False):
             hero_player = {
-                'name': hero_data.get('name', 'Moi'),
-                'stack': hero_data.get('stack_numeric', 0),
-                'position': hero_data.get('position_index', 6),  # Button par défaut
-                'position_name': hero_data.get('position', 'BTN'),
-                'status': hero_data.get('status', 'actif'),
-                'vpip': hero_data.get('vpip', 0),
-                'pfr': hero_data.get('pfr', 0),
-                'is_button': hero_data.get('position_index', 6) == 6,
-                'is_sb': hero_data.get('position_index', 6) == 7,
-                'is_bb': hero_data.get('position_index', 6) == 8,
-                'is_hero': True  # Marquer comme héros
+                'name': hero_data.get('name'),
+                'stack': hero_data.get('stack_numeric'),
+                'position': hero_data.get('position_index'),
+                'position_name': hero_data.get('position'),
+                'status': hero_data.get('status'),
+                'vpip': hero_data.get('vpip'),
+                'pfr': hero_data.get('pfr'),
+                'is_button': hero_data.get('position_index') == 6,
+                'is_sb': hero_data.get('position_index') == 7,
+                'is_bb': hero_data.get('position_index') == 8,
+                'is_hero': True
             }
-            all_players.append(hero_player)
+            real_players.append(hero_player)
         
-        self.create_players_display(all_players)
+        self.create_players_display(real_players)
     
     def create_players_display(self, players_data=None):
         """Affichage des 9 positions fixes d'une table 9-max"""
@@ -578,46 +586,53 @@ class RTAPGUIWindow:
             player = players_by_position.get(pos['index'])
             
             if player:
-                # Position occupée - afficher les infos du joueur
+                # Position occupée - afficher uniquement les vraies infos OCR
                 status_color = '#28a745' if player.get('status') == 'actif' else '#6c757d'
                 status_icon = "●" if player.get('status') == 'actif' else "○"
                 
-                # Statut
+                # Statut (seulement si détecté par OCR)
                 ttk.Label(main_line, text=status_icon, font=('Arial', 8), 
                          foreground=status_color).pack(side='left', padx=(2, 3))
                 
-                # Nom - en bleu et gras si c'est le héros
-                name = player.get('name', 'Joueur')[:8]
-                if len(player.get('name', '')) > 8:
-                    name += "."
+                # Nom (seulement si détecté par OCR) - en bleu et gras si c'est le héros
+                if player.get('name'):
+                    name = player.get('name')[:8]
+                    if len(player.get('name', '')) > 8:
+                        name += "."
+                        
+                    is_hero = player.get('is_hero', False)
+                    font_weight = 'bold' if is_hero else 'normal'
+                    name_color = '#007bff' if is_hero else status_color
+                    ttk.Label(main_line, text=name, font=('Arial', 8, font_weight), 
+                             foreground=name_color).pack(side='left')
                     
-                is_hero = player.get('is_hero', False)
-                font_weight = 'bold' if is_hero else 'normal'
-                name_color = '#007bff' if is_hero else status_color
-                ttk.Label(main_line, text=name, font=('Arial', 8, font_weight), 
-                         foreground=name_color).pack(side='left')
-                
-                # Stats
-                vpip = player.get('vpip', 0)
-                pfr = player.get('pfr', 0)
-                stats_text = f"{vpip}/{pfr}"
-                ttk.Label(main_line, text=stats_text, font=('Arial', 7), 
-                         foreground='#6c757d').pack(side='left', padx=(5, 0))
-                
-                # Stack
-                stack_value = player.get('stack', 0)
-                if isinstance(stack_value, (int, float)):
-                    if stack_value >= 1000:
-                        stack_text = f"{stack_value/1000:.1f}k"
-                    else:
-                        stack_text = f"{stack_value:.0f}"
+                    # Stats (seulement si disponibles et réelles)
+                    vpip = player.get('vpip')
+                    pfr = player.get('pfr')
+                    if vpip is not None and pfr is not None:
+                        stats_text = f"{vpip}/{pfr}"
+                        ttk.Label(main_line, text=stats_text, font=('Arial', 7), 
+                                 foreground='#6c757d').pack(side='left', padx=(5, 0))
+                    
+                    # Stack (seulement si détecté par OCR)
+                    stack_value = player.get('stack')
+                    if stack_value is not None and stack_value > 0:
+                        if isinstance(stack_value, (int, float)):
+                            if stack_value >= 1000:
+                                stack_text = f"{stack_value/1000:.1f}k"
+                            else:
+                                stack_text = f"{stack_value:.0f}"
+                        else:
+                            stack_text = str(stack_value)
+                        
+                        ttk.Label(main_line, text=stack_text, font=('Arial', 8, 'bold'), 
+                                 foreground='#28a745').pack(side='right')
                 else:
-                    stack_text = str(stack_value)
-                
-                ttk.Label(main_line, text=stack_text, font=('Arial', 8, 'bold'), 
-                         foreground='#28a745').pack(side='right')
+                    # Joueur détecté mais sans nom (OCR partiel)
+                    ttk.Label(main_line, text="Joueur détecté", font=('Arial', 8, 'italic'), 
+                             foreground='#6c757d').pack(side='left')
             else:
-                # Position vide
+                # Position vide (aucune détection OCR)
                 ttk.Label(main_line, text="○", font=('Arial', 8), 
                          foreground='#cccccc').pack(side='left', padx=(2, 3))
                 ttk.Label(main_line, text="Siège vide", font=('Arial', 8, 'italic'), 
