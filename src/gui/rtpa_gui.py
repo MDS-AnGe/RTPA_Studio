@@ -2068,14 +2068,14 @@ class RTAPGUIWindow:
         )
         date_label.pack(pady=2)
         
-        # Build
-        build_label = ctk.CTkLabel(
+        # Auteur
+        author_label = ctk.CTkLabel(
             info_frame,
-            text=f"Build: {version_info['build']}",
-            font=ctk.CTkFont(size=12),
-            text_color="gray"
+            text="Auteur: MDS_AnGe - AnG(e)™",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color="cyan"
         )
-        build_label.pack(pady=2)
+        author_label.pack(pady=2)
         
         # Status
         status_label = ctk.CTkLabel(
