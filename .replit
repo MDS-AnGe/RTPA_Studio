@@ -22,6 +22,10 @@ args = "RTPA_Demo"
 task = "workflow.run"
 args = "RTPA_Final_Test"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "RTPA_GUI"
+
 [[workflows.workflow]]
 name = "RTPA_Demo"
 author = "agent"
@@ -43,3 +47,14 @@ args = "python test_final.py"
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow]]
+name = "RTPA_GUI"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main_gui.py"
+
+[workflows.workflow.metadata]
+outputType = "vnc"
