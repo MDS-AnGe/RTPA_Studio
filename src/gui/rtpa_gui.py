@@ -620,6 +620,37 @@ class RTAPGUIWindow:
         settings_container = ctk.CTkScrollableFrame(self.settings_tab)
         settings_container.pack(fill='both', expand=True, padx=20, pady=20)
         
+        # === SECTION CFR BASE DE DONNÉES ===
+        cfr_db_frame = ctk.CTkFrame(settings_container)
+        cfr_db_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(cfr_db_frame, text="💾 Base CFR/Nash", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(20, 15))
+        
+        # Boutons Export/Import
+        cfr_buttons_frame = ctk.CTkFrame(cfr_db_frame)
+        cfr_buttons_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        self.export_cfr_btn = ctk.CTkButton(cfr_buttons_frame, text="📤 Exporter CFR", 
+                                           command=self.export_cfr_database, width=180)
+        self.export_cfr_btn.pack(side='left', padx=(10, 5), pady=15)
+        
+        self.import_cfr_btn = ctk.CTkButton(cfr_buttons_frame, text="📥 Importer CFR", 
+                                           command=self.import_cfr_database, width=180)
+        self.import_cfr_btn.pack(side='left', padx=5, pady=15)
+        
+        # Status export/import
+        self.cfr_status_label = ctk.CTkLabel(cfr_buttons_frame, text="Prêt pour export/import", 
+                                            font=ctk.CTkFont(size=10), text_color="gray")
+        self.cfr_status_label.pack(side='right', padx=10, pady=15)
+        
+        # Description des fonctionnalités
+        desc_frame = ctk.CTkFrame(cfr_db_frame)
+        desc_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        desc_text = "Sauvegardez et chargez vos calculs CFR/Nash pour préserver votre entraînement"
+        ctk.CTkLabel(desc_frame, text=desc_text, font=ctk.CTkFont(size=10), 
+                    text_color="gray", wraplength=400).pack(pady=10)
+        
         # === SECTION RESSOURCES ===
         resource_frame = ctk.CTkFrame(settings_container)
         resource_frame.pack(fill='x', pady=(0, 20))
@@ -1825,6 +1856,133 @@ class RTAPGUIWindow:
         except:
             pass
         return "1.0.0"
+    
+    def export_cfr_database(self):
+        """Exporte la base de données CFR/Nash"""
+        try:
+            import tkinter.filedialog as fd
+            import os
+            from datetime import datetime
+            
+            # Dialogue de sauvegarde
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            default_name = f"cfr_database_{timestamp}.json.gz"
+            
+            file_path = fd.asksaveasfilename(
+                title="Exporter la base CFR/Nash",
+                defaultextension=".json.gz",
+                filetypes=[("Fichiers CFR compressés", "*.json.gz"), ("Tous les fichiers", "*.*")],
+                initialname=default_name
+            )
+            
+            if file_path:
+                self.cfr_status_label.configure(text="Exportation en cours...", text_color="orange")
+                self.export_cfr_btn.configure(state="disabled", text="📤 Export...")
+                
+                # Thread pour éviter de bloquer l'interface
+                import threading
+                thread = threading.Thread(target=self._export_cfr_worker, args=(file_path,), daemon=True)
+                thread.start()
+        
+        except Exception as e:
+            print(f"Erreur export CFR: {e}")
+            self.cfr_status_label.configure(text="Erreur d'export", text_color="red")
+    
+    def _export_cfr_worker(self, file_path):
+        """Worker thread pour l'export CFR"""
+        try:
+            success = False
+            
+            # Essayer avec le CFR trainer si disponible
+            if hasattr(self, 'app_manager') and self.app_manager:
+                if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
+                    success = self.app_manager.cfr_trainer.export_optimized_database(file_path)
+                elif hasattr(self.app_manager, 'database') and self.app_manager.database:
+                    success = self.app_manager.database.export_database(file_path)
+            
+            # Mise à jour de l'interface
+            if success:
+                self.root.after(0, lambda: self.cfr_status_label.configure(
+                    text="✅ Export réussi", text_color="green"
+                ))
+                print(f"✅ Base CFR exportée: {file_path}")
+            else:
+                self.root.after(0, lambda: self.cfr_status_label.configure(
+                    text="❌ Échec d'export", text_color="red"
+                ))
+                
+        except Exception as e:
+            print(f"Erreur export worker: {e}")
+            self.root.after(0, lambda: self.cfr_status_label.configure(
+                text="❌ Erreur export", text_color="red"
+            ))
+        finally:
+            self.root.after(0, lambda: self.export_cfr_btn.configure(
+                state="normal", text="📤 Exporter CFR"
+            ))
+    
+    def import_cfr_database(self):
+        """Importe une base de données CFR/Nash"""
+        try:
+            import tkinter.filedialog as fd
+            import tkinter.messagebox as msgbox
+            
+            # Dialogue de sélection
+            file_path = fd.askopenfilename(
+                title="Importer une base CFR/Nash",
+                filetypes=[("Fichiers CFR compressés", "*.json.gz"), ("Fichiers JSON", "*.json"), ("Tous les fichiers", "*.*")]
+            )
+            
+            if file_path:
+                # Confirmation car cela écrase les données actuelles
+                result = msgbox.askyesno(
+                    "Confirmation d'import",
+                    "L'import va remplacer les données CFR actuelles.\n\nVoulez-vous continuer?"
+                )
+                
+                if result:
+                    self.cfr_status_label.configure(text="Import en cours...", text_color="orange")
+                    self.import_cfr_btn.configure(state="disabled", text="📥 Import...")
+                    
+                    # Thread pour éviter de bloquer l'interface
+                    import threading
+                    thread = threading.Thread(target=self._import_cfr_worker, args=(file_path,), daemon=True)
+                    thread.start()
+        
+        except Exception as e:
+            print(f"Erreur import CFR: {e}")
+            self.cfr_status_label.configure(text="Erreur d'import", text_color="red")
+    
+    def _import_cfr_worker(self, file_path):
+        """Worker thread pour l'import CFR"""
+        try:
+            success = False
+            
+            # Essayer d'importer via le manager
+            if hasattr(self, 'app_manager') and self.app_manager:
+                if hasattr(self.app_manager, 'database') and self.app_manager.database:
+                    success = self.app_manager.database.import_database(file_path, self.app_manager.cfr_engine)
+            
+            # Mise à jour de l'interface
+            if success:
+                self.root.after(0, lambda: self.cfr_status_label.configure(
+                    text="✅ Import réussi", text_color="green"
+                ))
+                print(f"✅ Base CFR importée: {file_path}")
+            else:
+                self.root.after(0, lambda: self.cfr_status_label.configure(
+                    text="❌ Échec d'import", text_color="red"
+                ))
+                
+        except Exception as e:
+            print(f"Erreur import worker: {e}")
+            self.root.after(0, lambda: self.cfr_status_label.configure(
+                text="❌ Erreur import", text_color="red"
+            ))
+        finally:
+            self.root.after(0, lambda: self.import_cfr_btn.configure(
+                state="normal", text="📥 Importer CFR"
+            ))
     
     def update_display(self, data):
         """Met à jour l'affichage avec les données reçues"""
