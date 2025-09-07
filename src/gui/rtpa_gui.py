@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import threading
 import time
+import subprocess
 from typing import Dict, Any, Optional
 import math
 
@@ -1332,7 +1333,7 @@ class RTAPGUIWindow:
             
             # Vérification CUDA PyTorch
             if torch.cuda.is_available():
-                cuda_version = torch.version.cuda
+                cuda_version = torch.version.cuda if hasattr(torch.version, 'cuda') else "Unknown"
                 gpu_count = torch.cuda.device_count()
                 gpu_name = torch.cuda.get_device_name(0) if gpu_count > 0 else "GPU Inconnu"
                 
@@ -1359,7 +1360,6 @@ class RTAPGUIWindow:
         
         # Vérification système CUDA (sans PyTorch)
         try:
-            import subprocess
             result = subprocess.run(['nvidia-smi'], capture_output=True, text=True, timeout=5)
             if result.returncode == 0:
                 # NVIDIA GPU détecté, extraire version CUDA
@@ -1385,7 +1385,6 @@ class RTAPGUIWindow:
                 self.pytorch_install_button.configure(text="Installation...", state='disabled')
                 self.pytorch_status_label.configure(text="Installation en cours...", foreground='blue')
                 
-                import subprocess
                 import sys
                 
                 # Installation PyTorch CPU par défaut
