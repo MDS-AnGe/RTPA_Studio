@@ -49,6 +49,7 @@ class ContinuousHandGenerator:
         self.generation_thread = None
         self.processing_thread = None
         self.paused = False
+        self.user_stopped = False  # Arrêt manuel par utilisateur
         
         # Statistiques
         self.hands_generated = 0
@@ -101,16 +102,39 @@ class ContinuousHandGenerator:
         
         self.logger.info("Génération continue démarrée")
     
-    def stop(self):
+    def stop(self, user_initiated: bool = False):
         """Arrête la génération continue"""
         self.running = False
+        self.user_stopped = user_initiated
         
         if self.generation_thread:
             self.generation_thread.join(timeout=1.0)
         if self.processing_thread:
             self.processing_thread.join(timeout=1.0)
         
-        self.logger.info("Génération continue arrêtée")
+        stop_reason = "par l'utilisateur" if user_initiated else "automatiquement"
+        self.logger.info(f"Génération continue arrêtée {stop_reason}")
+    
+    def is_user_stopped(self) -> bool:
+        """Vérifie si l'arrêt a été initié par l'utilisateur"""
+        return self.user_stopped
+    
+    def set_resource_limits(self, cpu_limit: float = None, memory_limit_mb: float = None, 
+                           generation_rate: float = None):
+        """Configure les limites de ressources"""
+        if cpu_limit is not None:
+            self.settings.cpu_usage_limit = min(1.0, max(0.01, cpu_limit))
+            self.logger.info(f"Limite CPU mise à jour: {cpu_limit*100:.1f}%")
+        
+        if memory_limit_mb is not None:
+            # Ajustement de la taille de queue selon mémoire disponible
+            max_hands_in_queue = int(memory_limit_mb * 2)  # ~2 mains par MB
+            self.settings.max_queue_size = min(2000, max(100, max_hands_in_queue))
+            self.logger.info(f"Limite mémoire mise à jour: {memory_limit_mb:.0f}MB")
+        
+        if generation_rate is not None:
+            self.settings.generation_interval = max(0.05, 1.0 / generation_rate)
+            self.logger.info(f"Taux génération mis à jour: {generation_rate:.1f} mains/s")
     
     def pause(self):
         """Met en pause la génération"""

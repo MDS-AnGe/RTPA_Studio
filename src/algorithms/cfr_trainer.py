@@ -57,9 +57,11 @@ class CFRTrainer:
         self.regret_updates = 0
         self.strategy_updates = 0
         
-        # Générateur continu
+        # Générateur continu et gestionnaire de données
         self.continuous_generator = None
+        self.data_manager = None
         self._init_continuous_generator()
+        self._init_data_manager()
         
         self.logger.info("CFRTrainer initialisé avec génération continue")
     
@@ -225,6 +227,118 @@ class CFRTrainer:
                 
         except Exception as e:
             self.logger.error(f"Erreur boost génération: {e}")
+    
+    def _init_data_manager(self):
+        """Initialise le gestionnaire de données optimisé"""
+        try:
+            from .data_manager import DataManager, StorageSettings
+            
+            # Configuration du stockage
+            storage_settings = StorageSettings(
+                max_memory_hands=30000,  # 30k mains en mémoire
+                max_disk_size_mb=200,    # 200MB max sur disque
+                compression_level=6,     # Compression équilibrée
+                cleanup_interval=180.0   # Nettoyage toutes les 3 minutes
+            )
+            
+            self.data_manager = DataManager(storage_settings)
+            self.data_manager.start_cleanup_service()
+            
+            self.logger.info("Gestionnaire de données initialisé")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur init data manager: {e}")
+    
+    def stop_continuous_generation_user(self):
+        """Arrête la génération continue à la demande de l'utilisateur"""
+        try:
+            if self.continuous_generator and self.continuous_generator.running:
+                self.continuous_generator.stop(user_initiated=True)
+                self.logger.info("Génération continue arrêtée par l'utilisateur")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur arrêt utilisateur: {e}")
+    
+    def is_generation_user_stopped(self) -> bool:
+        """Vérifie si la génération a été arrêtée par l'utilisateur"""
+        if self.continuous_generator:
+            return self.continuous_generator.is_user_stopped()
+        return False
+    
+    def configure_generation_resources(self, cpu_percent: float = None, 
+                                     memory_mb: float = None, rate_per_second: float = None):
+        """Configure les ressources allouées à la génération"""
+        try:
+            if self.continuous_generator:
+                cpu_limit = cpu_percent / 100.0 if cpu_percent else None
+                self.continuous_generator.set_resource_limits(
+                    cpu_limit=cpu_limit,
+                    memory_limit_mb=memory_mb,
+                    generation_rate=rate_per_second
+                )
+                self.logger.info("Ressources de génération mises à jour")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur configuration ressources: {e}")
+    
+    def configure_storage_settings(self, max_disk_mb: int = None, 
+                                 max_memory_hands: int = None, compression_level: int = None):
+        """Configure les paramètres de stockage"""
+        try:
+            if self.data_manager:
+                settings_update = {}
+                if max_disk_mb is not None:
+                    settings_update['max_disk_size_mb'] = max_disk_mb
+                if max_memory_hands is not None:
+                    settings_update['max_memory_hands'] = max_memory_hands
+                if compression_level is not None:
+                    settings_update['compression_level'] = compression_level
+                
+                if settings_update:
+                    self.data_manager.configure_storage(settings_update)
+                    self.logger.info("Paramètres de stockage mis à jour")
+                    
+        except Exception as e:
+            self.logger.error(f"Erreur configuration stockage: {e}")
+    
+    def get_storage_status(self) -> Dict[str, Any]:
+        """Retourne le statut du stockage et des ressources"""
+        status = {
+            'generation_active': False,
+            'generation_user_stopped': False,
+            'storage_stats': {},
+            'generation_stats': {}
+        }
+        
+        try:
+            # Statut génération
+            if self.continuous_generator:
+                status['generation_active'] = self.continuous_generator.running
+                status['generation_user_stopped'] = self.continuous_generator.is_user_stopped()
+                status['generation_stats'] = self.continuous_generator.get_statistics()
+            
+            # Statut stockage
+            if self.data_manager:
+                status['storage_stats'] = self.data_manager.get_storage_statistics()
+            
+        except Exception as e:
+            self.logger.error(f"Erreur statut stockage: {e}")
+        
+        return status
+    
+    def export_optimized_database(self, export_path: str) -> bool:
+        """Exporte la base de données de façon optimisée"""
+        try:
+            if self.data_manager:
+                return self.data_manager.export_database(export_path)
+            else:
+                # Fallback export basique
+                self.logger.warning("Export basique - data manager non disponible")
+                return self.export_cfr_data(export_path)
+                
+        except Exception as e:
+            self.logger.error(f"Erreur export optimisé: {e}")
+            return False
     
     def load_historical_hands(self, file_paths: List[str]) -> int:
         """Charge les mains historiques depuis les fichiers fournis"""
