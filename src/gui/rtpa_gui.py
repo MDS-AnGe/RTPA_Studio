@@ -1141,22 +1141,25 @@ class RTAPGUIWindow:
             self.root.after(100, lambda: self.pytorch_status_label.configure(text=f"❌ Erreur: {str(e)[:50]}...", text_color="red"))
             self.root.after(100, lambda: self.install_pytorch_btn.configure(state="normal", text="🔥 Installer PyTorch"))
     
-    def update_task_display(self, task_name, time_remaining=None):
+    def update_task_display(self, task_name, time_info=None):
         """Met à jour l'affichage de la tâche en cours"""
         try:
             if hasattr(self, 'current_task_label'):
                 self.current_task_label.configure(text=task_name)
             
-            if time_remaining and hasattr(self, 'task_time_label'):
-                if isinstance(time_remaining, (int, float)):
-                    if time_remaining > 60:
-                        time_text = f"Temps restant: {time_remaining/60:.1f} min"
+            if time_info and hasattr(self, 'task_time_label'):
+                if isinstance(time_info, str):
+                    # Texte formaté directement
+                    self.task_time_label.configure(text=time_info)
+                elif isinstance(time_info, (int, float)):
+                    # Fallback pour compatibilité (nombre de secondes)
+                    if time_info > 60:
+                        time_text = f"Temps restant: {time_info/60:.1f} min"
                     else:
-                        time_text = f"Temps restant: {time_remaining:.0f}s"
+                        time_text = f"Temps restant: {time_info:.0f}s"
+                    self.task_time_label.configure(text=time_text)
                 else:
-                    time_text = str(time_remaining)
-                
-                self.task_time_label.configure(text=time_text)
+                    self.task_time_label.configure(text=str(time_info))
             elif hasattr(self, 'task_time_label'):
                 self.task_time_label.configure(text="")
         except Exception as e:
@@ -1173,22 +1176,50 @@ class RTAPGUIWindow:
                         stats = trainer.get_training_statistics()
                         
                         if stats.get('is_training', False):
+                            # Calculer et afficher le temps restant
                             iterations = stats.get('iterations', 0)
                             target = stats.get('target_iterations', 100000)
                             progress = stats.get('progress_percentage', 0)
+                            time_remaining = stats.get('estimated_time_remaining', 0)
                             
-                            task_text = f"Entraînement CFR - {iterations:,}/{target:,} itérations ({progress:.1f}%)"
+                            # Nom de la tâche en cours
+                            task_name = f"Entraînement CFR - Itération {iterations:,}/{target:,}"
                             
-                            # Estimer temps restant
-                            if progress > 0 and progress < 100:
-                                estimated_remaining = ((100 - progress) / progress) * stats.get('elapsed_time', 0)
-                                self.update_task_display(task_text, estimated_remaining)
+                            # Formatage du temps restant
+                            if time_remaining > 0:
+                                if time_remaining > 3600:  # Plus d'1 heure
+                                    hours = int(time_remaining // 3600)
+                                    minutes = int((time_remaining % 3600) // 60)
+                                    time_text = f"Temps restant: {hours}h {minutes}min ({progress:.1f}%)"
+                                elif time_remaining > 60:  # Plus d'1 minute
+                                    minutes = int(time_remaining // 60)
+                                    seconds = int(time_remaining % 60)
+                                    time_text = f"Temps restant: {minutes}min {seconds}s ({progress:.1f}%)"
+                                else:  # Moins d'1 minute
+                                    time_text = f"Temps restant: {int(time_remaining)}s ({progress:.1f}%)"
                             else:
-                                self.update_task_display(task_text)
+                                time_text = f"Progression: {progress:.1f}%"
+                            
+                            # Mise à jour de l'affichage
+                            self.update_task_display(task_name, time_text)
                         else:
-                            self.update_task_display("Surveillance active - En attente de données")
+                            # Pas d'entraînement en cours - vérifier génération continue
+                            if hasattr(self.app_manager, 'continuous_generator') and self.app_manager.continuous_generator:
+                                if hasattr(self.app_manager.continuous_generator, 'is_running') and self.app_manager.continuous_generator.is_running:
+                                    gen_stats = getattr(self.app_manager.continuous_generator, '_last_stats', {})
+                                    hands_generated = gen_stats.get('total_generated', 0)
+                                    rate = gen_stats.get('generation_rate', 0)
+                                    task_name = "Génération continue de mains"
+                                    time_text = f"{hands_generated:,} mains générées ({rate:.1f}/s)"
+                                    self.update_task_display(task_name, time_text)
+                                else:
+                                    self.update_task_display("Système en attente", "Prêt pour l'analyse")
+                            else:
+                                self.update_task_display("Système en attente", "Prêt pour l'analyse")
                 else:
-                    self.update_task_display("Initialisation du système...")
+                    self.update_task_display("Initialisation du système...", "Chargement des composants")
+            else:
+                self.update_task_display("Initialisation système...", "Chargement des composants")
             
         except Exception as e:
             print(f"Erreur loop tâche: {e}")
