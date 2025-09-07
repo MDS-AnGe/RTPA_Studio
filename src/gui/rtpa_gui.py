@@ -163,10 +163,10 @@ class RTAPGUIWindow:
         
         # Section Main (compacte, à gauche)
         hero_frame = ttk.LabelFrame(cards_container, text="🂡 Main", style='Card.TFrame')
-        hero_frame.pack(side='left', padx=(0, 10))
+        hero_frame.pack(side='left', padx=(0, 10), fill='y')
         
         self.hero_cards_frame = ttk.Frame(hero_frame)
-        self.hero_cards_frame.pack(padx=10, pady=10)
+        self.hero_cards_frame.pack(padx=10, pady=15)
         
         # Cartes visuelles (gardées identiques)
         self.hero_card1_frame = tk.Frame(
@@ -196,10 +196,10 @@ class RTAPGUIWindow:
         
         # Section Board (à droite)
         board_frame = ttk.LabelFrame(cards_container, text="🃏 Board", style='Card.TFrame')
-        board_frame.pack(side='left', fill='x', expand=True)
+        board_frame.pack(side='left', fill='both', expand=True)
         
         self.board_cards_frame = ttk.Frame(board_frame)
-        self.board_cards_frame.pack(padx=10, pady=10)
+        self.board_cards_frame.pack(anchor='w', padx=10, pady=15)
         
         self.board_cards = []
         self.board_card_frames = []
@@ -261,18 +261,18 @@ class RTAPGUIWindow:
         self.bet_size_label = ttk.Label(action_line, text="", style='Card.TLabel', font=('Arial', 11))
         self.bet_size_label.pack(side='left', padx=(10, 20))
         
-        # Probabilité + Risque + Confiance en ligne
-        ttk.Label(action_line, text="🎲", style='Heading.TLabel').pack(side='left', padx=(0, 2))
-        self.win_prob_label = ttk.Label(action_line, text="50%", font=('Arial', 12, 'bold'))
+        # Probabilité + Risque + Confiance en ligne (plus clairs)
+        ttk.Label(action_line, text="Victoire:", style='Heading.TLabel').pack(side='left', padx=(0, 2))
+        self.win_prob_label = ttk.Label(action_line, text="50%", font=('Arial', 12, 'bold'), foreground='green')
         self.win_prob_label.pack(side='left', padx=(0, 15))
         
-        ttk.Label(action_line, text="⚠️", style='Heading.TLabel').pack(side='left', padx=(0, 2))
-        self.risk_label = ttk.Label(action_line, text="30%", font=('Arial', 12, 'bold'))
+        ttk.Label(action_line, text="Risque:", style='Heading.TLabel').pack(side='left', padx=(0, 2))
+        self.risk_label = ttk.Label(action_line, text="30%", font=('Arial', 12, 'bold'), foreground='orange')
         self.risk_label.pack(side='left', padx=(0, 15))
         
-        ttk.Label(action_line, text="🎯", style='Heading.TLabel').pack(side='left', padx=(0, 2))
-        self.main_confidence_label = ttk.Label(action_line, text="85%", font=('Arial', 12, 'bold'))
-        self.main_confidence_label.pack(side='left')
+        ttk.Label(action_line, text="Confiance:", style='Heading.TLabel').pack(side='left', padx=(0, 2))
+        self.main_confidence_label = ttk.Label(action_line, text="85%", font=('Arial', 12, 'bold'), foreground='blue')
+        self.main_confidence_label.pack(side='left', padx=(0, 20))
         
         # Raisonnement (plus compact)
         ttk.Label(rec_content, text="🧠 Raisonnement:", style='Heading.TLabel').pack(anchor='w', pady=(5, 2))
@@ -282,7 +282,29 @@ class RTAPGUIWindow:
         )
         self.main_reasoning_label.pack(anchor='w')
         
-        # SECTION 4: STATISTIQUES COMPACTES
+        # SECTION 4: JOUEURS ACTIFS
+        players_frame = ttk.LabelFrame(main_container, text="👥 JOUEURS ACTIFS", style='Card.TFrame')
+        players_frame.pack(fill='x', pady=(0, 10))
+        
+        players_content = ttk.Frame(players_frame)
+        players_content.pack(fill='x', padx=15, pady=8)
+        
+        # Info générale
+        players_info = ttk.Frame(players_content)
+        players_info.pack(fill='x', pady=(0, 5))
+        
+        ttk.Label(players_info, text="Joueurs:", style='Heading.TLabel').pack(side='left')
+        self.active_players_count = ttk.Label(players_info, text="6/6", style='Card.TLabel', font=('Arial', 12, 'bold'))
+        self.active_players_count.pack(side='left', padx=(5, 20))
+        
+        # Liste des joueurs avec stacks
+        self.players_list_frame = ttk.Frame(players_content)
+        self.players_list_frame.pack(fill='x')
+        
+        # Exemple de joueurs (sera mis à jour via OCR)
+        self.create_players_display()
+        
+        # SECTION 5: STATISTIQUES COMPACTES
         stats_frame = ttk.LabelFrame(main_container, text="📈 STATISTIQUES", style='Card.TFrame')
         stats_frame.pack(fill='x')
         
@@ -328,6 +350,50 @@ class RTAPGUIWindow:
         hidden_frame = ttk.Frame(main_container)
         self.win_prob_progress = ttk.Progressbar(hidden_frame, mode='determinate', length=1)
         self.risk_progress = ttk.Progressbar(hidden_frame, mode='determinate', length=1)
+    
+    def create_players_display(self):
+        """Création de l'affichage des joueurs actifs"""
+        
+        # Effacer l'affichage existant
+        for widget in self.players_list_frame.winfo_children():
+            widget.destroy()
+        
+        # Données d'exemple (sera remplacé par OCR)
+        players_data = [
+            {"name": "Hero", "stack": "2403€", "vpip": "22%", "pfr": "18%", "status": "actif"},
+            {"name": "Player2", "stack": "1847€", "vpip": "15%", "pfr": "12%", "status": "actif"},
+            {"name": "Player3", "stack": "2156€", "vpip": "28%", "pfr": "22%", "status": "actif"},
+            {"name": "Player4", "stack": "1023€", "vpip": "45%", "pfr": "8%", "status": "fold"},
+            {"name": "Player5", "stack": "3421€", "vpip": "12%", "pfr": "10%", "status": "actif"},
+            {"name": "Player6", "stack": "956€", "vpip": "35%", "pfr": "25%", "status": "fold"}
+        ]
+        
+        # Affichage en grille compacte
+        for i, player in enumerate(players_data):
+            row = i // 3  # 3 joueurs par ligne
+            col = i % 3
+            
+            player_frame = ttk.Frame(self.players_list_frame)
+            player_frame.grid(row=row, column=col, padx=5, pady=2, sticky='w')
+            
+            # Statut coloré
+            status_color = 'green' if player['status'] == 'actif' else 'gray'
+            status_symbol = '●' if player['status'] == 'actif' else '○'
+            
+            # Nom + Stack
+            name_label = ttk.Label(player_frame, text=f"{status_symbol} {player['name']}", 
+                                 style='Heading.TLabel', foreground=status_color)
+            name_label.pack(side='left')
+            
+            stack_label = ttk.Label(player_frame, text=player['stack'], 
+                                  style='Card.TLabel', font=('Arial', 10, 'bold'))
+            stack_label.pack(side='left', padx=(5, 10))
+            
+            # Stats tracker
+            stats_label = ttk.Label(player_frame, 
+                                  text=f"VPIP:{player['vpip']} PFR:{player['pfr']}", 
+                                  font=('Arial', 8), foreground='gray')
+            stats_label.pack(side='left')
     
     
     
