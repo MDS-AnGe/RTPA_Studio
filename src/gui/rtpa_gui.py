@@ -25,7 +25,7 @@ class RTAPGUIWindow:
         
         # Configuration de la fenêtre principale
         self.root = ctk.CTk()
-        self.root.title("🎯 Real-Time Poker Assistant (CFR/Nash) avec Intelligence Artificielle")
+        self.root.title("Real-Time Poker Assistant (CFR/Nash) avec Intelligence Artificielle")
         self.root.geometry("1100x900")  # Réduit de 1400 à 1100
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
@@ -127,7 +127,7 @@ class RTAPGUIWindow:
         title_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
         title_frame.pack(side='left', fill='both', expand=True)
         
-        ctk.CTkLabel(title_frame, text="🎯 Real-Time Poker Assistant (CFR/Nash)", font=ctk.CTkFont(size=24, weight="bold")).pack(anchor='w')
+        ctk.CTkLabel(title_frame, text="Real-Time Poker Assistant (CFR/Nash)", font=ctk.CTkFont(size=24, weight="bold")).pack(anchor='w')
         ctk.CTkLabel(title_frame, text="avec Intelligence Artificielle", 
                     font=ctk.CTkFont(size=14)).pack(anchor='w')
         
