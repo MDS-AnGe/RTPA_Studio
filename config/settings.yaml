@@ -13,6 +13,7 @@ max_players: 9
 nash_calculation_interval_ms: 50
 ocr_confidence_threshold: 0.8
 ocr_enabled: true
+real_ocr_enabled: false  # true pour OCR réel sur clients poker, false pour simulation
 ocr_interval_ms: 100
 ram_usage_limit: 70.0
 risk_percentage: 75.0

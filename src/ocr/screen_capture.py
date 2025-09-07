@@ -275,7 +275,7 @@ class ScreenCapture:
                     if zone_img.size == 0:
                         continue
                     
-                    # OCR selon le type de zone
+                            # OCR selon le type de zone
                     if zone_name == 'hero_cards':
                         text = self.extract_text_from_image(zone_img, 'cards')
                         game_data['hero_cards'] = self.parse_hero_cards(text)
