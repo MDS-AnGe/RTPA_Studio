@@ -637,13 +637,18 @@ class CFREngine:
             else:
                 reasoning_parts.append("Main faible")
             
-            # Analyse de position
-            if poker_state.position < 3:
+            # Analyse de position pour 9-max (0-8)
+            # 0=UTG, 1=UTG+1, 2=MP1, 3=MP2, 4=MP3, 5=CO, 6=BTN, 7=SB, 8=BB
+            if poker_state.position <= 2:  # UTG, UTG+1, MP1
                 reasoning_parts.append("position précoce")
-            elif poker_state.position < 6:
-                reasoning_parts.append("position milieu")
-            else:
-                reasoning_parts.append("position tardive")
+            elif poker_state.position <= 5:  # MP2, MP3, CO
+                reasoning_parts.append("position milieu") 
+            elif poker_state.position == 6:  # BTN
+                reasoning_parts.append("button")
+            elif poker_state.position == 7:  # SB
+                reasoning_parts.append("small blind")
+            else:  # BB
+                reasoning_parts.append("big blind")
             
             # Analyse du pot
             spr = poker_state.hero_stack / max(poker_state.pot_size, 1.0)

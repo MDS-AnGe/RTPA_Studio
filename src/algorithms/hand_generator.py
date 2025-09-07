@@ -210,7 +210,7 @@ class HandGenerator:
                 pot_size=pot_size,
                 hero_stack=stack_size,
                 villain_stack=stack_size,
-                position=random.randint(0, 1),
+                position=random.randint(0, 8),  # 9-max positions (0-8)
                 blinds=blinds,
                 result=result,
                 street=street
