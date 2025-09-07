@@ -125,10 +125,10 @@ class CFRTrainer:
             from .cfr_engine import PokerState
             
             # Extraction des informations de la main
-            hero_cards = (hand.hole_cards[0], hand.hole_cards[1]) if hand.hole_cards and len(hand.hole_cards) >= 2 else ('As', 'Ks')
+            hero_cards = (hand.hero_cards[0], hand.hero_cards[1]) if hand.hero_cards and len(hand.hero_cards) >= 2 else ('As', 'Ks')
             board_cards = hand.board_cards if hand.board_cards else []
             pot_size = hand.pot_size if hand.pot_size else 100.0
-            hero_stack = hand.stack_sizes.get('Hero', 1000.0) if hand.stack_sizes else 1000.0
+            hero_stack = hand.hero_stack if hand.hero_stack else 1000.0
             
             # Détermination de la street
             street = 0
