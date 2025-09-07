@@ -5,9 +5,9 @@ cfr_iterations: 1000
 cfr_sampling_enabled: true
 cpu_usage_limit: 80.0
 default_table_type: cashgame
-gpu_enabled: true
+gpu_enabled: false
 gpu_memory_limit: 80.0
-language: fr
+language: en
 manual_risk_override: false
 max_players: 9
 nash_calculation_interval_ms: 50
@@ -15,7 +15,7 @@ ocr_confidence_threshold: 0.8
 ocr_enabled: true
 ocr_interval_ms: 100
 ram_usage_limit: 70.0
-risk_percentage: 50.0
+risk_percentage: 75.0
 screen_region:
   height: 1080
   width: 1920

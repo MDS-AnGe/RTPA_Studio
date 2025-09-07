@@ -112,6 +112,25 @@ class MemoryDatabase:
             self.game_states.append(state_data)
             self.index_by_timestamp[timestamp] = len(self.game_states) - 1
             
+            # Préparation des données pour JSON (sérialisation compatible)
+            state_json = {
+                'timestamp': timestamp,
+                'table_type': game_state.table_type,
+                'players_count': game_state.players_count,
+                'hero_position': game_state.hero_position,
+                'hero_cards': list(game_state.hero_cards),
+                'board_cards': list(game_state.board_cards),
+                'pot_size': game_state.pot_size,
+                'hero_stack': game_state.hero_stack,
+                'small_blind': game_state.small_blind,
+                'big_blind': game_state.big_blind,
+                'current_bet': game_state.current_bet,
+                'action_to_hero': game_state.action_to_hero,
+                'ante': game_state.ante,
+                'tournament_level': game_state.tournament_level,
+                'rebuys_available': game_state.rebuys_available
+            }
+            
             # Stockage SQLite pour persistance
             cursor = self.conn.cursor()
             cursor.execute('''
@@ -129,7 +148,7 @@ class MemoryDatabase:
                 game_state.big_blind, game_state.current_bet,
                 int(game_state.action_to_hero), game_state.ante,
                 game_state.tournament_level, game_state.rebuys_available,
-                json.dumps(state_data)
+                json.dumps(state_json)
             ))
             self.conn.commit()
             

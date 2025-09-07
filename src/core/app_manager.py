@@ -9,10 +9,15 @@ from dataclasses import dataclass
 import yaml
 
 from ..database.memory_db import MemoryDatabase
-try:
-    from ..ocr.screen_capture import ScreenCapture
-except Exception:
+import os
+# Force mode headless pour Replit
+if os.getenv('REPLIT_ENVIRONMENT') or not (os.getenv('DISPLAY') and os.name != 'nt'):
     from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
+else:
+    try:
+        from ..ocr.screen_capture import ScreenCapture
+    except Exception:
+        from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
 from ..algorithms.cfr_engine import CFREngine
 from ..utils.logger import get_logger
 from ..config.settings import Settings
