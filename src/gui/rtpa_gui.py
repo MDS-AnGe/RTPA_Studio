@@ -320,51 +320,51 @@ class RTAPGUIWindow:
         stats_frame = ttk.LabelFrame(left_column, text="📈 STATISTIQUES", style='Card.TFrame')
         stats_frame.pack(fill='both', expand=True)
         
-        stats_content = ttk.Frame(stats_frame)
+        stats_content = tk.Frame(stats_frame, bg='#2d3748')
         stats_content.pack(fill='both', expand=True, padx=6, pady=4)
         
         # Taux de victoire principal - centré et plus compact
-        main_rate_frame = ttk.Frame(stats_content)
+        main_rate_frame = tk.Frame(stats_content, bg='#2d3748')
         main_rate_frame.pack(fill='x', pady=(0, 4))
         
-        ttk.Label(main_rate_frame, text="📊 TAUX DE VICTOIRE", font=('Arial', 9, 'bold'), foreground='#495057').pack()
-        self.win_rate_value = ttk.Label(main_rate_frame, text="0.0%", font=('Arial', 14, 'bold'), foreground='#dc3545')
+        tk.Label(main_rate_frame, text="📊 TAUX DE VICTOIRE", font=('Arial', 9, 'bold'), fg='#cbd5e0', bg='#2d3748').pack()
+        self.win_rate_value = tk.Label(main_rate_frame, text="0.0%", font=('Arial', 14, 'bold'), fg='#dc3545', bg='#2d3748')
         self.win_rate_value.pack()
         
         # Statistiques détaillées en grille compacte
-        details_frame = ttk.Frame(stats_content)
+        details_frame = tk.Frame(stats_content, bg='#2d3748')
         details_frame.pack(fill='both', expand=True, pady=(0, 2))
         
         # Ligne 1: Mains jouées + gagnées - plus compact
-        hands_row = ttk.Frame(details_frame)
+        hands_row = tk.Frame(details_frame, bg='#2d3748')
         hands_row.pack(fill='x', pady=(0, 2))
         
-        played_frame = ttk.Frame(hands_row)
+        played_frame = tk.Frame(hands_row, bg='#2d3748')
         played_frame.pack(side='left', fill='x', expand=True)
-        ttk.Label(played_frame, text="🎲 Jouées", font=('Arial', 8, 'bold'), foreground='#495057').pack()
-        self.hands_played_value = ttk.Label(played_frame, text="0", font=('Arial', 10, 'bold'), foreground='#495057')
+        tk.Label(played_frame, text="🎲 Jouées", font=('Arial', 8, 'bold'), fg='#cbd5e0', bg='#2d3748').pack()
+        self.hands_played_value = tk.Label(played_frame, text="0", font=('Arial', 10, 'bold'), fg='#495057', bg='#2d3748')
         self.hands_played_value.pack()
         
-        won_frame = ttk.Frame(hands_row)
+        won_frame = tk.Frame(hands_row, bg='#2d3748')
         won_frame.pack(side='right', fill='x', expand=True)
-        ttk.Label(won_frame, text="🏆 Gagnées", font=('Arial', 8, 'bold'), foreground='#495057').pack()
-        self.hands_won_value = ttk.Label(won_frame, text="0", font=('Arial', 10, 'bold'), foreground='#28a745')
+        tk.Label(won_frame, text="🏆 Gagnées", font=('Arial', 8, 'bold'), fg='#cbd5e0', bg='#2d3748').pack()
+        self.hands_won_value = tk.Label(won_frame, text="0", font=('Arial', 10, 'bold'), fg='#28a745', bg='#2d3748')
         self.hands_won_value.pack()
         
         # Ligne 2: Comparaison performance - plus compact
-        perf_row = ttk.Frame(details_frame)
+        perf_row = tk.Frame(details_frame, bg='#2d3748')
         perf_row.pack(fill='x')
         
-        pro_frame = ttk.Frame(perf_row)
+        pro_frame = tk.Frame(perf_row, bg='#2d3748')
         pro_frame.pack(side='left', fill='x', expand=True)
-        ttk.Label(pro_frame, text="👑 Pro", font=('Arial', 8, 'bold'), foreground='#495057').pack()
-        self.expected_rate_value = ttk.Label(pro_frame, text="68.0%", font=('Arial', 9, 'bold'), foreground='#6f42c1')
+        tk.Label(pro_frame, text="👑 Pro", font=('Arial', 8, 'bold'), fg='#cbd5e0', bg='#2d3748').pack()
+        self.expected_rate_value = tk.Label(pro_frame, text="68.0%", font=('Arial', 9, 'bold'), fg='#6f42c1', bg='#2d3748')
         self.expected_rate_value.pack()
         
-        performance_frame = ttk.Frame(perf_row)
+        performance_frame = tk.Frame(perf_row, bg='#2d3748')
         performance_frame.pack(side='right', fill='x', expand=True)
-        ttk.Label(performance_frame, text="📈 Perf", font=('Arial', 8, 'bold'), foreground='#495057').pack()
-        self.performance_ratio_value = ttk.Label(performance_frame, text="0.0%", font=('Arial', 9, 'bold'), foreground='#fd7e14')
+        tk.Label(performance_frame, text="📈 Perf", font=('Arial', 8, 'bold'), fg='#cbd5e0', bg='#2d3748').pack()
+        self.performance_ratio_value = tk.Label(performance_frame, text="0.0%", font=('Arial', 9, 'bold'), fg='#fd7e14', bg='#2d3748')
         self.performance_ratio_value.pack()
         
         # Colonne droite: Informations joueurs
