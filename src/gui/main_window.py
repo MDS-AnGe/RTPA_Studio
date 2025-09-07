@@ -144,8 +144,6 @@ class RTAPMainWindow:
                 font=ctk.CTkFont(size=20, weight="bold")
             )
         
-        # Panel d'informations système (sera ajouté plus tard dans setup_layout)
-        self.info_panel = None
 
         # Indicateur d'état automatique (haut droite)
         self.status_indicator = ctk.CTkFrame(self.header_frame)
@@ -220,6 +218,7 @@ class RTAPMainWindow:
         self.tabview = ctk.CTkTabview(self.settings_frame)
         self.stats_tab = self.tabview.add(self.get_text("statistics"))
         self.settings_tab = self.tabview.add(self.get_text("settings"))
+        self.version_tab = self.tabview.add("Version")
         
         # Statistiques
         self.hands_played_label = ctk.CTkLabel(self.stats_tab, text="♠ " + self.get_text("hands_played"))
@@ -311,27 +310,10 @@ class RTAPMainWindow:
         self.status_text.pack(anchor="w")
         self.platform_label.pack(anchor="w")
         
-        # Création du panel d'informations système à droite
-        self.info_panel = ctk.CTkFrame(self.main_frame)
-        self.info_panel.pack(side="right", fill="y", padx=(5, 0))
-        self.info_panel.configure(width=280)
-        
-        # Titre du panel
-        self.info_panel_title = ctk.CTkLabel(
-            self.info_panel,
-            text="📋 Informations Système",
-            font=ctk.CTkFont(size=14, weight="bold")
-        )
-        self.info_panel_title.pack(pady=(10, 5))
         
         
-        # Onglet Version (dédié à droite)
-        self.version_tabview = ctk.CTkTabview(self.info_panel)
-        self.version_tabview.pack(fill="both", expand=True, padx=10, pady=5)
         
-        self.version_tab = self.version_tabview.add("Version")
-        
-        # Contenu de l'onglet Version
+        # Contenu onglet Version (dans le tabview principal)
         self.version_current_label = ctk.CTkLabel(
             self.version_tab,
             text=f"Version Actuelle: {self.version_info['version']}",
@@ -394,45 +376,8 @@ class RTAPMainWindow:
         )
         self.update_status_label.pack(pady=5)
         
-        # Section système (déplacée sous version)
-        self.system_info_frame = ctk.CTkFrame(self.info_panel)
-        self.system_info_frame.pack(fill="x", padx=10, pady=5)
-        
-        self.system_title = ctk.CTkLabel(
-            self.system_info_frame,
-            text="⚙️ Système",
-            font=ctk.CTkFont(size=12, weight="bold")
-        )
-        self.system_title.pack(pady=(5, 2))
-        
-        self.cpu_label = ctk.CTkLabel(
-            self.system_info_frame,
-            text="CPU: --",
-            font=ctk.CTkFont(size=10)
-        )
-        self.cpu_label.pack(pady=1)
-        
-        self.memory_label = ctk.CTkLabel(
-            self.system_info_frame,
-            text="RAM: --",
-            font=ctk.CTkFont(size=10)
-        )
-        self.memory_label.pack(pady=1)
-        
-        self.cfr_status_label = ctk.CTkLabel(
-            self.system_info_frame,
-            text="CFR: Initialisation...",
-            font=ctk.CTkFont(size=10),
-            text_color="orange"
-        )
-        self.cfr_status_label.pack(pady=1)
 
-        # Frame de contenu principal (réduit pour laisser place au panel)
-        self.main_content_frame = ctk.CTkFrame(self.main_frame)
-        self.main_content_frame.pack(side="left", fill="both", expand=True, padx=(0, 5))
-        
-        # Frame de contenu (3 colonnes dans main_content_frame)
-        self.content_frame = ctk.CTkFrame(self.main_content_frame)
+        # Frame de contenu (3 colonnes)
         self.content_frame.pack(fill="both", expand=True)
         
         # Colonne 1: État du jeu

@@ -14,3 +14,5 @@ matplotlib==3.10.6
 seaborn==0.13.2
 mss==10.1.0
 psutil==7.0.0
+packaging
+requests
