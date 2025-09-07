@@ -2206,7 +2206,14 @@ class RTAPGUIWindow:
             import requests
             from packaging import version
             
-            url = "https://api.github.com/repos/MDS-AnGe/RTPA_Studio/releases/latest"
+            # Dépôt GitHub temporairement non disponible
+            self.root.after(0, lambda: self.update_status_label.configure(
+                text="Vérification des mises à jour non disponible", text_color="orange"
+            ))
+            self.root.after(0, lambda: self.check_update_btn.configure(state="normal"))
+            return
+            
+            url = "https://api.github.com/repos/MDS-AnGe/RTPA_Studio/releases/latest"  # désactivé
             
             # Tentatives multiples avec timeouts courts
             for attempt in range(3):

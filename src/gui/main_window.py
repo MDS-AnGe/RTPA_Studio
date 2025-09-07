@@ -504,7 +504,15 @@ class RTAPMainWindow:
             import json
             from packaging import version
             
-            # Récupération des releases GitHub
+            # Vérification de mise à jour désactivée temporairement
+            # Le dépôt GitHub n'est pas encore configuré
+            self.root.after(0, lambda: self.update_status_label.configure(
+                text="Vérification des mises à jour non disponible", text_color="orange"
+            ))
+            self.root.after(0, lambda: self.check_update_button.configure(state="normal"))
+            return
+            
+            # Récupération des releases GitHub (désactivé)
             url = "https://api.github.com/repos/MDS-AnGe/RTPA_Studio/releases/latest"
             response = requests.get(url, timeout=10)
             
