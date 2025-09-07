@@ -1907,8 +1907,55 @@ class RTAPGUIWindow:
             
         return None
 
+    def _ensure_update_dependencies(self):
+        """S'assure que toutes les dépendances pour les mises à jour sont installées"""
+        missing_deps = []
+        
+        # Vérification des dépendances critiques
+        try:
+            import requests
+        except ImportError:
+            missing_deps.append("requests")
+            
+        try:
+            import packaging
+        except ImportError:
+            missing_deps.append("packaging")
+            
+        # Installation automatique si dépendances manquantes
+        if missing_deps:
+            try:
+                import subprocess
+                import sys
+                
+                for dep in missing_deps:
+                    print(f"Installation automatique de {dep}...")
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", dep])
+                
+                print("✅ Toutes les dépendances sont maintenant installées")
+                return True
+            except Exception as e:
+                print(f"❌ Erreur installation dépendances: {e}")
+                return False
+                
+        return True
+
+    def _check_git_availability(self):
+        """Vérifie la disponibilité de Git"""
+        try:
+            import subprocess
+            result = subprocess.run(['git', '--version'], 
+                                  capture_output=True, text=True, timeout=5)
+            return result.returncode == 0
+        except:
+            return False
+
     def create_version_tab(self):
         """Création de l'onglet Version"""
+        # Vérification automatique des dépendances
+        if not self._ensure_update_dependencies():
+            print("⚠️ Certaines dépendances ne peuvent pas être installées automatiquement")
+            
         main_frame = ctk.CTkFrame(self.version_tab)
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
@@ -2019,6 +2066,23 @@ class RTAPGUIWindow:
     def check_for_updates(self):
         """Vérifie les mises à jour sur GitHub"""
         try:
+            # Vérification préalable des dépendances
+            if not self._ensure_update_dependencies():
+                self.update_status_label.configure(
+                    text="Dépendances manquantes pour les mises à jour", 
+                    text_color="red"
+                )
+                return
+                
+            # Vérification de Git
+            if not self._check_git_availability():
+                self.update_status_label.configure(
+                    text="Git non disponible - mises à jour impossibles", 
+                    text_color="red"
+                )
+                return
+                
+            # Vérification de la connectivité réseau
             self.update_status_label.configure(text="Vérification en cours...", text_color="orange")
             self.check_update_btn.configure(state="disabled")
             
@@ -2031,19 +2095,48 @@ class RTAPGUIWindow:
             self.update_status_label.configure(text="Erreur lors de la vérification", text_color="red")
             self.check_update_btn.configure(state="normal")
 
-    def _check_github_updates(self):
-        """Thread pour vérifier GitHub"""
+    def _check_network_connectivity(self):
+        """Vérifie la connectivité réseau"""
         try:
+            import socket
+            socket.create_connection(("8.8.8.8", 53), timeout=3)
+            return True
+        except:
+            return False
+
+    def _check_github_updates(self):
+        """Thread pour vérifier GitHub avec gestion d'erreurs robuste"""
+        try:
+            # Vérification réseau préalable
+            if not self._check_network_connectivity():
+                self.root.after(0, lambda: self.update_status_label.configure(
+                    text="Aucune connexion réseau détectée", text_color="red"
+                ))
+                self.root.after(0, lambda: self.check_update_btn.configure(state="normal"))
+                return
+                
             import requests
             from packaging import version
             
             url = "https://api.github.com/repos/MDS-AnGe/RTPA_Studio/releases/latest"
-            response = requests.get(url, timeout=10)
+            
+            # Tentatives multiples avec timeouts courts
+            for attempt in range(3):
+                try:
+                    response = requests.get(url, timeout=5 + attempt * 2)
+                    if response.status_code == 200:
+                        break
+                except requests.RequestException:
+                    if attempt == 2:  # Dernière tentative
+                        raise
+                    continue
             
             if response.status_code == 200:
                 release_data = response.json()
                 latest_version = release_data['tag_name'].lstrip('v')
-                current_version = "1.0.0"  # Version actuelle
+                
+                # Récupération version actuelle depuis le fichier
+                current_version = self._get_current_version()
                 
                 if version.parse(latest_version) > version.parse(current_version):
                     self.root.after(0, lambda: self._update_ui_new_version(latest_version))
@@ -2054,16 +2147,36 @@ class RTAPGUIWindow:
                     self.root.after(0, lambda: self.check_update_btn.configure(state="normal"))
             else:
                 self.root.after(0, lambda: self.update_status_label.configure(
-                    text="Impossible de vérifier", text_color="red"
+                    text=f"Erreur serveur: {response.status_code}", text_color="red"
                 ))
                 self.root.after(0, lambda: self.check_update_btn.configure(state="normal"))
                 
         except Exception as e:
             print(f"Erreur GitHub: {e}")
+            error_msg = "Connexion impossible"
+            if "timeout" in str(e).lower():
+                error_msg = "Délai d'attente dépassé"
+            elif "connection" in str(e).lower():
+                error_msg = "Erreur de connexion"
+                
             self.root.after(0, lambda: self.update_status_label.configure(
-                text="Erreur de connexion", text_color="red"
+                text=error_msg, text_color="red"
             ))
             self.root.after(0, lambda: self.check_update_btn.configure(state="normal"))
+
+    def _get_current_version(self):
+        """Récupère la version actuelle depuis version.json"""
+        try:
+            import os
+            import json
+            version_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'version.json')
+            if os.path.exists(version_file):
+                with open(version_file, 'r') as f:
+                    version_info = json.load(f)
+                    return version_info.get('version', '1.0.0')
+        except:
+            pass
+        return "1.0.0"
 
     def _update_ui_new_version(self, latest_version):
         """Interface quand nouvelle version disponible"""
@@ -2100,34 +2213,144 @@ class RTAPGUIWindow:
             print(f"Erreur MAJ: {e}")
             self.update_status_label.configure(text="Erreur de mise à jour", text_color="red")
 
+    def _backup_critical_data(self):
+        """Sauvegarde automatique des données critiques avant MAJ"""
+        try:
+            import os
+            import shutil
+            import json
+            from datetime import datetime
+            
+            backup_dir = os.path.join("backups", f"pre_update_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+            os.makedirs(backup_dir, exist_ok=True)
+            
+            # Sauvegarde des fichiers critiques
+            critical_files = [
+                'config/settings.yaml',
+                'version.json',
+                'data/cfr_training_data.json'
+            ]
+            
+            for file_path in critical_files:
+                if os.path.exists(file_path):
+                    shutil.copy2(file_path, backup_dir)
+                    
+            print(f"✅ Sauvegarde créée: {backup_dir}")
+            return backup_dir
+            
+        except Exception as e:
+            print(f"⚠️ Erreur sauvegarde: {e}")
+            return None
+
     def _perform_git_update(self):
-        """Effectue la mise à jour Git"""
+        """Effectue la mise à jour Git avec sauvegarde automatique"""
         try:
             import subprocess
             import os
+            
+            # Sauvegarde automatique
+            self.root.after(0, lambda: self.update_status_label.configure(
+                text="Sauvegarde en cours...", text_color="orange"
+            ))
+            
+            backup_path = self._backup_critical_data()
             
             self.root.after(0, lambda: self.update_status_label.configure(
                 text="Téléchargement...", text_color="orange"
             ))
             
-            # Mise à jour Git
-            result = subprocess.run(['git', 'pull', 'origin', 'main'], 
-                                  capture_output=True, text=True, cwd='.')
+            # Vérification de l'état Git avant MAJ
+            status_result = subprocess.run(['git', 'status', '--porcelain'], 
+                                         capture_output=True, text=True, cwd='.')
             
+            if status_result.stdout.strip():
+                # Fichiers modifiés - stash automatique
+                subprocess.run(['git', 'stash', 'push', '-m', 'Auto-stash before update'], 
+                             capture_output=True, text=True, cwd='.')
+                print("📦 Modifications locales sauvegardées automatiquement")
+            
+            # Mise à jour Git avec retry
+            for attempt in range(3):
+                result = subprocess.run(['git', 'pull', 'origin', 'main'], 
+                                      capture_output=True, text=True, cwd='.', timeout=30)
+                
+                if result.returncode == 0:
+                    break
+                elif attempt == 2:
+                    raise subprocess.CalledProcessError(result.returncode, 'git pull')
+                    
+            # Vérification post-MAJ
             if result.returncode == 0:
+                # Re-installation automatique des dépendances si nécessaire
+                if not self._ensure_update_dependencies():
+                    print("⚠️ Réinstallation des dépendances nécessaire")
+                    
                 self.root.after(0, lambda: self.update_status_label.configure(
-                    text="Mise à jour réussie!", text_color="green"
+                    text="✅ Mise à jour réussie!", text_color="green"
                 ))
+                
+                # Proposition de redémarrage
+                self.root.after(2000, self._suggest_restart)
             else:
+                error_output = result.stderr or result.stdout
+                print(f"Erreur Git: {error_output}")
                 self.root.after(0, lambda: self.update_status_label.configure(
                     text="Erreur lors de la mise à jour", text_color="red"
                 ))
                 
+        except subprocess.TimeoutExpired:
+            self.root.after(0, lambda: self.update_status_label.configure(
+                text="Délai d'attente dépassé", text_color="red"
+            ))
         except Exception as e:
             print(f"Erreur Git: {e}")
             self.root.after(0, lambda: self.update_status_label.configure(
                 text="Erreur de mise à jour", text_color="red"
             ))
+
+    def _suggest_restart(self):
+        """Propose un redémarrage après mise à jour"""
+        try:
+            from tkinter import messagebox
+            
+            result = messagebox.askyesno(
+                "Redémarrage recommandé",
+                "Mise à jour terminée avec succès!\n\n"
+                "Un redémarrage est recommandé pour appliquer tous les changements.\n\n"
+                "Redémarrer maintenant ?",
+                icon='question'
+            )
+            
+            if result:
+                self._restart_application()
+                
+        except Exception as e:
+            print(f"Erreur suggestion redémarrage: {e}")
+
+    def _restart_application(self):
+        """Redémarre l'application"""
+        try:
+            import sys
+            import subprocess
+            import os
+            
+            # Fermeture propre
+            if self.app_manager:
+                self.app_manager.stop()
+                
+            # Redémarrage
+            python = sys.executable
+            script = os.path.abspath(__file__)
+            subprocess.Popen([python, script])
+            
+            self.root.quit()
+            self.root.destroy()
+            
+        except Exception as e:
+            print(f"Erreur redémarrage: {e}")
+            self.update_status_label.configure(
+                text="Redémarrage manuel requis", text_color="orange"
+            )
 
     def on_closing(self):
         """Gestion de la fermeture de la fenêtre"""
