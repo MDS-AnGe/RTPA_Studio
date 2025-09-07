@@ -62,3 +62,49 @@ The system includes robust resource management, monitoring CPU, RAM, and GPU usa
 
 ### Data Storage
 - **SQLite3**: Lightweight database for data persistence and hand history.
+
+---
+
+## 🚀 Guide de Démarrage Rapide
+
+### Installation
+```bash
+# 1. Cloner le projet
+git clone <repository-url>
+cd rtpa-studio
+
+# 2. Installer les dépendances
+pip install -r requirements.txt
+
+# 3. Lancer l'interface
+python main_gui.py
+```
+
+### ⚡ Utilisation Immédiate
+1. **Ouvrez votre plateforme poker** (PokerStars, Winamax, PMU)
+2. **Détection automatique** : RTPA se lance automatiquement
+3. **Recommandations instantanées** : Les conseils Nash apparaissent en temps réel
+4. **Amélioration continue** : Le système s'améliore pendant que vous jouez
+
+---
+
+## ❓ Questions Fréquentes
+
+### Fonctionnement CFR/Nash
+**Q: Quelle est la différence entre CFR et Nash ?**
+📊 **CFR est l'algorithme qui calcule Nash.** CFR (Counterfactual Regret Minimization) utilise les regrets pour converger vers l'équilibre de Nash optimal. Ce n'est pas deux calculs séparés.
+
+**Q: Puis-je utiliser RTPA pendant l'apprentissage ?**
+✅ **Oui !** L'apprentissage est continu en arrière-plan (450 mains/minute). Vous pouvez jouer immédiatement et profiter des améliorations progressives. Pas besoin d'attendre !
+
+### Configuration Technique
+**Q: GPU vs CPU ?**
+⚡ Le système bascule automatiquement : CPU pour petits calculs, GPU pour gros batches (50+ mains). Fallback sécurisé si GPU indisponible.
+
+**Q: Installation PyTorch/GPU ?**
+🔥 Détection automatique avec bouton d'installation directe dans l'interface. Support CUDA avec gestion mémoire intelligente.
+
+### Troubleshooting
+**🔴 Performance lente** : Activez GPU dans Configuration, augmentez limite mémoire
+**🔴 Erreurs mémoire GPU** : Réduisez `gpu_memory_limit` à 0.6 et `batch_size` à 1000
+**🔴 Détection échoue** : Vérifiez plateforme ouverte, redémarrez RTPA
