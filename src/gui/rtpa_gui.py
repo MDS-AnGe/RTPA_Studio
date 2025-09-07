@@ -50,11 +50,14 @@ class RTAPGUIWindow:
         
         # Variables de statut
         self.current_connection_status = "waiting"  # waiting, active, error
-        self.current_activity = "idle"  # idle, generating, training, analyzing
+        self.current_activity = "training"  # Commencer avec training car CFR est toujours actif
         self.current_platform = None  # Plateforme actuellement connectée
         
         # Démarrer la mise à jour du statut
         self._update_status_display()
+        
+        # Connecter aux événements réels du système
+        self._connect_to_system_events()
         
         # Démarrage auto-détection (si disponible)
         if self.app_manager and hasattr(self.app_manager, 'start_platform_detection'):
@@ -1635,11 +1638,12 @@ class RTAPGUIWindow:
             
             # Ligne 2: Activité du système
             activity_messages = {
-                "idle": "Surveillance active",
+                "idle": "Système en attente",
                 "generating": "Génération de mains...",
                 "training": "Entraînement CFR en cours",
                 "analyzing": "Analyse de la situation",
-                "ocr": "Capture d'écran OCR"
+                "ocr": "Capture d'écran OCR",
+                "continuous": "Génération continue active"
             }
             
             activity_text = activity_messages.get(self.current_activity, "Système opérationnel")
@@ -1702,6 +1706,35 @@ class RTAPGUIWindow:
             self.root.title(title)
         except Exception as e:
             print(f"Erreur mise à jour titre: {e}")
+
+    def _connect_to_system_events(self):
+        """Connecte l'interface aux événements réels du système"""
+        try:
+            if self.app_manager and hasattr(self.app_manager, 'cfr_engine'):
+                # Essayer de récupérer le trainer CFR
+                def check_cfr_status():
+                    try:
+                        if hasattr(self.app_manager.cfr_engine, 'trainer') and self.app_manager.cfr_engine.trainer:
+                            trainer = self.app_manager.cfr_engine.trainer
+                            # Vérifier si la génération continue est active
+                            if hasattr(trainer, 'continuous_generator') and trainer.continuous_generator:
+                                if hasattr(trainer.continuous_generator, 'is_running') and trainer.continuous_generator.is_running:
+                                    self.update_activity_status("continuous")
+                                else:
+                                    self.update_activity_status("training")
+                            else:
+                                self.update_activity_status("training")
+                    except Exception as e:
+                        print(f"Erreur vérification statut CFR: {e}")
+                    
+                    # Programmer la prochaine vérification
+                    self.root.after(3000, check_cfr_status)
+                
+                # Démarrer la vérification périodique
+                self.root.after(5000, check_cfr_status)  # Premier check après 5s
+                
+        except Exception as e:
+            print(f"Erreur connexion événements système: {e}")
 
     def on_closing(self):
         """Gestion de la fermeture de la fenêtre"""
