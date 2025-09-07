@@ -175,6 +175,18 @@ class CFREngine:
             "percent": (used / total) * 100
         }
     
+    def compute_strategy_regrets(self, utilities, strategy_probs):
+        """Calcul optimisé des regrets avec accélération"""
+        if self.gpu_accelerator and len(utilities) > 100:
+            # Utiliser l'accélérateur pour gros calculs
+            utilities_batch = utilities.reshape(1, -1)
+            strategy_batch = strategy_probs.reshape(1, -1)
+            regrets = self.gpu_accelerator.compute_regrets_batch(utilities_batch, strategy_batch)
+            return regrets.flatten()
+        else:
+            # Utiliser Numba pour petits calculs
+            return self._compute_regrets_numba(utilities, strategy_probs)
+    
     @jit(nopython=True)
     def _compute_regrets_numba(self, utilities, strategy_probs):
         """Calcul optimisé des regrets avec Numba"""
@@ -186,18 +198,35 @@ class CFREngine:
         
         return regrets
     
-    def _compute_regrets_torch(self, utilities_tensor, strategy_tensor):
-        """Calcul optimisé des regrets avec PyTorch"""
-        if not self.use_acceleration:
-            return None
+    def compute_nash_equilibrium_fast(self, payoff_matrix, max_iterations=1000):
+        """Calcul équilibre de Nash avec accélération"""
+        if self.gpu_accelerator:
+            return self.gpu_accelerator.compute_nash_equilibrium(payoff_matrix, max_iterations)
+        else:
+            # Fallback vers méthode traditionnelle
+            return self._compute_nash_traditional(payoff_matrix, max_iterations)
+    
+    def _compute_nash_traditional(self, payoff_matrix, max_iterations):
+        """Calcul Nash traditionnel"""
+        n_actions = payoff_matrix.shape[0]
+        strategy = np.ones(n_actions) / n_actions
         
-        # Calculer la valeur espérée
-        ev = torch.sum(utilities_tensor * strategy_tensor)
+        for iteration in range(max_iterations):
+            expected_utilities = np.dot(payoff_matrix, strategy)
+            
+            best_response = np.zeros(n_actions)
+            best_action = np.argmax(expected_utilities)
+            best_response[best_action] = 1.0
+            
+            alpha = 1.0 / (iteration + 1)
+            strategy = (1 - alpha) * strategy + alpha * best_response
+            
+            if iteration % 100 == 0:
+                exploitability = np.max(expected_utilities) - np.sum(strategy * expected_utilities)
+                if exploitability < 1e-6:
+                    break
         
-        # Calculer les regrets
-        regrets = utilities_tensor - ev
-        
-        return regrets.cpu().numpy()
+        return strategy
     
     def _init_gpu_accelerator(self):
         """Initialise l'accélérateur GPU/CPU"""

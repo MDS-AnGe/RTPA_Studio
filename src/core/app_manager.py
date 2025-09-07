@@ -190,6 +190,15 @@ class RTAPStudioManager:
         """Met à jour les paramètres"""
         self.settings.update(new_settings)
         self.cfr_engine.update_settings(new_settings)
+        
+        # Mise à jour des paramètres GPU si modifiés
+        if 'gpu_enabled' in new_settings or 'gpu_memory_limit' in new_settings:
+            gpu_enabled = new_settings.get('gpu_enabled', getattr(self.settings, 'gpu_enabled', False))
+            gpu_memory = new_settings.get('gpu_memory_limit', getattr(self.settings, 'gpu_memory_limit', 0.8))
+            
+            if hasattr(self.cfr_engine, 'update_gpu_settings'):
+                self.cfr_engine.update_gpu_settings(gpu_enabled, gpu_memory / 100.0)
+                self.logger.info(f"Paramètres GPU mis à jour: enabled={gpu_enabled}, memory={gpu_memory}%")
     
     def manual_override(self, risk_percentage: float):
         """Override manuel du pourcentage de risque"""

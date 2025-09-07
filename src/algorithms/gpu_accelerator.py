@@ -58,7 +58,7 @@ class GPUAccelerator:
         if not TORCH_AVAILABLE:
             return "cpu"
         
-        if self.config.gpu_enabled and torch.cuda.is_available():
+        if TORCH_AVAILABLE and self.config.gpu_enabled and torch.cuda.is_available():
             device = torch.device("cuda:0")
             # Configuration mémoire GPU
             torch.cuda.set_per_process_memory_fraction(self.config.gpu_memory_limit)
@@ -69,7 +69,7 @@ class GPUAccelerator:
             self.logger.info(f"GPU activé: {torch.cuda.get_device_name(0)}")
             return device
         else:
-            device = torch.device("cpu")
+            device = torch.device("cpu") if TORCH_AVAILABLE else "cpu"
             if TORCH_AVAILABLE:
                 torch.set_num_threads(self.config.cpu_threads)
             self.logger.info(f"CPU threads: {self.config.cpu_threads}")
@@ -93,12 +93,12 @@ class GPUAccelerator:
         self.tensor_cache.clear()
         self.memory_pool.clear()
         
-        if torch.cuda.is_available():
+        if TORCH_AVAILABLE and torch.cuda.is_available():
             torch.cuda.empty_cache()
     
     def get_memory_info(self):
         """Retourne les informations mémoire"""
-        if self.device.type == "cuda" and torch.cuda.is_available():
+        if TORCH_AVAILABLE and hasattr(self.device, 'type') and self.device.type == "cuda" and torch.cuda.is_available():
             allocated = torch.cuda.memory_allocated() / 1024**2
             cached = torch.cuda.memory_reserved() / 1024**2
             total = torch.cuda.get_device_properties(0).total_memory / 1024**2
@@ -140,6 +140,9 @@ def _compute_equity_numba(hand_strengths, opponent_ranges):
             total_combos += opponent_ranges[i]
     
     return equity / total_combos if total_combos > 0 else 0.0
+
+class GPUAccelerator:
+    """Gestionnaire d'accélération GPU/CPU pour calculs CFR - Continuation"""
     
     def compute_regrets_batch(self, utilities_batch, strategies_batch):
         """Calcul optimisé des regrets par lots"""
@@ -173,6 +176,9 @@ def _compute_equity_numba(hand_strengths, opponent_ranges):
     
     def _compute_regrets_torch(self, utilities, strategies):
         """Calcul regrets avec PyTorch"""
+        if not TORCH_AVAILABLE:
+            return self._compute_regrets_numpy(utilities, strategies)
+        
         # Convertir en tenseurs
         utilities_tensor = torch.tensor(utilities, device=self.device, dtype=torch.float32)
         strategies_tensor = torch.tensor(strategies, device=self.device, dtype=torch.float32)
@@ -192,14 +198,18 @@ def _compute_equity_numba(hand_strengths, opponent_ranges):
     
     def _compute_nash_torch(self, payoff_matrix, max_iterations):
         """Calcul Nash avec PyTorch"""
+        if not TORCH_AVAILABLE:
+            return self._compute_nash_numpy(payoff_matrix, max_iterations)
+        
         n_actions = payoff_matrix.shape[0]
+        payoff_tensor = torch.tensor(payoff_matrix, device=self.device, dtype=torch.float32)
         
         # Initialiser stratégie uniforme
-        strategy = torch.ones(n_actions, device=self.device) / n_actions
+        strategy = torch.ones(n_actions, device=self.device, dtype=torch.float32) / n_actions
         
         for iteration in range(max_iterations):
             # Calcul des utilités esperées
-            expected_utilities = torch.matmul(payoff_matrix, strategy)
+            expected_utilities = torch.matmul(payoff_tensor, strategy)
             
             # Mise à jour de la stratégie (fictitious play)
             best_response = torch.zeros_like(strategy)
@@ -249,6 +259,9 @@ def _compute_equity_numba(hand_strengths, opponent_ranges):
     
     def _generate_hands_torch(self, num_hands, hand_types):
         """Génération de mains avec PyTorch"""
+        if not TORCH_AVAILABLE:
+            return self._generate_hands_numpy(num_hands, hand_types)
+        
         # Génération vectorisée rapide
         cards = torch.randint(0, 52, (num_hands, 2), device=self.device)
         
@@ -305,7 +318,7 @@ def _compute_equity_numba(hand_strengths, opponent_ranges):
             
             # Test GPU si disponible
             gpu_time = None
-            if TORCH_AVAILABLE and self.device.type == "cuda":
+            if TORCH_AVAILABLE and hasattr(self.device, 'type') and self.device.type == "cuda":
                 start = time.time()
                 self._compute_regrets_torch(utilities, strategies)
                 torch.cuda.synchronize()  # Attendre la fin des calculs GPU
