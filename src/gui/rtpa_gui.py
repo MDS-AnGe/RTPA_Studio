@@ -230,104 +230,142 @@ class RTAPGUIWindow:
         table_info_frame.pack(fill='both', expand=True, pady=(0, 5))
         
         table_content = ttk.Frame(table_info_frame)
-        table_content.pack(padx=10, pady=8)
+        table_content.pack(fill='both', expand=True, padx=8, pady=6)
         
-        # Ligne 1: Pot + Blinds (alignés à gauche)
-        row1 = ttk.Frame(table_content)
-        row1.pack(anchor='w', pady=(0, 8))
+        # POT principal - centré et mis en valeur
+        pot_container = ttk.Frame(table_content)
+        pot_container.pack(fill='x', pady=(0, 8))
         
-        ttk.Label(row1, text="💰 POT:", style='Heading.TLabel', font=('Arial', 13, 'bold')).pack(side='left', padx=(0, 8))
-        self.pot_label = ttk.Label(row1, text="0.00€", style='Card.TLabel', font=('Arial', 18, 'bold'), foreground='#28a745')
-        self.pot_label.pack(side='left', padx=(0, 20))
+        ttk.Label(pot_container, text="💰 POT ACTUEL", font=('Arial', 11, 'bold'), foreground='#495057').pack()
+        self.pot_label = ttk.Label(pot_container, text="0.00€", font=('Arial', 20, 'bold'), foreground='#28a745')
+        self.pot_label.pack()
         
-        ttk.Label(row1, text="🎲 Blinds:", style='Heading.TLabel', font=('Arial', 11)).pack(side='left', padx=(0, 8))
-        self.blinds_label = ttk.Label(row1, text="0.00€ / 0.00€", style='Card.TLabel', font=('Arial', 13, 'bold'), foreground='#fd7e14')
-        self.blinds_label.pack(side='left')
+        # Ligne blinds et antes - organisation horizontale optimisée
+        blinds_row = ttk.Frame(table_content)
+        blinds_row.pack(fill='x', pady=(0, 4))
         
-        # Ligne 2: Antes + Type (alignés à gauche) 
-        row2 = ttk.Frame(table_content)
-        row2.pack(anchor='w', pady=(5, 0))
+        # Blinds section
+        blinds_container = ttk.Frame(blinds_row)
+        blinds_container.pack(side='left', fill='x', expand=True)
+        ttk.Label(blinds_container, text="🎲 Blinds", font=('Arial', 10, 'bold'), foreground='#495057').pack()
+        self.blinds_label = ttk.Label(blinds_container, text="0.00€ / 0.00€", font=('Arial', 12, 'bold'), foreground='#fd7e14')
+        self.blinds_label.pack()
         
-        ttk.Label(row2, text="⚡ Antes:", style='Heading.TLabel', font=('Arial', 10)).pack(side='left', padx=(0, 8))
-        self.antes_label = ttk.Label(row2, text="0.00€", style='Card.TLabel', font=('Arial', 11), foreground='#6f42c1')
-        self.antes_label.pack(side='left', padx=(0, 20))
+        # Antes section
+        antes_container = ttk.Frame(blinds_row)
+        antes_container.pack(side='right')
+        ttk.Label(antes_container, text="⚡ Antes", font=('Arial', 10, 'bold'), foreground='#495057').pack()
+        self.antes_label = ttk.Label(antes_container, text="0.00€", font=('Arial', 12, 'bold'), foreground='#6f42c1')
+        self.antes_label.pack()
         
-        self.table_type_label = ttk.Label(row2, text="Cash Game", font=('Arial', 11), foreground='#6c757d')
-        self.table_type_label.pack(side='left')
+        # Type de table - en bas
+        self.table_type_label = ttk.Label(table_content, text="Cash Game", font=('Arial', 10), foreground='#6c757d')
+        self.table_type_label.pack(pady=(4, 0))
         
         # SOUS-SECTION: Recommandation principale
         rec_frame = ttk.LabelFrame(left_column, text="🎯 RECOMMANDATION", style='Card.TFrame')
         rec_frame.pack(fill='both', expand=True, pady=(0, 5))
         
         rec_content = ttk.Frame(rec_frame)
-        rec_content.pack(padx=10, pady=8)
+        rec_content.pack(fill='both', expand=True, padx=8, pady=6)
         
-        # Action + détails en ligne
-        action_line = ttk.Frame(rec_content)
-        action_line.pack(fill='x', pady=(0, 5))
+        # Action principale centrée
+        action_container = ttk.Frame(rec_content)
+        action_container.pack(fill='x', pady=(0, 8))
         
-        # Action principale - beaucoup plus visible
-        self.action_display = ttk.Label(action_line, text="CHECK", font=('Arial', 22, 'bold'), foreground='#28a745')
-        self.action_display.pack(side='left')
+        self.action_display = ttk.Label(action_container, text="CHECK", font=('Arial', 24, 'bold'), foreground='#28a745')
+        self.action_display.pack()
         
-        self.bet_size_label = ttk.Label(action_line, text="", style='Card.TLabel', font=('Arial', 16, 'bold'), foreground='#28a745')
-        self.bet_size_label.pack(side='left', padx=(15, 25))
+        self.bet_size_label = ttk.Label(action_container, text="", font=('Arial', 18, 'bold'), foreground='#28a745')
+        self.bet_size_label.pack()
         
-        # Probabilité + Risque + Confiance en ligne
-        ttk.Label(action_line, text="Victoire:", style='Heading.TLabel').pack(side='left', padx=(0, 2))
-        self.win_prob_label = ttk.Label(action_line, text="50%", font=('Arial', 12, 'bold'), foreground='green')
-        self.win_prob_label.pack(side='left', padx=(0, 15))
+        # Métriques en grille 2x2
+        metrics_frame = ttk.Frame(rec_content)
+        metrics_frame.pack(fill='x', pady=(0, 8))
         
-        ttk.Label(action_line, text="Risque:", style='Heading.TLabel').pack(side='left', padx=(0, 2))
-        self.risk_label = ttk.Label(action_line, text="30%", font=('Arial', 12, 'bold'), foreground='orange')
-        self.risk_label.pack(side='left', padx=(0, 15))
+        # Ligne 1: Victoire + Risque
+        metrics_row1 = ttk.Frame(metrics_frame)
+        metrics_row1.pack(fill='x', pady=(0, 4))
         
-        ttk.Label(action_line, text="Confiance:", style='Heading.TLabel').pack(side='left', padx=(0, 2))
-        self.main_confidence_label = ttk.Label(action_line, text="85%", font=('Arial', 12, 'bold'), foreground='blue')
-        self.main_confidence_label.pack(side='left', padx=(0, 20))
+        victory_frame = ttk.Frame(metrics_row1)
+        victory_frame.pack(side='left', fill='x', expand=True)
+        ttk.Label(victory_frame, text="🎯 Victoire", font=('Arial', 9, 'bold'), foreground='#495057').pack()
+        self.win_prob_label = ttk.Label(victory_frame, text="50%", font=('Arial', 14, 'bold'), foreground='#28a745')
+        self.win_prob_label.pack()
         
-        # Raisonnement
-        ttk.Label(rec_content, text="🧠 Raisonnement:", style='Heading.TLabel').pack(anchor='w', pady=(5, 2))
+        risk_frame = ttk.Frame(metrics_row1)
+        risk_frame.pack(side='right', fill='x', expand=True)
+        ttk.Label(risk_frame, text="⚠️ Risque", font=('Arial', 9, 'bold'), foreground='#495057').pack()
+        self.risk_label = ttk.Label(risk_frame, text="30%", font=('Arial', 14, 'bold'), foreground='#fd7e14')
+        self.risk_label.pack()
+        
+        # Ligne 2: Confiance seule, centrée
+        confidence_frame = ttk.Frame(metrics_frame)
+        confidence_frame.pack(fill='x')
+        ttk.Label(confidence_frame, text="🔮 Confiance", font=('Arial', 9, 'bold'), foreground='#495057').pack()
+        self.main_confidence_label = ttk.Label(confidence_frame, text="85%", font=('Arial', 14, 'bold'), foreground='#6f42c1')
+        self.main_confidence_label.pack()
+        
+        # Raisonnement optimisé
+        reasoning_frame = ttk.Frame(rec_content)
+        reasoning_frame.pack(fill='both', expand=True)
+        ttk.Label(reasoning_frame, text="🧠 Raisonnement:", font=('Arial', 10, 'bold'), foreground='#495057').pack(anchor='w')
         self.main_reasoning_label = ttk.Label(
-            rec_content, text="En attente d'analyse...", font=('Arial', 10),
-            wraplength=350, justify='left'
+            reasoning_frame, text="En attente d'analyse...", font=('Arial', 9),
+            wraplength=320, justify='left', foreground='#6c757d'
         )
-        self.main_reasoning_label.pack(anchor='w')
+        self.main_reasoning_label.pack(anchor='w', fill='both', expand=True)
         
         # SOUS-SECTION: Statistiques compactes
         stats_frame = ttk.LabelFrame(left_column, text="📈 STATISTIQUES", style='Card.TFrame')
         stats_frame.pack(fill='both', expand=True)
         
         stats_content = ttk.Frame(stats_frame)
-        stats_content.pack(padx=10, pady=6)
+        stats_content.pack(fill='both', expand=True, padx=8, pady=6)
         
-        # Ligne 1: Mains + Taux (alignés à gauche)
-        stats_line1 = ttk.Frame(stats_content)
-        stats_line1.pack(anchor='w', pady=(0, 8))
+        # Taux de victoire principal - centré
+        main_rate_frame = ttk.Frame(stats_content)
+        main_rate_frame.pack(fill='x', pady=(0, 8))
         
-        ttk.Label(stats_line1, text="Mains:", style='Heading.TLabel', font=('Arial', 11, 'bold')).pack(side='left')
-        self.hands_played_value = ttk.Label(stats_line1, text="0", style='Card.TLabel', font=('Arial', 13, 'bold'), foreground='#495057')
-        self.hands_played_value.pack(side='left', padx=(8, 15))
+        ttk.Label(main_rate_frame, text="📊 TAUX DE VICTOIRE", font=('Arial', 10, 'bold'), foreground='#495057').pack()
+        self.win_rate_value = ttk.Label(main_rate_frame, text="0.0%", font=('Arial', 18, 'bold'), foreground='#dc3545')
+        self.win_rate_value.pack()
         
-        ttk.Label(stats_line1, text="Gagnées:", style='Heading.TLabel', font=('Arial', 11, 'bold')).pack(side='left')
-        self.hands_won_value = ttk.Label(stats_line1, text="0", style='Card.TLabel', font=('Arial', 13, 'bold'), foreground='#28a745')
-        self.hands_won_value.pack(side='left', padx=(8, 20))
+        # Statistiques détaillées en grille
+        details_frame = ttk.Frame(stats_content)
+        details_frame.pack(fill='x', pady=(0, 6))
         
-        ttk.Label(stats_line1, text="TAUX:", style='Heading.TLabel', font=('Arial', 12, 'bold')).pack(side='left')
-        self.win_rate_value = ttk.Label(stats_line1, text="0.0%", style='Card.TLabel', font=('Arial', 16, 'bold'), foreground='#dc3545')
-        self.win_rate_value.pack(side='left', padx=(8, 0))
+        # Ligne 1: Mains jouées + gagnées
+        hands_row = ttk.Frame(details_frame)
+        hands_row.pack(fill='x', pady=(0, 4))
         
-        # Ligne 2: Pro + Performance (alignés à gauche)
-        stats_line2 = ttk.Frame(stats_content)
-        stats_line2.pack(anchor='w', pady=(5, 0))
+        played_frame = ttk.Frame(hands_row)
+        played_frame.pack(side='left', fill='x', expand=True)
+        ttk.Label(played_frame, text="🎲 Jouées", font=('Arial', 9, 'bold'), foreground='#495057').pack()
+        self.hands_played_value = ttk.Label(played_frame, text="0", font=('Arial', 12, 'bold'), foreground='#495057')
+        self.hands_played_value.pack()
         
-        ttk.Label(stats_line2, text="Pro:", style='Heading.TLabel', font=('Arial', 10)).pack(side='left')
-        self.expected_rate_value = ttk.Label(stats_line2, text="68.0%", style='Card.TLabel', font=('Arial', 11), foreground='#6f42c1')
-        self.expected_rate_value.pack(side='left', padx=(5, 20))
+        won_frame = ttk.Frame(hands_row)
+        won_frame.pack(side='right', fill='x', expand=True)
+        ttk.Label(won_frame, text="🏆 Gagnées", font=('Arial', 9, 'bold'), foreground='#495057').pack()
+        self.hands_won_value = ttk.Label(won_frame, text="0", font=('Arial', 12, 'bold'), foreground='#28a745')
+        self.hands_won_value.pack()
         
-        ttk.Label(stats_line2, text="Perf:", style='Heading.TLabel', font=('Arial', 10)).pack(side='left')
-        self.performance_ratio_value = ttk.Label(stats_line2, text="0.0%", style='Card.TLabel', font=('Arial', 11), foreground='#fd7e14')
-        self.performance_ratio_value.pack(side='left', padx=(5, 0))
+        # Ligne 2: Comparaison performance
+        perf_row = ttk.Frame(details_frame)
+        perf_row.pack(fill='x')
+        
+        pro_frame = ttk.Frame(perf_row)
+        pro_frame.pack(side='left', fill='x', expand=True)
+        ttk.Label(pro_frame, text="👔 Pro", font=('Arial', 9, 'bold'), foreground='#495057').pack()
+        self.expected_rate_value = ttk.Label(pro_frame, text="68.0%", font=('Arial', 11, 'bold'), foreground='#6f42c1')
+        self.expected_rate_value.pack()
+        
+        performance_frame = ttk.Frame(perf_row)
+        performance_frame.pack(side='right', fill='x', expand=True)
+        ttk.Label(performance_frame, text="📈 Perf", font=('Arial', 9, 'bold'), foreground='#495057').pack()
+        self.performance_ratio_value = ttk.Label(performance_frame, text="0.0%", font=('Arial', 11, 'bold'), foreground='#fd7e14')
+        self.performance_ratio_value.pack()
         
         # Colonne droite: Informations joueurs
         right_column = ttk.Frame(main_layout)
