@@ -52,6 +52,10 @@ class CFRTrainer:
         self.start_time = 0.0
         self.total_training_time = 0.0
         
+        # Métriques de progression pour l'interface
+        self.current_iteration = 0
+        self.training_start_time = None
+        
         # Cache et optimisations
         self.strategy_cache = {}
         self.regret_updates = 0
@@ -431,6 +435,9 @@ class CFRTrainer:
         last_convergence_check = 0
         convergence = 1.0  # Initialize convergence
         
+        # Initialiser le temps de démarrage pour l'estimation
+        self.training_start_time = time.time()
+        
         while self.is_training and iteration < self.target_iterations:
             try:
                 iter_start = time.time()
@@ -447,6 +454,7 @@ class CFRTrainer:
                 self.convergence_history.append(convergence)
                 
                 iteration += 1
+                self.current_iteration = iteration  # Mettre à jour pour l'interface
                 
                 # Check convergence périodique
                 if iteration - last_convergence_check >= 100:

@@ -1807,36 +1807,23 @@ class RTAPGUIWindow:
                 
             trainer = cfr_engine.trainer
             
-            # Récupérer les métriques d'entraînement
-            if hasattr(trainer, 'iterations_completed') and hasattr(trainer, 'target_iterations'):
-                completed = getattr(trainer, 'iterations_completed', 0)
-                target = getattr(trainer, 'target_iterations', 100000)
-                
-                if completed > 0 and target > completed:
-                    # Calculer le temps écoulé et la vitesse
-                    if hasattr(trainer, 'training_start_time'):
-                        import time
-                        elapsed_time = time.time() - trainer.training_start_time
-                        if elapsed_time > 0:
-                            iterations_per_second = completed / elapsed_time
-                            if iterations_per_second > 0:
-                                remaining_iterations = target - completed
-                                remaining_seconds = remaining_iterations / iterations_per_second
-                                
-                                # Formater le temps restant
-                                if remaining_seconds < 60:
-                                    return f"{int(remaining_seconds)}s restant"
-                                elif remaining_seconds < 3600:
-                                    minutes = int(remaining_seconds / 60)
-                                    return f"{minutes}min restant"
-                                else:
-                                    hours = int(remaining_seconds / 3600)
-                                    minutes = int((remaining_seconds % 3600) / 60)
-                                    return f"{hours}h{minutes}min restant"
-                
-                # Afficher le progrès sans estimation si pas assez d'infos
-                progress_percent = int((completed / target) * 100) if target > 0 else 0
+            # Essayer différentes propriétés possibles pour la progression
+            completed = 0
+            target = 100000  # Valeur par défaut visible dans les logs
+            
+            # Utiliser les métriques du trainer CFR
+            completed = getattr(trainer, 'current_iteration', 0)
+            target = getattr(trainer, 'target_iterations', 100000)
+            
+            # Si on a une progression valide
+            if completed > 0 and target > completed:
+                progress_percent = int((completed / target) * 100)
                 return f"{progress_percent}% terminé"
+            elif completed >= target and target > 0:
+                return "Entraînement terminé"
+            else:
+                # Pas de métriques fiables - afficher un message générique
+                return "En cours..."
                 
         except Exception as e:
             print(f"Erreur calcul estimation CFR: {e}")
