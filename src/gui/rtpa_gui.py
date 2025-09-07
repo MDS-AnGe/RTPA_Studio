@@ -170,7 +170,16 @@ class RTAPGUIWindow:
             font=ctk.CTkFont(size=13),
             text_color="#666666"  # Gris plus foncé pour meilleure lisibilité
         )
-        self.activity_status_label.pack(pady=(0, 5))
+        self.activity_status_label.pack(pady=(0, 2))
+        
+        # Ligne 3: Temps restant CFR (nouvelle ligne dédiée)
+        self.cfr_time_label = ctk.CTkLabel(
+            self.controls_frame,
+            text="",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color="#FFA500"  # Orange pour visibilité
+        )
+        self.cfr_time_label.pack(pady=(0, 5))
         
         # Notebook avec onglets
         self.notebook = ttk.Notebook(self.main_frame)
@@ -1708,10 +1717,19 @@ class RTAPGUIWindow:
                     text_color="#ff8c82"  # Rouge clair
                 )
             
-            # Ligne 2: Activité du système avec estimation temps
-            activity_text = self._get_activity_with_time_estimate()
+            # Ligne 2: Activité du système
+            activity_text = "Surveillance active"
+            try:
+                platform_status = self.get_platform_status()
+                if platform_status and platform_status.get('status') == 'connected':
+                    activity_text = "Analyse en cours"
+            except:
+                pass
             
             self.activity_status_label.configure(text=activity_text)
+            
+            # Ligne 3: Temps restant CFR - mise à jour séparée
+            self.update_cfr_time_display()
             
         except Exception as e:
             print(f"Erreur mise à jour statut: {e}")
@@ -1906,6 +1924,44 @@ class RTAPGUIWindow:
             print(f"Erreur calcul estimation CFR: {e}")
             
         return None
+
+    def update_cfr_time_display(self):
+        """Met à jour l'affichage du temps restant CFR sur sa ligne dédiée"""
+        try:
+            if not hasattr(self, 'cfr_time_label'):
+                return
+                
+            # Récupération du temps restant
+            time_estimate = self._get_cfr_time_estimate()
+            
+            if time_estimate:
+                # Affichage avec couleur selon le statut
+                if "restant" in time_estimate:
+                    self.cfr_time_label.configure(
+                        text=time_estimate,
+                        text_color="#FFA500"  # Orange pour temps restant
+                    )
+                elif "terminé" in time_estimate:
+                    self.cfr_time_label.configure(
+                        text=time_estimate,
+                        text_color="#00FF00"  # Vert pour terminé
+                    )
+                elif "%" in time_estimate:
+                    self.cfr_time_label.configure(
+                        text=time_estimate,
+                        text_color="#87CEEB"  # Bleu ciel pour progression
+                    )
+                else:
+                    self.cfr_time_label.configure(
+                        text=time_estimate,
+                        text_color="#CCCCCC"  # Gris pour autres statuts
+                    )
+            else:
+                # Masquer si pas d'entraînement en cours
+                self.cfr_time_label.configure(text="")
+                
+        except Exception as e:
+            print(f"Erreur mise à jour temps CFR: {e}")
 
     def _ensure_update_dependencies(self):
         """S'assure que toutes les dépendances pour les mises à jour sont installées"""
