@@ -58,3 +58,7 @@ args = "python main_gui.py"
 
 [workflows.workflow.metadata]
 outputType = "vnc"
+
+[deployment]
+deploymentTarget = "vm"
+run = ["python", "main_gui.py"]
