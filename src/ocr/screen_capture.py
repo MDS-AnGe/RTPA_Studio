@@ -158,7 +158,7 @@ class ScreenCapture:
         """Extraction de texte avec OCR optimisé"""
         try:
             # Préprocessing
-            processed_img = self.preprocess_image(img, zone_type)
+            processed_img = self.preprocess_image_advanced(img, zone_type)
             
             # Configuration OCR spécialisée selon le type
             if zone_type == 'cards':
@@ -172,8 +172,17 @@ class ScreenCapture:
             text = pytesseract.image_to_string(processed_img, config=config)
             return text.strip()
             
+        except pytesseract.TesseractError as e:
+            self.logger.error(f"Erreur Tesseract OCR: {e}")
+            self.logger.debug(f"Config OCR utilisée: {config}")
+            return ""
+        except cv2.error as e:
+            self.logger.error(f"Erreur OpenCV: {e}")
+            return ""
         except Exception as e:
-            self.logger.error(f"Erreur OCR: {e}")
+            self.logger.error(f"Erreur inattendue OCR: {e}")
+            import traceback
+            self.logger.debug(f"Traceback OCR: {traceback.format_exc()}")
             return ""
     
     def detect_poker_client(self, img: np.ndarray) -> str:
