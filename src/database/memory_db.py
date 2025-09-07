@@ -103,11 +103,18 @@ class MemoryDatabase:
         with self.lock:
             timestamp = time.time()
             
-            # Protection contre données corrompues
-            if game_state.hero_cards is None:
-                game_state.hero_cards = ("", "")
-            if game_state.board_cards is None:
-                game_state.board_cards = []
+            # Protection contre données corrompues et types mixtes
+            if hasattr(game_state, 'hero_cards'):
+                if game_state.hero_cards is None:
+                    game_state.hero_cards = ("", "")
+                if hasattr(game_state, 'board_cards') and game_state.board_cards is None:
+                    game_state.board_cards = []
+            elif isinstance(game_state, dict):
+                # Si c'est un dictionnaire, le traiter comme tel
+                if 'hero_cards' not in game_state:
+                    game_state['hero_cards'] = ("", "")
+                if 'board_cards' not in game_state:
+                    game_state['board_cards'] = []
             
             # Stockage en mémoire
             state_data = {
@@ -119,23 +126,44 @@ class MemoryDatabase:
             self.index_by_timestamp[timestamp] = len(self.game_states) - 1
             
             # Préparation des données pour JSON (sérialisation compatible)
-            state_json = {
-                'timestamp': timestamp,
-                'table_type': game_state.table_type,
-                'players_count': game_state.players_count,
-                'hero_position': game_state.hero_position,
-                'hero_cards': list(game_state.hero_cards),
-                'board_cards': list(game_state.board_cards),
-                'pot_size': game_state.pot_size,
-                'hero_stack': game_state.hero_stack,
-                'small_blind': game_state.small_blind,
-                'big_blind': game_state.big_blind,
-                'current_bet': game_state.current_bet,
-                'action_to_hero': game_state.action_to_hero,
-                'ante': game_state.ante,
-                'tournament_level': game_state.tournament_level,
-                'rebuys_available': game_state.rebuys_available
-            }
+            if isinstance(game_state, dict):
+                # Traitement des dictionnaires
+                state_json = {
+                    'timestamp': timestamp,
+                    'table_type': game_state.get('table_type', 'cashgame'),
+                    'players_count': game_state.get('players_count', 6),
+                    'hero_position': game_state.get('hero_position', 0),
+                    'hero_cards': game_state.get('hero_cards', []),
+                    'board_cards': game_state.get('board_cards', []),
+                    'pot_size': game_state.get('pot_size', 0),
+                    'hero_stack': game_state.get('hero_stack', 0),
+                    'small_blind': game_state.get('small_blind', 0),
+                    'big_blind': game_state.get('big_blind', 0),
+                    'current_bet': game_state.get('current_bet', 0),
+                    'action_to_hero': game_state.get('action_to_hero', False),
+                    'ante': game_state.get('ante', 0),
+                    'tournament_level': game_state.get('tournament_level', 0),
+                    'rebuys_available': game_state.get('rebuys_available', 0)
+                }
+            else:
+                # Traitement des objets GameState
+                state_json = {
+                    'timestamp': timestamp,
+                    'table_type': getattr(game_state, 'table_type', 'cashgame'),
+                    'players_count': getattr(game_state, 'players_count', 6),
+                    'hero_position': getattr(game_state, 'hero_position', 0),
+                    'hero_cards': list(getattr(game_state, 'hero_cards', [])),
+                    'board_cards': list(getattr(game_state, 'board_cards', [])),
+                    'pot_size': getattr(game_state, 'pot_size', 0),
+                    'hero_stack': getattr(game_state, 'hero_stack', 0),
+                    'small_blind': getattr(game_state, 'small_blind', 0),
+                    'big_blind': getattr(game_state, 'big_blind', 0),
+                    'current_bet': getattr(game_state, 'current_bet', 0),
+                    'action_to_hero': getattr(game_state, 'action_to_hero', False),
+                    'ante': getattr(game_state, 'ante', 0),
+                    'tournament_level': getattr(game_state, 'tournament_level', 0),
+                    'rebuys_available': getattr(game_state, 'rebuys_available', 0)
+                }
             
             # Stockage SQLite pour persistance
             cursor = self.conn.cursor()
