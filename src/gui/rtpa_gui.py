@@ -1046,11 +1046,16 @@ class RTAPGUIWindow:
                 self.app_manager.update_settings({'cpu_usage_limit': float(cpu_value)})
                 
                 if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
-                    # Appliquer la limite CPU réelle
+                    # Appliquer la limite CPU réelle (convertir pourcentage en décimal)
                     self.app_manager.cfr_trainer.configure_generation_resources(
                         cpu_percent=cpu_value
                     )
                     print(f"✅ Limite CPU CFR appliquée et sauvegardée: {cpu_value}%")
+                    
+                    # Vérifier que la limite est bien appliquée
+                    if hasattr(self.app_manager.cfr_trainer, 'continuous_generator') and self.app_manager.cfr_trainer.continuous_generator:
+                        actual_limit = self.app_manager.cfr_trainer.continuous_generator.settings.cpu_usage_limit
+                        print(f"🔍 Vérification: limite CPU active = {actual_limit*100:.1f}%")
         except Exception as e:
             print(f"Erreur mise à jour CPU: {e}")
     
@@ -1074,6 +1079,11 @@ class RTAPGUIWindow:
                         memory_mb=ram_mb
                     )
                     print(f"✅ Limite RAM CFR appliquée et sauvegardée: {ram_value:.1f} GB")
+                    
+                    # Vérifier que la limite est bien appliquée
+                    if hasattr(self.app_manager.cfr_trainer, 'continuous_generator') and self.app_manager.cfr_trainer.continuous_generator:
+                        actual_queue = self.app_manager.cfr_trainer.continuous_generator.settings.max_queue_size
+                        print(f"🔍 Vérification: queue mémoire active = {actual_queue} mains")
         except Exception as e:
             print(f"Erreur mise à jour RAM: {e}")
     

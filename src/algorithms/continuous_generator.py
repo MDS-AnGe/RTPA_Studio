@@ -121,20 +121,31 @@ class ContinuousHandGenerator:
     
     def set_resource_limits(self, cpu_limit: float = None, memory_limit_mb: float = None, 
                            generation_rate: float = None):
-        """Configure les limites de ressources"""
+        """Configure les limites de ressources avec feedback utilisateur"""
         if cpu_limit is not None:
+            old_limit = self.settings.cpu_usage_limit
             self.settings.cpu_usage_limit = min(1.0, max(0.01, cpu_limit))
             self.logger.info(f"Limite CPU mise à jour: {cpu_limit*100:.1f}%")
+            print(f"🎛️ CPU limite: {old_limit*100:.1f}% → {self.settings.cpu_usage_limit*100:.1f}% (active dans la génération continue)")
         
         if memory_limit_mb is not None:
             # Ajustement de la taille de queue selon mémoire disponible
+            old_queue = self.settings.max_queue_size
             max_hands_in_queue = int(memory_limit_mb * 2)  # ~2 mains par MB
             self.settings.max_queue_size = min(2000, max(100, max_hands_in_queue))
             self.logger.info(f"Limite mémoire mise à jour: {memory_limit_mb:.0f}MB")
+            print(f"🎛️ RAM limite: {old_queue} → {self.settings.max_queue_size} mains en queue ({memory_limit_mb:.0f}MB)")
         
         if generation_rate is not None:
+            old_interval = self.settings.generation_interval
             self.settings.generation_interval = max(0.05, 1.0 / generation_rate)
             self.logger.info(f"Taux génération mis à jour: {generation_rate:.1f} mains/s")
+            old_rate = 1.0 / old_interval if old_interval > 0 else 0
+            new_rate = 1.0 / self.settings.generation_interval
+            print(f"🎛️ Vitesse génération: {old_rate:.1f} → {new_rate:.1f} mains/seconde")
+        
+        # Afficher le résumé des paramètres actuels
+        self._print_current_settings()
     
     def pause(self):
         """Met en pause la génération"""
@@ -284,6 +295,15 @@ class ContinuousHandGenerator:
                 pass
         
         return False
+    
+    def _print_current_settings(self):
+        """Affiche un résumé des paramètres actuels"""
+        print(f"📊 Paramètres génération CFR:")
+        print(f"   • CPU limite: {self.settings.cpu_usage_limit*100:.1f}%")
+        print(f"   • Queue mémoire: {self.settings.max_queue_size} mains max")
+        print(f"   • Vitesse cible: {1.0/self.settings.generation_interval:.1f} mains/seconde")
+        print(f"   • Intervalle adaptatif actuel: {self.adaptive_interval:.3f}s")
+        print(f"   • Usage CPU actuel: {self.cpu_usage*100:.1f}%")
     
     def get_statistics(self) -> dict:
         """Retourne les statistiques de génération"""
