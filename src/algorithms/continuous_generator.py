@@ -119,8 +119,8 @@ class ContinuousHandGenerator:
         """Vérifie si l'arrêt a été initié par l'utilisateur"""
         return self.user_stopped
     
-    def set_resource_limits(self, cpu_limit: float = None, memory_limit_mb: float = None, 
-                           generation_rate: float = None):
+    def set_resource_limits(self, cpu_limit: Optional[float] = None, memory_limit_mb: Optional[float] = None, 
+                           generation_rate: Optional[float] = None):
         """Configure les limites de ressources avec feedback utilisateur"""
         if cpu_limit is not None:
             old_limit = self.settings.cpu_usage_limit
@@ -228,7 +228,15 @@ class ContinuousHandGenerator:
         """Génère un batch optimisé selon les priorités"""
         try:
             # Sélection scenario prioritaire
-            scenario = random.choice(self.settings.priority_scenarios)
+            if self.settings.priority_scenarios:
+                scenario = random.choice(self.settings.priority_scenarios)
+            else:
+                # Scénario par défaut si pas de priorités
+                default_scenarios = [
+                    'heads_up', 'deep_stacks', 'short_stacks', 
+                    'tournament_bubble', 'multiway_pots'
+                ]
+                scenario = random.choice(default_scenarios)
             
             # Configuration adaptée au scenario
             settings = self._get_scenario_settings(scenario)
@@ -321,7 +329,7 @@ class ContinuousHandGenerator:
             'integration_pending': queue_size > 0
         }
     
-    def boost_generation(self, scenario: str = None, multiplier: float = 2.0):
+    def boost_generation(self, scenario: Optional[str] = None, multiplier: float = 2.0):
         """Booste temporairement la génération pour un scénario"""
         if scenario and self.settings.priority_scenarios:
             # Focus sur un scénario spécifique
