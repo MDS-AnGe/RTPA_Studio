@@ -72,6 +72,9 @@ class RTAPGUIWindow:
         
         # Configuration de l'événement de fermeture
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        
+        # Démarrer la mise à jour des tâches
+        self.root.after(1000, self._update_task_display_loop)
     
     def _set_windows_properties(self):
         """Configure les propriétés Windows pour une meilleure identification"""
@@ -654,18 +657,65 @@ class RTAPGUIWindow:
         ctk.CTkLabel(perf_container, text="⚡ Monitoring des performances", 
                     font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 15))
         
-        # Notice PyTorch
-        notice_frame = ctk.CTkFrame(perf_container)
-        notice_frame.pack(fill='x', pady=(0, 20))
+        # === AFFICHAGE TÂCHE EN COURS ===
+        task_frame = ctk.CTkFrame(perf_container)
+        task_frame.pack(fill='x', pady=(0, 20))
         
-        ctk.CTkLabel(notice_frame, text="ℹ️ Information importante", 
-                    font=ctk.CTkFont(size=14, weight="bold"), 
-                    text_color="#1f538d").pack(pady=(15, 5))
+        ctk.CTkLabel(task_frame, text="📋 Tâche en cours", 
+                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(10, 5))
         
-        ctk.CTkLabel(notice_frame, 
-                    text="Le monitoring GPU avancé nécessite PyTorch installé.\nSans PyTorch, seules les métriques CPU et RAM basiques sont disponibles.", 
-                    font=ctk.CTkFont(size=12), 
-                    text_color="gray").pack(pady=(0, 15))
+        self.current_task_label = ctk.CTkLabel(task_frame, text="Initialisation...", 
+                                              font=ctk.CTkFont(size=12, weight="bold"), 
+                                              text_color="#00b300")
+        self.current_task_label.pack(pady=(0, 5))
+        
+        self.task_time_label = ctk.CTkLabel(task_frame, text="", 
+                                           font=ctk.CTkFont(size=10), 
+                                           text_color="gray")
+        self.task_time_label.pack(pady=(0, 10))
+        
+        # Vérification PyTorch et bouton d'installation si nécessaire
+        pytorch_frame = ctk.CTkFrame(perf_container)
+        pytorch_frame.pack(fill='x', pady=(0, 20))
+        
+        try:
+            import torch
+            TORCH_AVAILABLE = True
+            ctk.CTkLabel(pytorch_frame, text="✅ PyTorch détecté", 
+                        font=ctk.CTkFont(size=14, weight="bold"), 
+                        text_color="#00b300").pack(pady=(15, 5))
+            
+            ctk.CTkLabel(pytorch_frame, 
+                        text=f"Version: {torch.__version__} - GPU acceleration disponible", 
+                        font=ctk.CTkFont(size=12), 
+                        text_color="gray").pack(pady=(0, 15))
+        except ImportError:
+            TORCH_AVAILABLE = False
+            ctk.CTkLabel(pytorch_frame, text="⚠️ PyTorch non détecté", 
+                        font=ctk.CTkFont(size=14, weight="bold"), 
+                        text_color="#ff6600").pack(pady=(15, 5))
+            
+            ctk.CTkLabel(pytorch_frame, 
+                        text="Le monitoring GPU avancé nécessite PyTorch installé.\nSans PyTorch, seules les métriques CPU et RAM basiques sont disponibles.", 
+                        font=ctk.CTkFont(size=12), 
+                        text_color="gray").pack(pady=(0, 10))
+            
+            # Bouton d'installation PyTorch
+            self.install_pytorch_btn = ctk.CTkButton(pytorch_frame, 
+                                                   text="🔥 Installer PyTorch",
+                                                   command=self.install_pytorch,
+                                                   width=200,
+                                                   font=ctk.CTkFont(weight="bold"))
+            self.install_pytorch_btn.pack(pady=(5, 15))
+            
+            # Progress bar pour l'installation (masquée par défaut)
+            self.pytorch_progress = ctk.CTkProgressBar(pytorch_frame, width=300)
+            self.pytorch_progress.pack(pady=(0, 10))
+            self.pytorch_progress.pack_forget()  # Masquer initialement
+            
+            self.pytorch_status_label = ctk.CTkLabel(pytorch_frame, text="", 
+                                                    font=ctk.CTkFont(size=11))
+            self.pytorch_status_label.pack()
         
         # === MÉTRIQUES SYSTÈME ===
         system_frame = ctk.CTkFrame(perf_container)
@@ -771,9 +821,23 @@ class RTAPGUIWindow:
         version_container = ctk.CTkFrame(self.version_tab)
         version_container.pack(fill='both', expand=True, padx=40, pady=40)
         
-        # Logo/titre principal
-        ctk.CTkLabel(version_container, text="🎯 RTPA Studio", 
-                    font=ctk.CTkFont(size=32, weight="bold")).pack(pady=(40, 10))
+        # Logo principal
+        try:
+            from PIL import Image
+            import os
+            logo_path = "attached_assets/RTPA_Studio_logo_1757285479377.png"
+            if os.path.exists(logo_path):
+                logo_image = Image.open(logo_path)
+                logo_image = logo_image.resize((250, 80), Image.Resampling.LANCZOS)
+                self.version_logo = ctk.CTkImage(light_image=logo_image, dark_image=logo_image, size=(250, 80))
+                logo_label = ctk.CTkLabel(version_container, image=self.version_logo, text="")
+                logo_label.pack(pady=(40, 20))
+            else:
+                raise FileNotFoundError("Logo non trouvé")
+        except:
+            # Fallback texte si logo non trouvé
+            ctk.CTkLabel(version_container, text="🎯 RTPA Studio", 
+                        font=ctk.CTkFont(size=32, weight="bold")).pack(pady=(40, 10))
         
         ctk.CTkLabel(version_container, text="Real-Time Poker Assistant", 
                     font=ctk.CTkFont(size=18), text_color="gray").pack(pady=(0, 20))
@@ -821,6 +885,109 @@ class RTAPGUIWindow:
         # Copyright
         ctk.CTkLabel(version_container, text="© 2025 RTPA Studio - Tous droits réservés", 
                     font=ctk.CTkFont(size=10), text_color="gray").pack(side='bottom', pady=(30, 20))
+    
+    def install_pytorch(self):
+        """Lance l'installation de PyTorch"""
+        try:
+            self.install_pytorch_btn.configure(state="disabled", text="Installation...")
+            self.pytorch_progress.pack(pady=(10, 5))
+            self.pytorch_progress.set(0)
+            self.pytorch_status_label.configure(text="Téléchargement de PyTorch...", text_color="orange")
+            
+            import threading
+            install_thread = threading.Thread(target=self._install_pytorch_worker, daemon=True)
+            install_thread.start()
+            
+        except Exception as e:
+            self.pytorch_status_label.configure(text=f"Erreur: {e}", text_color="red")
+            self.install_pytorch_btn.configure(state="normal", text="🔥 Installer PyTorch")
+    
+    def _install_pytorch_worker(self):
+        """Worker thread pour l'installation PyTorch"""
+        try:
+            import subprocess
+            import sys
+            
+            # Mise à jour de la progress bar
+            self.root.after(100, lambda: self.pytorch_progress.set(0.2))
+            self.root.after(100, lambda: self.pytorch_status_label.configure(text="Installation en cours...", text_color="orange"))
+            
+            # Installation PyTorch
+            result = subprocess.run([
+                sys.executable, "-m", "pip", "install", 
+                "torch", "torchvision", "torchaudio",
+                "--index-url", "https://download.pytorch.org/whl/cpu"
+            ], capture_output=True, text=True, timeout=300)
+            
+            self.root.after(100, lambda: self.pytorch_progress.set(0.8))
+            
+            if result.returncode == 0:
+                self.root.after(100, lambda: self.pytorch_progress.set(1.0))
+                self.root.after(200, lambda: self.pytorch_status_label.configure(text="✅ PyTorch installé avec succès!", text_color="green"))
+                self.root.after(300, lambda: self.install_pytorch_btn.configure(text="✅ Installé", state="disabled"))
+            else:
+                raise Exception(f"Erreur installation: {result.stderr}")
+                
+        except subprocess.TimeoutExpired:
+            self.root.after(100, lambda: self.pytorch_status_label.configure(text="Timeout - Installation trop longue", text_color="red"))
+        except Exception as e:
+            self.root.after(100, lambda: self.pytorch_status_label.configure(text=f"❌ Erreur: {str(e)[:50]}...", text_color="red"))
+            self.root.after(100, lambda: self.install_pytorch_btn.configure(state="normal", text="🔥 Installer PyTorch"))
+    
+    def update_task_display(self, task_name, time_remaining=None):
+        """Met à jour l'affichage de la tâche en cours"""
+        try:
+            if hasattr(self, 'current_task_label'):
+                self.current_task_label.configure(text=task_name)
+            
+            if time_remaining and hasattr(self, 'task_time_label'):
+                if isinstance(time_remaining, (int, float)):
+                    if time_remaining > 60:
+                        time_text = f"Temps restant: {time_remaining/60:.1f} min"
+                    else:
+                        time_text = f"Temps restant: {time_remaining:.0f}s"
+                else:
+                    time_text = str(time_remaining)
+                
+                self.task_time_label.configure(text=time_text)
+            elif hasattr(self, 'task_time_label'):
+                self.task_time_label.configure(text="")
+        except Exception as e:
+            print(f"Erreur mise à jour tâche: {e}")
+    
+    def _update_task_display_loop(self):
+        """Boucle de mise à jour de l'affichage des tâches"""
+        try:
+            if hasattr(self, 'app_manager') and self.app_manager:
+                # Obtenir les informations de tâche du CFR trainer
+                if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
+                    trainer = self.app_manager.cfr_trainer
+                    if hasattr(trainer, 'get_training_statistics'):
+                        stats = trainer.get_training_statistics()
+                        
+                        if stats.get('is_training', False):
+                            iterations = stats.get('iterations', 0)
+                            target = stats.get('target_iterations', 100000)
+                            progress = stats.get('progress_percentage', 0)
+                            
+                            task_text = f"Entraînement CFR - {iterations:,}/{target:,} itérations ({progress:.1f}%)"
+                            
+                            # Estimer temps restant
+                            if progress > 0 and progress < 100:
+                                estimated_remaining = ((100 - progress) / progress) * stats.get('elapsed_time', 0)
+                                self.update_task_display(task_text, estimated_remaining)
+                            else:
+                                self.update_task_display(task_text)
+                        else:
+                            self.update_task_display("Surveillance active - En attente de données")
+                else:
+                    self.update_task_display("Initialisation du système...")
+            
+        except Exception as e:
+            print(f"Erreur loop tâche: {e}")
+        
+        # Programmer la prochaine mise à jour
+        self.root.after(2000, self._update_task_display_loop)
     
     def update_hero_info(self, pseudo, stack, position):
         """Met à jour les informations du joueur principal"""
