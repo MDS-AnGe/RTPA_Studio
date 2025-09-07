@@ -170,16 +170,16 @@ class RTAPGUIWindow:
             font=ctk.CTkFont(size=13),
             text_color="#666666"  # Gris plus foncé pour meilleure lisibilité
         )
-        self.activity_status_label.pack(pady=(0, 1))
+        self.activity_status_label.pack(pady=(0, 0))
         
-        # Ligne 3: Temps restant CFR (nouvelle ligne dédiée, plus compacte)
+        # Ligne 3: Temps restant CFR (nouvelle ligne dédiée, rapprochée)
         self.cfr_time_label = ctk.CTkLabel(
             self.controls_frame,
             text="",
             font=ctk.CTkFont(size=11, weight="bold"),
-            text_color="#FFA500"  # Orange pour visibilité
+            text_color="black"  # Noir pour meilleure lisibilité
         )
-        self.cfr_time_label.pack(pady=(0, 2))
+        self.cfr_time_label.pack(pady=(1, 2))
         
         # Notebook avec onglets
         self.notebook = ttk.Notebook(self.main_frame)
@@ -1717,14 +1717,22 @@ class RTAPGUIWindow:
                     text_color="#ff8c82"  # Rouge clair
                 )
             
-            # Ligne 2: Activité du système
-            activity_text = "Surveillance active"
+            # Ligne 2: Activité du système avec statuts plus précis
+            activity_text = "Système en attente"
             try:
                 platform_status = self.get_platform_status()
                 if platform_status and platform_status.get('status') == 'connected':
-                    activity_text = "Analyse en cours"
+                    activity_text = "Analyse poker en cours"
+                elif hasattr(self, 'app_manager') and self.app_manager:
+                    # Vérifier l'état du système
+                    if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine:
+                        activity_text = "Moteur CFR actif"
+                    else:
+                        activity_text = "Initialisation système"
+                else:
+                    activity_text = "Mode surveillance"
             except:
-                pass
+                activity_text = "Mode surveillance"
             
             self.activity_status_label.configure(text=activity_text)
             
@@ -1921,7 +1929,7 @@ class RTAPGUIWindow:
                 import random
                 sim_percent = random.randint(45, 85)
                 sim_time = random.randint(3, 25)
-                return f"CFR: {sim_percent}% ({sim_time}min restant)"
+                return f"Calcul CFR: {sim_percent}% - {sim_time}min restant"
                 
         except Exception as e:
             print(f"Erreur calcul estimation CFR: {e}")
@@ -1929,7 +1937,7 @@ class RTAPGUIWindow:
             import random
             sim_percent = random.randint(60, 90)
             sim_time = random.randint(5, 20)
-            return f"CFR: {sim_percent}% ({sim_time}min restant)"
+            return f"Calcul CFR: {sim_percent}% - {sim_time}min restant"
 
     def update_cfr_time_display(self):
         """Met à jour l'affichage du temps restant CFR sur sa ligne dédiée"""
@@ -1945,30 +1953,14 @@ class RTAPGUIWindow:
                 import random
                 sim_percent = random.randint(55, 80)
                 sim_time = random.randint(4, 18)
-                time_estimate = f"CFR: {sim_percent}% ({sim_time}min restant)"
+                time_estimate = f"Calcul CFR: {sim_percent}% - {sim_time}min restant"
             
             if time_estimate:
-                # Affichage avec couleur selon le statut
-                if "restant" in time_estimate:
-                    self.cfr_time_label.configure(
-                        text=time_estimate,
-                        text_color="#FFA500"  # Orange pour temps restant
-                    )
-                elif "terminé" in time_estimate:
-                    self.cfr_time_label.configure(
-                        text=time_estimate,
-                        text_color="#00FF00"  # Vert pour terminé
-                    )
-                elif "%" in time_estimate:
-                    self.cfr_time_label.configure(
-                        text=time_estimate,
-                        text_color="#87CEEB"  # Bleu ciel pour progression
-                    )
-                else:
-                    self.cfr_time_label.configure(
-                        text=time_estimate,
-                        text_color="#CCCCCC"  # Gris pour autres statuts
-                    )
+                # Affichage en noir pour meilleure lisibilité
+                self.cfr_time_label.configure(
+                    text=time_estimate,
+                    text_color="black"
+                )
             else:
                 # Masquer si pas d'entraînement en cours
                 self.cfr_time_label.configure(text="")
