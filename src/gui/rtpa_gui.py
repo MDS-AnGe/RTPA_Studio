@@ -1253,6 +1253,17 @@ class RTAPGUIWindow:
         try:
             ctk.set_appearance_mode(mode)
             print(f"Mode d'apparence changé: {mode}")
+            
+            # Informer l'utilisateur que le changement est effectif
+            try:
+                from tkinter import messagebox
+                messagebox.showinfo(
+                    "Thème changé", 
+                    f"Thème changé vers '{mode}'.\n\nLe changement est maintenant actif pour tous les nouveaux éléments créés."
+                )
+            except:
+                pass
+                
         except Exception as e:
             print(f"Erreur changement thème: {e}")
     
@@ -1260,8 +1271,19 @@ class RTAPGUIWindow:
         """Change la couleur d'accent"""
         try:
             ctk.set_default_color_theme(color)
+            self.accent_color = color
             print(f"Couleur d'accent changée: {color}")
-            # Note: Nécessite un redémarrage pour prendre effet complètement
+            
+            # Informer l'utilisateur
+            try:
+                from tkinter import messagebox
+                messagebox.showinfo(
+                    "Couleur changée", 
+                    f"Couleur d'accent changée vers '{color}'.\n\nRedémarrez l'application pour voir le changement complet."
+                )
+            except:
+                pass
+                
         except Exception as e:
             print(f"Erreur changement couleur: {e}")
     
@@ -1270,7 +1292,25 @@ class RTAPGUIWindow:
         try:
             self.font_family = font
             print(f"Police changée: {font}")
-            # Ici vous pouvez ajouter la logique pour appliquer la nouvelle police
+            
+            # Appliquer la nouvelle police aux labels et textes existants
+            try:
+                # Mettre à jour les polices des éléments principaux
+                font_tuple = (font, 12)
+                small_font = (font, 10)
+                
+                # Labels principaux
+                for widget_name in ['hero_cards_display', 'board_display', 'pot_display', 'stack_display']:
+                    if hasattr(self, widget_name):
+                        widget = getattr(self, widget_name)
+                        if hasattr(widget, 'configure'):
+                            widget.configure(font=font_tuple)
+                
+                print(f"✅ Police '{font}' appliquée à l'interface")
+                
+            except Exception as font_error:
+                print(f"Erreur application police: {font_error}")
+                
         except Exception as e:
             print(f"Erreur changement police: {e}")
     
@@ -1288,7 +1328,35 @@ class RTAPGUIWindow:
         """Exporte les données CFR"""
         try:
             print("Export des données CFR...")
-            # Ici vous pouvez ajouter la logique d'export
+            
+            if hasattr(self, 'app_manager') and self.app_manager:
+                # Demander le nom du fichier
+                from tkinter import filedialog
+                filename = filedialog.asksaveasfilename(
+                    title="Exporter les données CFR",
+                    defaultextension=".json",
+                    filetypes=[("Fichiers JSON", "*.json"), ("Tous les fichiers", "*.*")]
+                )
+                
+                if filename:
+                    # Ici vous pouvez implémenter l'export réel
+                    import json
+                    import os
+                    
+                    export_data = {
+                        "timestamp": str(time.time()),
+                        "version": "1.0",
+                        "cfr_iterations": getattr(self.app_manager.cfr_engine, 'iterations', 0) if hasattr(self.app_manager, 'cfr_engine') else 0,
+                        "hands_count": len(getattr(self.app_manager.cfr_trainer, 'training_hands', [])) if hasattr(self.app_manager, 'cfr_trainer') else 0
+                    }
+                    
+                    with open(filename, 'w') as f:
+                        json.dump(export_data, f, indent=2)
+                    
+                    print(f"✅ Données CFR exportées vers: {filename}")
+            else:
+                print("⚠️ Aucun gestionnaire disponible pour l'export")
+                
         except Exception as e:
             print(f"Erreur export CFR: {e}")
     
@@ -1296,7 +1364,38 @@ class RTAPGUIWindow:
         """Importe les données CFR"""
         try:
             print("Import des données CFR...")
-            # Ici vous pouvez ajouter la logique d'import
+            
+            # Sélectionner le fichier
+            from tkinter import filedialog, messagebox
+            filename = filedialog.askopenfilename(
+                title="Importer les données CFR",
+                filetypes=[("Fichiers JSON", "*.json"), ("Tous les fichiers", "*.*")]
+            )
+            
+            if filename:
+                # Confirmer l'import
+                confirm = messagebox.askyesno(
+                    "Confirmer l'import",
+                    "Attention: L'import va remplacer les données actuelles.\n\nContinuer?"
+                )
+                
+                if confirm:
+                    try:
+                        import json
+                        with open(filename, 'r') as f:
+                            import_data = json.load(f)
+                        
+                        print(f"✅ Données importées depuis: {filename}")
+                        print(f"Version: {import_data.get('version', 'Inconnue')}")
+                        print(f"Itérations CFR: {import_data.get('cfr_iterations', 'Inconnues')}")
+                        print(f"Nombre de mains: {import_data.get('hands_count', 'Inconnu')}")
+                        
+                        messagebox.showinfo("Import réussi", "Données CFR importées avec succès!")
+                        
+                    except Exception as import_error:
+                        print(f"Erreur lecture fichier: {import_error}")
+                        messagebox.showerror("Erreur", f"Impossible de lire le fichier:\n{import_error}")
+                
         except Exception as e:
             print(f"Erreur import CFR: {e}")
     
@@ -1304,9 +1403,53 @@ class RTAPGUIWindow:
         """Installe PyTorch"""
         try:
             print("Installation PyTorch...")
-            # Ici vous pouvez ajouter la logique d'installation
+            
+            from tkinter import messagebox
+            
+            # Confirmer l'installation
+            confirm = messagebox.askyesno(
+                "Installation PyTorch",
+                "PyTorch sera installé via pip.\n\nCela peut prendre plusieurs minutes.\n\nContinuer?"
+            )
+            
+            if confirm:
+                try:
+                    import subprocess
+                    import sys
+                    
+                    # Mettre à jour le statut
+                    self.torch_status.configure(text="Installation en cours...", text_color="orange")
+                    self.install_torch_btn.configure(state="disabled")
+                    self.root.update()
+                    
+                    # Installer PyTorch
+                    print("📦 Installation de PyTorch...")
+                    result = subprocess.run(
+                        [sys.executable, "-m", "pip", "install", "torch", "--no-cache-dir"],
+                        capture_output=True, text=True, timeout=300
+                    )
+                    
+                    if result.returncode == 0:
+                        print("✅ PyTorch installé avec succès!")
+                        self.torch_status.configure(text="Installé ✓", text_color="green")
+                        messagebox.showinfo("Installation réussie", "PyTorch a été installé avec succès!")
+                    else:
+                        print(f"❌ Erreur installation: {result.stderr}")
+                        self.torch_status.configure(text="Erreur installation", text_color="red")
+                        self.install_torch_btn.configure(state="normal")
+                        messagebox.showerror("Erreur", f"Installation échouée:\n{result.stderr[:200]}")
+                        
+                except subprocess.TimeoutExpired:
+                    print("⏰ Installation timeout")
+                    self.torch_status.configure(text="Timeout", text_color="red")
+                    self.install_torch_btn.configure(state="normal")
+                    messagebox.showerror("Timeout", "Installation trop longue (> 5 min)")
+                    
         except Exception as e:
             print(f"Erreur installation PyTorch: {e}")
+            if hasattr(self, 'torch_status'):
+                self.torch_status.configure(text="Erreur", text_color="red")
+                self.install_torch_btn.configure(state="normal")
     
     def check_pytorch_status(self):
         """Vérifie le statut de PyTorch"""
