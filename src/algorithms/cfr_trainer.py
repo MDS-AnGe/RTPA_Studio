@@ -263,7 +263,7 @@ class CFRTrainer:
                 avg_other_value = np.mean(other_values) if other_values else 0.0
                 
                 # Regret = différence
-                regrets[action] = max(0, avg_other_value - action_value)
+                regrets[action] = max(0.0, float(avg_other_value - action_value))
                 
         except Exception:
             # Fallback: regrets uniformes
@@ -271,6 +271,32 @@ class CFRTrainer:
                 regrets[action] = 0.1
                 
         return regrets
+    
+    def _evaluate_hand_strength(self, hero_cards, board_cards):
+        """Évalue la force de la main actuelle"""
+        try:
+            # Évaluation simplifiée de la force de main
+            if not hero_cards or len(hero_cards) != 2:
+                return 0.5
+                
+            # Basé sur les cartes hautes et potentiels
+            card_values = {'2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, 
+                          '9': 9, 'T': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14}
+            
+            hero_value = sum(card_values.get(card[0], 7) for card in hero_cards) / 28.0  # Normalisé
+            
+            # Bonus pour paire
+            if hero_cards[0][0] == hero_cards[1][0]:
+                hero_value *= 1.5
+                
+            # Bonus pour couleur
+            if hero_cards[0][1] == hero_cards[1][1]:
+                hero_value *= 1.2
+                
+            return min(hero_value, 1.0)
+            
+        except Exception:
+            return 0.5
     
     def _quick_action_evaluation(self, cfr_state, action):
         """Évaluation rapide d'une action"""
@@ -440,10 +466,33 @@ class CFRTrainer:
             else:
                 # Fallback export basique
                 self.logger.warning("Export basique - data manager non disponible")
-                return self.export_cfr_data(export_path)
+                return self.export_cfr_data_fallback(export_path)
                 
         except Exception as e:
             self.logger.error(f"Erreur export optimisé: {e}")
+            return False
+    
+    def export_cfr_data_fallback(self, export_path: str) -> bool:
+        """Export basique des données CFR"""
+        try:
+            import json
+            
+            data = {
+                'training_hands': len(self.training_hands),
+                'regret_sum': dict(self.cfr_engine.regret_sum) if hasattr(self.cfr_engine, 'regret_sum') else {},
+                'strategy_sum': dict(self.cfr_engine.strategy_sum) if hasattr(self.cfr_engine, 'strategy_sum') else {},
+                'iterations': self.iterations_completed,
+                'timestamp': time.time()
+            }
+            
+            with open(export_path, 'w') as f:
+                json.dump(data, f, indent=2)
+            
+            self.logger.info(f"Export CFR basique sauvé: {export_path}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur export CFR basique: {e}")
             return False
     
     def load_historical_hands(self, file_paths: List[str]) -> int:
