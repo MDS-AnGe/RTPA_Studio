@@ -628,7 +628,8 @@ class RTAPMainWindow:
         """Gestion de la fermeture de l'application"""
         try:
             if self.is_running:
-                self.stop_analysis()
+                if hasattr(self, 'is_running') and self.is_running:
+                    self.is_running = False
             
             self.root.quit()
             self.root.destroy()
