@@ -125,24 +125,6 @@ class GPUAccelerator:
     def compute_equity_fast(self, hand_strengths, opponent_ranges):
         """Calcul rapide d'equity avec Numba"""
         return _compute_equity_numba(hand_strengths, opponent_ranges)
-
-@jit(nopython=True)
-def _compute_equity_numba(hand_strengths, opponent_ranges):
-    """Fonction Numba compilée pour calcul d'equity"""
-    equity = 0.0
-    total_combos = 0.0
-    
-    for i in prange(len(opponent_ranges)):
-        if opponent_ranges[i] > 0:
-            wins = np.sum(hand_strengths > hand_strengths[i])
-            ties = np.sum(hand_strengths == hand_strengths[i])
-            equity += opponent_ranges[i] * (wins + 0.5 * ties)
-            total_combos += opponent_ranges[i]
-    
-    return equity / total_combos if total_combos > 0 else 0.0
-
-class GPUAccelerator:
-    """Gestionnaire d'accélération GPU/CPU pour calculs CFR - Continuation"""
     
     def compute_regrets_batch(self, utilities_batch, strategies_batch):
         """Calcul optimisé des regrets par lots"""
@@ -331,3 +313,18 @@ class GPUAccelerator:
             }
         
         return results
+
+@jit(nopython=True)
+def _compute_equity_numba(hand_strengths, opponent_ranges):
+    """Fonction Numba compilée pour calcul d'equity"""
+    equity = 0.0
+    total_combos = 0.0
+    
+    for i in prange(len(opponent_ranges)):
+        if opponent_ranges[i] > 0:
+            wins = np.sum(hand_strengths > hand_strengths[i])
+            ties = np.sum(hand_strengths == hand_strengths[i])
+            equity += opponent_ranges[i] * (wins + 0.5 * ties)
+            total_combos += opponent_ranges[i]
+    
+    return equity / total_combos if total_combos > 0 else 0.0
