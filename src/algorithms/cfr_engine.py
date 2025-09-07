@@ -55,6 +55,8 @@ class CFREngine:
         
         # Configuration CFR
         self.iterations = 0
+        self.iterations_count = 0  # Pour compatibilité avec export/import
+        self.total_training_time = 0.0  # Temps total d'entraînement
         self.discount_factor = 0.95
         self.exploration_rate = 0.1
         
