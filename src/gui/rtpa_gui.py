@@ -75,6 +75,9 @@ class RTAPGUIWindow:
         
         # Démarrer la mise à jour des tâches
         self.root.after(1000, self._update_task_display_loop)
+        
+        # Charger les paramètres d'affichage
+        self.root.after(2000, self.load_display_settings)
     
     def _set_windows_properties(self):
         """Configure les propriétés Windows pour une meilleure identification"""
@@ -270,29 +273,30 @@ class RTAPGUIWindow:
         self.game_type_label.pack()
         
         # SECTION 2B: RECOMMANDATION
-        rec_frame = ttk.LabelFrame(left_column, text="🎯 RECOMMANDATION", style='Card.TFrame')
-        rec_frame.pack(fill='x', pady=(0, 10))
+        self.rec_frame = ttk.LabelFrame(left_column, text="🎯 RECOMMANDATION", style='Card.TFrame')
+        self.rec_frame.pack(fill='x', pady=(0, 10))
         
         # Action recommandée en gros
-        self.action_label = tk.Label(rec_frame, text="---", font=('Arial', 24, 'bold'),
+        self.action_label = tk.Label(self.rec_frame, text="---", font=('Arial', 24, 'bold'),
                                     fg='#ff6600', bg='#f0f0f0')
         self.action_label.pack(pady=(10, 5))
         
         # Détails recommandation en ligne
-        rec_details = tk.Frame(rec_frame, bg='#f0f0f0')
-        rec_details.pack(fill='x', padx=15, pady=(0, 15))
+        self.rec_details = tk.Frame(self.rec_frame, bg='#f0f0f0')
+        self.rec_details.pack(fill='x', padx=15, pady=(0, 15))
         
         # Probabilité de victoire et taille de mise
-        left_rec = tk.Frame(rec_details, bg='#f0f0f0')
-        left_rec.pack(side='left')
+        self.left_rec = tk.Frame(self.rec_details, bg='#f0f0f0')
+        self.left_rec.pack(side='left')
         
-        tk.Label(left_rec, text="Victoire:", font=('Arial', 10), bg='#f0f0f0').pack(anchor='w')
-        self.win_prob_label = tk.Label(left_rec, text="--", font=('Arial', 10, 'bold'), 
+        self.win_prob_title = tk.Label(self.left_rec, text="Victoire:", font=('Arial', 10), bg='#f0f0f0')
+        self.win_prob_title.pack(anchor='w')
+        self.win_prob_label = tk.Label(self.left_rec, text="--", font=('Arial', 10, 'bold'), 
                                       fg='#00b300', bg='#f0f0f0')
         self.win_prob_label.pack(anchor='w')
         
         # Niveau de risque au centre
-        center_rec = tk.Frame(rec_details, bg='#f0f0f0')
+        center_rec = tk.Frame(self.rec_details, bg='#f0f0f0')
         center_rec.pack(side='left', padx=30)
         
         tk.Label(center_rec, text="Risque:", font=('Arial', 10), bg='#f0f0f0').pack(anchor='w')
@@ -301,7 +305,7 @@ class RTAPGUIWindow:
         self.risk_label.pack(anchor='w')
         
         # Confiance à droite
-        right_rec = tk.Frame(rec_details, bg='#f0f0f0')
+        right_rec = tk.Frame(self.rec_details, bg='#f0f0f0')
         right_rec.pack(side='right')
         
         tk.Label(right_rec, text="Confiance:", font=('Arial', 10), bg='#f0f0f0').pack(anchor='w')
@@ -310,23 +314,23 @@ class RTAPGUIWindow:
         self.confidence_label.pack(anchor='w')
         
         # Raisonnement (séparé et plus visible)
-        reasoning_frame = tk.Frame(rec_frame, bg='#f8f8f8', relief='sunken', bd=1)
-        reasoning_frame.pack(fill='x', padx=15, pady=(5, 15))
+        self.reasoning_frame = tk.Frame(self.rec_frame, bg='#f8f8f8', relief='sunken', bd=1)
+        self.reasoning_frame.pack(fill='x', padx=15, pady=(5, 15))
         
-        tk.Label(reasoning_frame, text="💭 Raisonnement:", font=('Arial', 9, 'bold'),
+        tk.Label(self.reasoning_frame, text="💭 Raisonnement:", font=('Arial', 9, 'bold'),
                 bg='#f8f8f8').pack(anchor='w', padx=8, pady=(5, 2))
         
-        self.reasoning_label = tk.Label(reasoning_frame, text="En attente d'analyse...", 
+        self.reasoning_label = tk.Label(self.reasoning_frame, text="En attente d'analyse...", 
                                       font=('Arial', 9), bg='#f8f8f8', fg='#444', 
                                       wraplength=400, justify='left')
         self.reasoning_label.pack(anchor='w', padx=8, pady=(0, 8))
         
-        # Colonne droite: Informations joueurs
-        right_column = ttk.Frame(columns_container)
-        right_column.pack(side='right', fill='y', padx=(0, 0))
+        # Colonne droite: Informations joueurs et statistiques
+        self.right_column = ttk.Frame(columns_container)
+        self.right_column.pack(side='right', fill='y', padx=(0, 0))
         
         # SECTION 4A: MES INFORMATIONS
-        hero_info_frame = ttk.LabelFrame(right_column, text="👤 MOI", style='Card.TFrame')
+        hero_info_frame = ttk.LabelFrame(self.right_column, text="👤 MOI", style='Card.TFrame')
         hero_info_frame.pack(fill='x', pady=(0, 10))
         
         # Pseudo
@@ -354,7 +358,7 @@ class RTAPGUIWindow:
         self.hero_position_label.pack(side='left', padx=(10, 0))
         
         # SECTION 4B: AUTRES JOUEURS ACTIFS
-        players_frame = ttk.LabelFrame(right_column, text="👥 AUTRES JOUEURS", style='Card.TFrame')
+        players_frame = ttk.LabelFrame(self.right_column, text="👥 AUTRES JOUEURS", style='Card.TFrame')
         players_frame.pack(fill='both', expand=True, pady=(0, 10))
         
         # Compteur de joueurs actifs en haut
@@ -503,19 +507,22 @@ class RTAPGUIWindow:
         self.language_combo.pack(side='left', padx=10)
         self.language_combo.set("Français")
         
-        # Checkboxes d'affichage
+        # Checkboxes d'affichage avec callbacks
         checkboxes_frame = ctk.CTkFrame(ui_frame)
         checkboxes_frame.pack(fill='x', padx=20, pady=(0, 15))
         
-        self.show_probabilities = ctk.CTkCheckBox(checkboxes_frame, text="Afficher probabilités")
+        self.show_probabilities = ctk.CTkCheckBox(checkboxes_frame, text="Afficher probabilités",
+                                                 command=self.toggle_probabilities_display)
         self.show_probabilities.pack(side='left', padx=20, pady=10)
         self.show_probabilities.select()
         
-        self.show_recommendations = ctk.CTkCheckBox(checkboxes_frame, text="Afficher recommandations")
+        self.show_recommendations = ctk.CTkCheckBox(checkboxes_frame, text="Afficher recommandations",
+                                                   command=self.toggle_recommendations_display)
         self.show_recommendations.pack(side='left', padx=20, pady=10)
         self.show_recommendations.select()
         
-        self.show_statistics = ctk.CTkCheckBox(checkboxes_frame, text="Afficher statistiques")
+        self.show_statistics = ctk.CTkCheckBox(checkboxes_frame, text="Afficher statistiques",
+                                              command=self.toggle_statistics_display)
         self.show_statistics.pack(side='left', padx=20, pady=10)
         self.show_statistics.select()
         
@@ -988,6 +995,109 @@ class RTAPGUIWindow:
         
         # Programmer la prochaine mise à jour
         self.root.after(2000, self._update_task_display_loop)
+    
+    def toggle_probabilities_display(self):
+        """Masque/affiche les probabilités de victoire"""
+        try:
+            show_probs = self.show_probabilities.get()
+            
+            # Sauvegarder le paramètre
+            if hasattr(self, 'app_manager') and self.app_manager:
+                self.app_manager.update_settings({'show_probabilities': show_probs})
+            
+            # Masquer/afficher les éléments de probabilité
+            if hasattr(self, 'left_rec'):
+                if show_probs:
+                    self.left_rec.pack(side='left')
+                else:
+                    self.left_rec.pack_forget()
+            
+            print(f"✅ Probabilités {'affichées' if show_probs else 'masquées'}")
+            
+        except Exception as e:
+            print(f"Erreur toggle probabilités: {e}")
+    
+    def toggle_recommendations_display(self):
+        """Masque/affiche toute la section recommandations"""
+        try:
+            show_recs = self.show_recommendations.get()
+            
+            # Sauvegarder le paramètre
+            if hasattr(self, 'app_manager') and self.app_manager:
+                self.app_manager.update_settings({'show_recommendations': show_recs})
+            
+            # Masquer/afficher toute la frame de recommandation
+            if hasattr(self, 'rec_frame'):
+                if show_recs:
+                    self.rec_frame.pack(fill='x', pady=(0, 10))
+                else:
+                    self.rec_frame.pack_forget()
+            
+            print(f"✅ Recommandations {'affichées' if show_recs else 'masquées'}")
+            
+        except Exception as e:
+            print(f"Erreur toggle recommandations: {e}")
+    
+    def toggle_statistics_display(self):
+        """Masque/affiche la colonne statistiques des joueurs"""
+        try:
+            show_stats = self.show_statistics.get()
+            
+            # Sauvegarder le paramètre
+            if hasattr(self, 'app_manager') and self.app_manager:
+                self.app_manager.update_settings({'show_statistics': show_stats})
+            
+            # Masquer/afficher la colonne droite avec les statistiques
+            if hasattr(self, 'right_column'):
+                if show_stats:
+                    self.right_column.pack(side='right', fill='y', padx=(0, 0))
+                else:
+                    self.right_column.pack_forget()
+            
+            print(f"✅ Statistiques {'affichées' if show_stats else 'masquées'}")
+            
+        except Exception as e:
+            print(f"Erreur toggle statistiques: {e}")
+    
+    def load_display_settings(self):
+        """Charge les paramètres d'affichage depuis les settings"""
+        try:
+            if hasattr(self, 'app_manager') and self.app_manager and hasattr(self.app_manager, 'settings'):
+                settings = self.app_manager.settings
+                
+                # Charger et appliquer les paramètres d'affichage
+                show_probs = getattr(settings, 'show_probabilities', True)
+                show_recs = getattr(settings, 'show_recommendations', True)  
+                show_stats = getattr(settings, 'show_statistics', True)
+                
+                # Mettre à jour les checkboxes
+                if hasattr(self, 'show_probabilities'):
+                    if show_probs:
+                        self.show_probabilities.select()
+                    else:
+                        self.show_probabilities.deselect()
+                        
+                if hasattr(self, 'show_recommendations'):
+                    if show_recs:
+                        self.show_recommendations.select()
+                    else:
+                        self.show_recommendations.deselect()
+                        
+                if hasattr(self, 'show_statistics'):
+                    if show_stats:
+                        self.show_statistics.select()
+                    else:
+                        self.show_statistics.deselect()
+                
+                # Appliquer l'état initial
+                self.toggle_probabilities_display()
+                self.toggle_recommendations_display()
+                self.toggle_statistics_display()
+                
+                print("✅ Paramètres d'affichage chargés")
+        
+        except Exception as e:
+            print(f"Erreur chargement paramètres d'affichage: {e}")
     
     def update_hero_info(self, pseudo, stack, position):
         """Met à jour les informations du joueur principal"""

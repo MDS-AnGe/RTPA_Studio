@@ -5,7 +5,7 @@ cfr_iterations: 1000
 cfr_sampling_enabled: true
 cpu_usage_limit: 80.0
 default_table_type: cashgame
-gpu_enabled: false
+gpu_enabled: 1
 gpu_memory_limit: 80.0
 language: en
 manual_risk_override: false
