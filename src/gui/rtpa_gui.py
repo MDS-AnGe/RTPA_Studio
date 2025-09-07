@@ -556,6 +556,20 @@ class RTAPGUIWindow:
         ctk.CTkLabel(custom_frame, text="🎨 Personnalisation Interface", 
                     font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
         
+        # Choix du thème
+        theme_frame = ctk.CTkFrame(custom_frame)
+        theme_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        ctk.CTkLabel(theme_frame, text="Mode d'apparence:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        
+        self.theme_var = tk.StringVar(value="dark")
+        theme_menu = ctk.CTkOptionMenu(theme_frame, values=["dark", "light"], 
+                                      variable=self.theme_var, command=self.change_appearance_mode)
+        theme_menu.pack(side='left', padx=10)
+        
+        ctk.CTkLabel(theme_frame, text="Sombre ou clair pour toute l'interface", 
+                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
+        
         # Couleur d'accent
         color_frame = ctk.CTkFrame(custom_frame)
         color_frame.pack(fill='x', padx=20, pady=(0, 10))
@@ -656,6 +670,55 @@ class RTAPGUIWindow:
         
         # Description détaillée
         ctk.CTkLabel(eps_frame, text="Taux d'exploration vs exploitation (0.1-0.5)", 
+                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
+        
+        # Section: Génération Continue
+        generation_frame = ctk.CTkFrame(main_frame)
+        generation_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(generation_frame, text="🔄 Génération Continue de Données", 
+                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        
+        # Activation/Désactivation
+        gen_control_frame = ctk.CTkFrame(generation_frame)
+        gen_control_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        ctk.CTkLabel(gen_control_frame, text="Génération active:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.generation_enabled = ctk.CTkSwitch(gen_control_frame, text="", command=self.toggle_generation)
+        self.generation_enabled.pack(side='left', padx=10)
+        self.generation_enabled.select()  # Activé par défaut
+        
+        ctk.CTkLabel(gen_control_frame, text="Génération automatique de mains pour entraînement CFR", 
+                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
+        
+        # Vitesse de génération
+        gen_rate_frame = ctk.CTkFrame(generation_frame)
+        gen_rate_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        ctk.CTkLabel(gen_rate_frame, text="Vitesse génération:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.generation_rate = ctk.CTkSlider(gen_rate_frame, from_=1, to=10, command=self.update_generation_rate)
+        self.generation_rate.pack(side='left', padx=10, fill='x', expand=True)
+        self.generation_rate.set(5)
+        
+        self.gen_rate_label = ctk.CTkLabel(gen_rate_frame, text="5 (Moyen)", font=ctk.CTkFont(weight="bold"))
+        self.gen_rate_label.pack(side='left', padx=10)
+        
+        ctk.CTkLabel(gen_rate_frame, text="Contrôle la vitesse de génération (1=Lent, 10=Rapide)", 
+                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
+        
+        # Limite ressources pour génération
+        gen_resource_frame = ctk.CTkFrame(generation_frame)
+        gen_resource_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        ctk.CTkLabel(gen_resource_frame, text="Ressources génération:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.generation_cpu_limit = ctk.CTkSlider(gen_resource_frame, from_=10, to=80, command=self.update_gen_cpu_value)
+        self.generation_cpu_limit.pack(side='left', padx=10, fill='x', expand=True)
+        self.generation_cpu_limit.set(50)
+        
+        self.gen_cpu_label = ctk.CTkLabel(gen_resource_frame, text="50% CPU", font=ctk.CTkFont(weight="bold"))
+        self.gen_cpu_label.pack(side='left', padx=10)
+        
+        ctk.CTkLabel(gen_resource_frame, text="CPU dédié à la génération continue", 
                     font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
         
         # Section: Gestion des Ressources
@@ -1086,6 +1149,133 @@ class RTAPGUIWindow:
             if callback:
                 callback()
     
+    # ========================================
+    # FONCTIONS CALLBACK POUR LES PARAMÈTRES
+    # ========================================
+    
+    def update_cpu_value(self, value):
+        """Met à jour l'affichage de la valeur CPU"""
+        try:
+            cpu_value = int(float(value))
+            self.cpu_value_label.configure(text=f"{cpu_value}%")
+        except Exception as e:
+            print(f"Erreur mise à jour CPU: {e}")
+    
+    def update_ram_value(self, value):
+        """Met à jour l'affichage de la valeur RAM"""
+        try:
+            ram_value = float(value)
+            self.ram_value_label.configure(text=f"{ram_value:.1f} GB")
+        except Exception as e:
+            print(f"Erreur mise à jour RAM: {e}")
+    
+    def update_generation_rate(self, value):
+        """Met à jour l'affichage de la vitesse de génération"""
+        try:
+            rate_value = int(float(value))
+            rate_labels = {
+                1: "1 (Très lent)", 2: "2 (Lent)", 3: "3 (Lent)", 
+                4: "4 (Modéré)", 5: "5 (Moyen)", 6: "6 (Moyen)",
+                7: "7 (Rapide)", 8: "8 (Rapide)", 9: "9 (Très rapide)", 10: "10 (Maximum)"
+            }
+            display_text = rate_labels.get(rate_value, f"{rate_value}")
+            self.gen_rate_label.configure(text=display_text)
+        except Exception as e:
+            print(f"Erreur mise à jour vitesse génération: {e}")
+    
+    def update_gen_cpu_value(self, value):
+        """Met à jour l'affichage de la limite CPU pour génération"""
+        try:
+            cpu_value = int(float(value))
+            self.gen_cpu_label.configure(text=f"{cpu_value}% CPU")
+        except Exception as e:
+            print(f"Erreur mise à jour CPU génération: {e}")
+    
+    def toggle_generation(self):
+        """Active/désactive la génération continue"""
+        try:
+            is_enabled = self.generation_enabled.get()
+            status = "Activé" if is_enabled else "Désactivé"
+            print(f"Génération continue: {status}")
+            
+            # Ici vous pouvez ajouter la logique pour contrôler le générateur
+            if hasattr(self, 'app_manager') and self.app_manager:
+                if hasattr(self.app_manager, 'toggle_continuous_generation'):
+                    self.app_manager.toggle_continuous_generation(is_enabled)
+                    
+        except Exception as e:
+            print(f"Erreur toggle génération: {e}")
+    
+    def change_appearance_mode(self, mode):
+        """Change le mode d'apparence sombre/clair"""
+        try:
+            ctk.set_appearance_mode(mode)
+            print(f"Mode d'apparence changé: {mode}")
+        except Exception as e:
+            print(f"Erreur changement thème: {e}")
+    
+    def change_accent_color(self, color):
+        """Change la couleur d'accent"""
+        try:
+            ctk.set_default_color_theme(color)
+            print(f"Couleur d'accent changée: {color}")
+            # Note: Nécessite un redémarrage pour prendre effet complètement
+        except Exception as e:
+            print(f"Erreur changement couleur: {e}")
+    
+    def change_font(self, font):
+        """Change la police de l'interface"""
+        try:
+            self.font_family = font
+            print(f"Police changée: {font}")
+            # Ici vous pouvez ajouter la logique pour appliquer la nouvelle police
+        except Exception as e:
+            print(f"Erreur changement police: {e}")
+    
+    def change_opacity(self, value):
+        """Change l'opacité de la fenêtre"""
+        try:
+            opacity = float(value)
+            self.opacity = opacity
+            self.root.attributes('-alpha', opacity)
+            self.opacity_label.configure(text=f"{int(opacity*100)}%")
+        except Exception as e:
+            print(f"Erreur changement opacité: {e}")
+    
+    def export_cfr_data(self):
+        """Exporte les données CFR"""
+        try:
+            print("Export des données CFR...")
+            # Ici vous pouvez ajouter la logique d'export
+        except Exception as e:
+            print(f"Erreur export CFR: {e}")
+    
+    def import_cfr_data(self):
+        """Importe les données CFR"""
+        try:
+            print("Import des données CFR...")
+            # Ici vous pouvez ajouter la logique d'import
+        except Exception as e:
+            print(f"Erreur import CFR: {e}")
+    
+    def install_pytorch(self):
+        """Installe PyTorch"""
+        try:
+            print("Installation PyTorch...")
+            # Ici vous pouvez ajouter la logique d'installation
+        except Exception as e:
+            print(f"Erreur installation PyTorch: {e}")
+    
+    def check_pytorch_status(self):
+        """Vérifie le statut de PyTorch"""
+        try:
+            import torch
+            self.torch_status.configure(text="Installé ✓", text_color="green")
+            self.install_torch_btn.configure(state="disabled")
+        except ImportError:
+            self.torch_status.configure(text="Non installé", text_color="red")
+            self.install_torch_btn.configure(state="normal")
+
     def on_closing(self):
         """Gestion de la fermeture de la fenêtre"""
         self.running = False
