@@ -622,6 +622,10 @@ class RTAPGUIWindow:
         ctk.CTkLabel(iter_frame, text="Itérations CFR:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
         self.cfr_iterations = ctk.CTkEntry(iter_frame, placeholder_text="100000")
         self.cfr_iterations.pack(side='left', padx=10)
+        self.cfr_iterations.bind('<Return>', self.apply_cfr_iterations)
+        
+        apply_iter_btn = ctk.CTkButton(iter_frame, text="Appliquer", command=self.apply_cfr_iterations, width=80)
+        apply_iter_btn.pack(side='left', padx=10)
         
         # Description détaillée
         ctk.CTkLabel(iter_frame, text="Nombre d'itérations d'entraînement CFR (plus = meilleure qualité)", 
@@ -634,6 +638,10 @@ class RTAPGUIWindow:
         ctk.CTkLabel(depth_frame, text="Profondeur CFR:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
         self.cfr_depth = ctk.CTkEntry(depth_frame, placeholder_text="3")
         self.cfr_depth.pack(side='left', padx=10)
+        self.cfr_depth.bind('<Return>', self.apply_cfr_depth)
+        
+        apply_depth_btn = ctk.CTkButton(depth_frame, text="Appliquer", command=self.apply_cfr_depth, width=80)
+        apply_depth_btn.pack(side='left', padx=10)
         
         # Description détaillée
         ctk.CTkLabel(depth_frame, text="Profondeur d'analyse des actions (3-5 recommandé)", 
@@ -646,6 +654,10 @@ class RTAPGUIWindow:
         ctk.CTkLabel(eps_frame, text="Epsilon Exploration:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
         self.cfr_epsilon = ctk.CTkEntry(eps_frame, placeholder_text="0.3")
         self.cfr_epsilon.pack(side='left', padx=10)
+        self.cfr_epsilon.bind('<Return>', self.apply_cfr_epsilon)
+        
+        apply_eps_btn = ctk.CTkButton(eps_frame, text="Appliquer", command=self.apply_cfr_epsilon, width=80)
+        apply_eps_btn.pack(side='left', padx=10)
         
         # Description détaillée
         ctk.CTkLabel(eps_frame, text="Taux d'exploration vs exploitation (0.1-0.5)", 
@@ -1226,6 +1238,62 @@ class RTAPGUIWindow:
                     
         except Exception as e:
             print(f"Erreur toggle génération: {e}")
+    
+    def apply_cfr_iterations(self, event=None):
+        """Applique le nombre d'itérations CFR"""
+        try:
+            value = self.cfr_iterations.get().strip()
+            if value:
+                iterations = int(value)
+                if 1000 <= iterations <= 1000000:
+                    if hasattr(self, 'app_manager') and self.app_manager:
+                        if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
+                            self.app_manager.cfr_trainer.target_iterations = iterations
+                            print(f"✅ Itérations CFR appliquées: {iterations}")
+                        if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine:
+                            self.app_manager.cfr_engine.iterations = iterations
+                else:
+                    print("❌ Itérations doivent être entre 1000 et 1000000")
+        except ValueError:
+            print("❌ Valeur d'itérations invalide")
+        except Exception as e:
+            print(f"Erreur application itérations: {e}")
+    
+    def apply_cfr_depth(self, event=None):
+        """Applique la profondeur CFR"""
+        try:
+            value = self.cfr_depth.get().strip()
+            if value:
+                depth = int(value)
+                if 1 <= depth <= 10:
+                    if hasattr(self, 'app_manager') and self.app_manager:
+                        if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine:
+                            self.app_manager.cfr_engine.abstraction_depth = depth
+                            print(f"✅ Profondeur CFR appliquée: {depth}")
+                else:
+                    print("❌ Profondeur doit être entre 1 et 10")
+        except ValueError:
+            print("❌ Valeur de profondeur invalide")
+        except Exception as e:
+            print(f"Erreur application profondeur: {e}")
+    
+    def apply_cfr_epsilon(self, event=None):
+        """Applique l'epsilon d'exploration CFR"""
+        try:
+            value = self.cfr_epsilon.get().strip()
+            if value:
+                epsilon = float(value)
+                if 0.01 <= epsilon <= 1.0:
+                    if hasattr(self, 'app_manager') and self.app_manager:
+                        if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine:
+                            self.app_manager.cfr_engine.exploration_rate = epsilon
+                            print(f"✅ Epsilon exploration appliqué: {epsilon}")
+                else:
+                    print("❌ Epsilon doit être entre 0.01 et 1.0")
+        except ValueError:
+            print("❌ Valeur d'epsilon invalide")
+        except Exception as e:
+            print(f"Erreur application epsilon: {e}")
     
     # Fonctions de personnalisation supprimées (non indispensables)
     
