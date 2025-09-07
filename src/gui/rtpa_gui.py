@@ -222,6 +222,9 @@ class RTAPGUIWindow:
         
         # Charger les paramètres sauvegardés après création des éléments
         self.load_saved_settings()
+        
+        # Démarrer la mise à jour du progrès CFR
+        self.root.after(1000, self.update_cfr_progress)  # Démarrer après 1 seconde
     
     def create_dashboard_tab(self):
         """Création de l'onglet Tableau de Bord complet (état du jeu + recommandations + statistiques)"""
@@ -1217,6 +1220,49 @@ class RTAPGUIWindow:
                 self.task_time_label.configure(text="")
         except Exception as e:
             print(f"Erreur mise à jour tâche: {e}")
+    
+    def update_cfr_progress(self):
+        """Met à jour l'affichage du progrès CFR en temps réel"""
+        try:
+            if hasattr(self, 'app_manager') and self.app_manager:
+                # Récupérer les statistiques CFR
+                if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
+                    stats = self.app_manager.cfr_trainer.get_training_statistics()
+                    
+                    if stats:
+                        # Calculer le pourcentage et temps restant
+                        progress = stats.get('progress_percentage', 0)
+                        time_remaining = stats.get('estimated_time_remaining', 0)
+                        iterations = stats.get('iterations', 0)
+                        target = stats.get('target_iterations', 100000)
+                        
+                        # Formater le temps restant
+                        if time_remaining > 3600:  # Plus d'1 heure
+                            time_str = f"{int(time_remaining/3600)}h{int((time_remaining%3600)/60):02d}m"
+                        elif time_remaining > 60:  # Plus d'1 minute
+                            time_str = f"{int(time_remaining/60)}m{int(time_remaining%60):02d}s"
+                        else:  # Moins d'1 minute
+                            time_str = f"{int(time_remaining)}s"
+                        
+                        # Affichage du progrès
+                        if progress > 0:
+                            display_text = f"🧠 CFR: {progress:.1f}% ({iterations:,}/{target:,}) - Reste: {time_str}"
+                        else:
+                            display_text = f"🧠 CFR: {iterations:,} itérations - Entraînement actif"
+                        
+                        self.cfr_time_label.configure(text=display_text)
+                    else:
+                        self.cfr_time_label.configure(text="🧠 CFR: Initialisation...")
+                else:
+                    self.cfr_time_label.configure(text="🧠 CFR: Démarrage...")
+            
+            # Programmer la prochaine mise à jour
+            self.root.after(2000, self.update_cfr_progress)  # Mise à jour toutes les 2 secondes
+            
+        except Exception as e:
+            print(f"Erreur update CFR progress: {e}")
+            # Reprogram même en cas d'erreur
+            self.root.after(5000, self.update_cfr_progress)
     
     def _update_task_display_loop(self):
         """Boucle de mise à jour de l'affichage des tâches"""
