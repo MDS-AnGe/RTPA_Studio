@@ -1,167 +1,71 @@
 """
-Interface graphique principale pour RTPA Studio avec CustomTkinter
+Interface graphique de RTPA Studio
+Utilise CustomTkinter pour une interface moderne
 """
 
-import customtkinter as ctk
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog, font
+import tkinter.ttk as ttk
+import customtkinter as ctk
 import threading
 import time
-import os
-import json
-import subprocess
-from pathlib import Path
+from typing import Dict, Any, Optional, List
 
 # Configuration CustomTkinter
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
 class RTAPGUIWindow:
-    def __init__(self, app_manager=None):
-        """Initialisation de l'interface graphique RTPA Studio"""
+    """Interface graphique principale de RTPA Studio"""
+    
+    def __init__(self, app_manager):
+        """Initialise l'interface graphique"""
         self.app_manager = app_manager
-        self.update_thread = None
         self.running = False
+        self.update_thread = None
         
-        # Configuration de la fenêtre principale
+        # Variables pour le stockage des éléments GUI
+        self.players_list_frame = None
+        self.active_players_count = None
+        self.hero_name_label = None
+        self.hero_stack_label = None
+        self.hero_position_label = None
+        
+        # Fenêtre principale
         self.root = ctk.CTk()
-        self.root.title("RTPA Studio")
-        self.root.geometry("1100x900")  # Réduit de 1400 à 1100
-        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.root.title("RTPA Studio - Real-Time Poker Assistant")
+        self.root.geometry("1400x900")
+        self.root.minsize(1200, 800)
         
-        # Configuration couleurs plus claires
-        ctk.set_appearance_mode("light")  # Mode clair pour éviter les zones noires
-        
-        # Variables de thème
-        self.accent_color = "blue"
-        self.font_family = "Arial"
-        self.opacity = 1.0
-        
-        # Type de table actuel pour gérer l'affichage des devises
-        self.current_table_type = "cashgame"
-        
-        # Charger logo si disponible
-        self.logo = None
-        self.logo_image = None
-        self.load_logo()
-        
-        # Configuration du style
-        self.setup_styles()
+        # Variables de contrôle pour les sliders
+        self.cpu_limit = None
+        self.ram_limit = None
+        self.cpu_value_label = None
+        self.ram_value_label = None
         
         # Interface utilisateur
-        self.create_widgets()
+        self.create_interface()
         
-        # Variables de statut
-        self.current_connection_status = "waiting"  # waiting, active, error
-        self.current_activity = "training"  # Commencer avec training car CFR est toujours actif
-        self.current_platform = None  # Plateforme actuellement connectée
-        
-        # Démarrer la mise à jour du statut
-        self._update_status_display()
-        
-        # Connecter aux événements réels du système
-        self._connect_to_system_events()
-        
-        # Démarrage auto-détection (si disponible)
-        if self.app_manager and hasattr(self.app_manager, 'start_platform_detection'):
-            self.app_manager.start_platform_detection()
-        
-    def load_logo(self):
-        """Charge le logo et l'icône si disponibles"""
-        # Logo principal
-        logo_path = "attached_assets/RTPA_Studio_logo_1757263280355.png"
-        if os.path.exists(logo_path):
-            try:
-                from PIL import Image
-                self.logo_image = ctk.CTkImage(
-                    light_image=Image.open(logo_path),
-                    dark_image=Image.open(logo_path),
-                    size=(200, 60)  # Taille adaptée au logo horizontal
-                )
-                self.logo = True
-            except Exception as e:
-                print(f"Erreur chargement logo: {e}")
-                self.logo = None
-        
-        # Icône de fenêtre
-        icon_path = "attached_assets/RTPA_Studio_icon_1757263280355.ico"
-        if os.path.exists(icon_path):
-            try:
-                self.root.iconbitmap(icon_path)
-            except Exception as e:
-                # Fallback avec l'icône PNG
-                icon_png = "attached_assets/RTPA_Studio_icon_1024_1757263280355.png"
-                if os.path.exists(icon_png):
-                    try:
-                        from PIL import Image
-                        icon_img = Image.open(icon_png)
-                        icon_photo = tk.PhotoImage(icon_img.resize((64, 64)))
-                        self.root.iconphoto(True, icon_photo)
-                    except Exception:
-                        pass
+        # Configuration de l'événement de fermeture
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
     
-    def setup_styles(self):
-        """Configuration des styles CustomTkinter"""
-        self.style = ttk.Style()
-        self.style.theme_use('clam')
+    def create_interface(self):
+        """Crée tous les éléments de l'interface"""
         
-        # Couleurs harmonisées - tons beige/crème correspondant au thème CustomTkinter
-        bg_color = "#dbdbdb"  # Couleur de fond CustomTkinter par défaut en mode dark
-        fg_color = "#212529"  # Noir doux pour le texte
-        accent = "#1f538d"
-        card_bg = "#dbdbdb"   # Beige pour les cartes
-        
-        # Styles des frames
-        self.style.configure('Card.TFrame', background=bg_color, relief='raised', borderwidth=1)
-        self.style.configure('Heading.TLabel', background=bg_color, foreground=fg_color, font=(self.font_family, 11, 'bold'))
-        self.style.configure('Card.TLabel', background=bg_color, foreground=fg_color, font=(self.font_family, 10))
-        
-        # Styles pour les onglets
-        self.style.configure('TNotebook', background=bg_color)
-        self.style.configure('TNotebook.Tab', background=bg_color, foreground=fg_color)
-        
-        # Configuration de la fenêtre principale
-        self.root.configure(bg=bg_color)
-    
-    def create_widgets(self):
-        """Création de l'interface utilisateur"""
-        
-        # Frame principal
+        # Container principal pour l'affichage structuré
         self.main_frame = ctk.CTkFrame(self.root)
         self.main_frame.pack(fill='both', expand=True, padx=10, pady=10)
         
-        # En-tête avec logo et titre
-        header_frame = ctk.CTkFrame(self.main_frame)
-        header_frame.pack(fill='x', pady=(0, 10))
+        # Frame de contrôle compact en haut
+        self.controls_frame = ctk.CTkFrame(self.main_frame, height=80)
+        self.controls_frame.pack(fill='x', pady=(0, 10))
         
-        if self.logo:
-            logo_label = ctk.CTkLabel(header_frame, image=self.logo_image, text="")
-            logo_label.pack(side='left', padx=(10, 20))
-        
-        title_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
-        title_frame.pack(side='left', fill='both', expand=True)
-        
-        # Titre sur une ligne avec partie en gras et partie en normal
-        title_line_frame = ctk.CTkFrame(title_frame, fg_color="transparent")
-        title_line_frame.pack(anchor='w')
-        
-        ctk.CTkLabel(title_line_frame, text="Real-Time Poker Assistant ", font=ctk.CTkFont(size=24, weight="bold")).pack(side='left')
-        ctk.CTkLabel(title_line_frame, text="(CFR/Nash)", font=ctk.CTkFont(size=24, weight="normal")).pack(side='left')
-        ctk.CTkLabel(title_frame, text="avec Intelligence Artificielle", 
-                    font=ctk.CTkFont(size=14)).pack(anchor='w')
-        
-        # Contrôles et statut (en-tête droite)
-        self.controls_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
-        self.controls_frame.pack(side='right', padx=(20, 10))
-        
-        # Ligne 1: État de connexion (rouge/vert) - Plus gros
-        self.connection_status_label = ctk.CTkLabel(
+        # Ligne 1: Statut principal - Plus compact
+        self.status_label = ctk.CTkLabel(
             self.controls_frame,
-            text="En attente de plateforme",
-            font=ctk.CTkFont(size=16, weight="bold"),
-            text_color="#ff6b6b"  # Rouge par défaut
+            text="🎯 Real-Time Poker Assistant (CFR/Nash)",
+            font=ctk.CTkFont(size=20, weight="bold")
         )
-        self.connection_status_label.pack(pady=(3, 0))
+        self.status_label.pack(pady=(10, 2))
         
         # Ligne 2: Activité du système - Espacement ultra-réduit
         self.activity_status_label = ctk.CTkLabel(
@@ -209,6 +113,9 @@ class RTAPGUIWindow:
         self.version_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.version_tab, text="📌 Version")
         self.create_version_tab()
+        
+        # Charger les paramètres sauvegardés après création des éléments
+        self.load_saved_settings()
     
     def create_dashboard_tab(self):
         """Création de l'onglet Tableau de Bord complet (état du jeu + recommandations + statistiques)"""
@@ -243,7 +150,8 @@ class RTAPGUIWindow:
         self.hero_card1.pack(expand=True, fill='both')
         
         self.hero_card2_frame = tk.Frame(
-            self.hero_cards_frame, bg='#dbdbdb', relief='raised', bd=2, width=90, height=120
+            self.hero_cards_frame, 
+            bg='#dbdbdb', relief='raised', bd=2, width=90, height=120
         )
         self.hero_card2_frame.pack(side='left', padx=5)
         self.hero_card2_frame.pack_propagate(False)
@@ -254,252 +162,607 @@ class RTAPGUIWindow:
         )
         self.hero_card2.pack(expand=True, fill='both')
         
-        # Section Board (à droite)
+        # Section Board (compacte, au milieu)
         board_frame = ttk.LabelFrame(cards_container, text="🃏 Board", style='Card.TFrame')
-        board_frame.pack(side='left', fill='both', expand=True, padx=(10, 0))
+        board_frame.pack(side='left', padx=(0, 10), fill='both', expand=True)
         
-        board_content = tk.Frame(board_frame, bg='#dbdbdb')
-        board_content.pack(fill='both', expand=True, padx=8, pady=6)
+        # Layout horizontal pour les 5 cartes du board
+        self.board_cards_frame = tk.Frame(board_frame, bg='#dbdbdb')
+        self.board_cards_frame.pack(padx=8, pady=10)
         
-        self.board_cards_frame = tk.Frame(board_content, bg='#dbdbdb')
-        self.board_cards_frame.pack(anchor='center')
-        
-        # Calculer la largeur optimale pour 5 cartes (90px + padding)
-        optimal_board_width = (5 * 90) + (4 * 5) + 16  # 5 cartes + 4 espacements + padding
-        
+        # Créer 5 cartes du board (plus petites que les cartes main)
         self.board_cards = []
-        self.board_card_frames = []
         for i in range(5):
             card_frame = tk.Frame(
-                self.board_cards_frame, bg='#dbdbdb', relief='raised', bd=2, width=90, height=120
+                self.board_cards_frame, 
+                bg='#dbdbdb', relief='raised', bd=2, width=70, height=95
             )
-            card_frame.pack(side='left', padx=5)
+            card_frame.pack(side='left', padx=3)
             card_frame.pack_propagate(False)
             
             card_label = tk.Label(
-                card_frame, text="🂠", font=('Arial', 28, 'bold'),
+                card_frame, text="🂠", font=('Arial', 20, 'bold'),
                 fg='#5a5a5a', bg='#dbdbdb', anchor='center'
             )
             card_label.pack(expand=True, fill='both')
-            
             self.board_cards.append(card_label)
-            self.board_card_frames.append(card_frame)
         
         # SECTION 2: LAYOUT PRINCIPAL AVEC COLONNES
-        main_layout = ttk.Frame(main_container)
-        main_layout.pack(fill='both', expand=True, pady=(0, 10))
+        columns_container = ttk.Frame(main_container)
+        columns_container.pack(fill='both', expand=True)
         
-        # Colonne gauche: Informations table et recommandations
-        left_column = ttk.Frame(main_layout)
-        left_column.pack(side='left', fill='both', expand=True, padx=(0, 15))
+        # Colonne gauche: Informations principales
+        left_column = ttk.Frame(columns_container)
+        left_column.pack(side='left', fill='both', expand=True, padx=(0, 10))
         
-        # SOUS-SECTION: Informations de table
-        table_info_frame = ttk.LabelFrame(left_column, text="📊 INFORMATIONS TABLE", style='Card.TFrame')
-        table_info_frame.pack(fill='both', expand=True, pady=(0, 5))
+        # SECTION 2A: INFORMATIONS DE TABLE
+        table_info_frame = ttk.LabelFrame(left_column, text="💰 POT ACTUEL", style='Card.TFrame')
+        table_info_frame.pack(fill='x', pady=(0, 10))
         
-        table_content = tk.Frame(table_info_frame, bg='#dbdbdb')
-        table_content.pack(fill='both', expand=True, padx=8, pady=6)
+        # Pot size centré et gros
+        self.pot_value = tk.Label(table_info_frame, text="0.0", font=('Arial', 32, 'bold'),
+                                 fg='#00b300', bg='#f0f0f0')
+        self.pot_value.pack(pady=15)
         
-        # POT principal - centré et mis en valeur
-        pot_container = tk.Frame(table_content, bg='#dbdbdb')
-        pot_container.pack(fill='x', pady=(0, 8))
+        # Infos complémentaires en ligne
+        info_line = tk.Frame(table_info_frame, bg='#f0f0f0')
+        info_line.pack(fill='x', padx=15, pady=(0, 15))
         
-        tk.Label(pot_container, text="💰 POT ACTUEL", font=('Arial', 11, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.pot_label = tk.Label(pot_container, text=self.format_amount(0), font=('Arial', 20, 'bold'), fg='#28a745', bg='#dbdbdb')
-        self.pot_label.pack()
+        tk.Label(info_line, text="Blinds:", font=('Arial', 9), bg='#f0f0f0').pack(side='left')
+        self.blinds_label = tk.Label(info_line, text="0.00€ / 0.00€", font=('Arial', 9, 'bold'), 
+                                    bg='#f0f0f0', fg='#666')
+        self.blinds_label.pack(side='left', padx=(5, 20))
         
-        # Ligne blinds et antes - organisation horizontale équilibrée
-        blinds_row = tk.Frame(table_content, bg='#dbdbdb')
-        blinds_row.pack(fill='x', pady=(0, 4))
+        tk.Label(info_line, text="Antes:", font=('Arial', 9), bg='#f0f0f0').pack(side='left')
+        self.antes_label = tk.Label(info_line, text="0.00€", font=('Arial', 9, 'bold'), 
+                                   bg='#f0f0f0', fg='#666')
+        self.antes_label.pack(side='left', padx=(5, 20))
         
-        # Blinds section - centrée à gauche
-        blinds_container = tk.Frame(blinds_row, bg='#dbdbdb')
-        blinds_container.pack(side='left', fill='x', expand=True)
-        tk.Label(blinds_container, text="🎲 Blinds", font=('Arial', 10, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.blinds_label = tk.Label(blinds_container, text=f"{self.format_amount(0)} / {self.format_amount(0)}", font=('Arial', 12, 'bold'), fg='#fd7e14', bg='#dbdbdb')
-        self.blinds_label.pack()
+        # Type de jeu à droite
+        type_frame = tk.Frame(info_line, bg='#f0f0f0')
+        type_frame.pack(side='right')
+        self.game_type_label = tk.Label(type_frame, text="cashgame", font=('Arial', 9, 'italic'), 
+                                       bg='#f0f0f0', fg='#666')
+        self.game_type_label.pack()
         
-        # Antes section - centrée à droite
-        antes_container = tk.Frame(blinds_row, bg='#dbdbdb')
-        antes_container.pack(side='right', fill='x', expand=True)
-        tk.Label(antes_container, text="⚡ Antes", font=('Arial', 10, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.antes_label = tk.Label(antes_container, text=self.format_amount(0), font=('Arial', 12, 'bold'), fg='#6f42c1', bg='#dbdbdb')
-        self.antes_label.pack()
-        
-        # Type de table - en bas
-        self.table_type_label = tk.Label(table_content, text="Cash Game", font=('Arial', 10), fg='#6c757d', bg='#dbdbdb')
-        self.table_type_label.pack(pady=(4, 0))
-        
-        # SOUS-SECTION: Recommandation principale
+        # SECTION 2B: RECOMMANDATION
         rec_frame = ttk.LabelFrame(left_column, text="🎯 RECOMMANDATION", style='Card.TFrame')
-        rec_frame.pack(fill='both', expand=True, pady=(0, 5))
+        rec_frame.pack(fill='x', pady=(0, 10))
         
-        rec_content = tk.Frame(rec_frame, bg='#dbdbdb')
-        rec_content.pack(fill='both', expand=True, padx=8, pady=6)
+        # Action recommandée en gros
+        self.action_label = tk.Label(rec_frame, text="---", font=('Arial', 24, 'bold'),
+                                    fg='#ff6600', bg='#f0f0f0')
+        self.action_label.pack(pady=(10, 5))
         
-        # Action principale centrée
-        action_container = tk.Frame(rec_content, bg='#dbdbdb')
-        action_container.pack(fill='x', pady=(0, 8))
+        # Détails recommandation en ligne
+        rec_details = tk.Frame(rec_frame, bg='#f0f0f0')
+        rec_details.pack(fill='x', padx=15, pady=(0, 15))
         
-        self.action_display = tk.Label(action_container, text="---", font=('Arial', 24, 'bold'), fg='#6c757d', bg='#dbdbdb')
-        self.action_display.pack()
+        # Probabilité de victoire et taille de mise
+        left_rec = tk.Frame(rec_details, bg='#f0f0f0')
+        left_rec.pack(side='left')
         
-        self.bet_size_label = tk.Label(action_container, text="", font=('Arial', 18, 'bold'), fg='#28a745', bg='#dbdbdb')
-        self.bet_size_label.pack()
+        tk.Label(left_rec, text="Victoire:", font=('Arial', 10), bg='#f0f0f0').pack(anchor='w')
+        self.win_prob_label = tk.Label(left_rec, text="--", font=('Arial', 10, 'bold'), 
+                                      fg='#00b300', bg='#f0f0f0')
+        self.win_prob_label.pack(anchor='w')
         
-        # Métriques en grille 2x2
-        metrics_frame = tk.Frame(rec_content, bg='#dbdbdb')
-        metrics_frame.pack(fill='x', pady=(0, 8))
+        # Niveau de risque au centre
+        center_rec = tk.Frame(rec_details, bg='#f0f0f0')
+        center_rec.pack(side='left', padx=30)
         
-        # Ligne 1: Victoire + Risque
-        metrics_row1 = tk.Frame(metrics_frame, bg='#dbdbdb')
-        metrics_row1.pack(fill='x', pady=(0, 4))
+        tk.Label(center_rec, text="Risque:", font=('Arial', 10), bg='#f0f0f0').pack(anchor='w')
+        self.risk_label = tk.Label(center_rec, text="--", font=('Arial', 10, 'bold'), 
+                                  fg='#ff3300', bg='#f0f0f0')
+        self.risk_label.pack(anchor='w')
         
-        victory_frame = tk.Frame(metrics_row1, bg='#dbdbdb')
-        victory_frame.pack(side='left', fill='x', expand=True)
-        tk.Label(victory_frame, text="🎯 Victoire", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.win_prob_label = tk.Label(victory_frame, text="--", font=('Arial', 14, 'bold'), fg='#6c757d', bg='#dbdbdb')
-        self.win_prob_label.pack()
+        # Confiance à droite
+        right_rec = tk.Frame(rec_details, bg='#f0f0f0')
+        right_rec.pack(side='right')
         
-        risk_frame = tk.Frame(metrics_row1, bg='#dbdbdb')
-        risk_frame.pack(side='right', fill='x', expand=True)
-        tk.Label(risk_frame, text="⚠️ Risque", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.risk_label = tk.Label(risk_frame, text="--", font=('Arial', 14, 'bold'), fg='#6c757d', bg='#dbdbdb')
-        self.risk_label.pack()
+        tk.Label(right_rec, text="Confiance:", font=('Arial', 10), bg='#f0f0f0').pack(anchor='w')
+        self.confidence_label = tk.Label(right_rec, text="--", font=('Arial', 10, 'bold'), 
+                                        fg='#0066ff', bg='#f0f0f0')
+        self.confidence_label.pack(anchor='w')
         
-        # Ligne 2: Confiance seule, centrée
-        confidence_frame = tk.Frame(metrics_frame, bg='#dbdbdb')
-        confidence_frame.pack(fill='x')
-        tk.Label(confidence_frame, text="🔮 Confiance", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.main_confidence_label = tk.Label(confidence_frame, text="--", font=('Arial', 14, 'bold'), fg='#6c757d', bg='#dbdbdb')
-        self.main_confidence_label.pack()
+        # Raisonnement (séparé et plus visible)
+        reasoning_frame = tk.Frame(rec_frame, bg='#f8f8f8', relief='sunken', bd=1)
+        reasoning_frame.pack(fill='x', padx=15, pady=(5, 15))
         
-        # Raisonnement optimisé
-        reasoning_frame = tk.Frame(rec_content, bg='#dbdbdb')
-        reasoning_frame.pack(fill='both', expand=True)
-        tk.Label(reasoning_frame, text="🧠 Raisonnement:", font=('Arial', 10, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack(anchor='w')
-        self.main_reasoning_label = tk.Label(
-            reasoning_frame, text="En attente d'analyse...", font=('Arial', 9),
-            wraplength=320, justify='left', fg='#6c757d', bg='#dbdbdb'
-        )
-        self.main_reasoning_label.pack(anchor='w', fill='both', expand=True)
+        tk.Label(reasoning_frame, text="💭 Raisonnement:", font=('Arial', 9, 'bold'),
+                bg='#f8f8f8').pack(anchor='w', padx=8, pady=(5, 2))
         
-        # SOUS-SECTION: Statistiques compactes
-        stats_frame = ttk.LabelFrame(left_column, text="📈 STATISTIQUES", style='Card.TFrame')
-        stats_frame.pack(fill='x', pady=(0, 5))  # Hauteur fixe pour éviter les problèmes d'affichage
-        
-        stats_content = tk.Frame(stats_frame, bg='#dbdbdb')
-        stats_content.pack(fill='x', padx=6, pady=4)
-        
-        # Taux de victoire principal - centré et plus compact
-        main_rate_frame = tk.Frame(stats_content, bg='#dbdbdb')
-        main_rate_frame.pack(fill='x', pady=(0, 4))
-        
-        tk.Label(main_rate_frame, text="📊 TAUX DE VICTOIRE", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.win_rate_value = tk.Label(main_rate_frame, text="0.0%", font=('Arial', 14, 'bold'), fg='#dc3545', bg='#dbdbdb')
-        self.win_rate_value.pack()
-        
-        # Statistiques détaillées en grille compacte
-        details_frame = tk.Frame(stats_content, bg='#dbdbdb')
-        details_frame.pack(fill='x', pady=(0, 2))
-        
-        # Ligne 1: Mains jouées + gagnées - VISIBLE et bien espacé
-        hands_row = tk.Frame(details_frame, bg='#dbdbdb')
-        hands_row.pack(fill='x', pady=(2, 4))  # Plus d'espace vertical
-        
-        played_frame = tk.Frame(hands_row, bg='#dbdbdb')
-        played_frame.pack(side='left', fill='x', expand=True)
-        tk.Label(played_frame, text="🎲 Jouées", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.hands_played_value = tk.Label(played_frame, text="0", font=('Arial', 11, 'bold'), fg='#495057', bg='#dbdbdb')
-        self.hands_played_value.pack()
-        
-        won_frame = tk.Frame(hands_row, bg='#dbdbdb')
-        won_frame.pack(side='right', fill='x', expand=True)
-        tk.Label(won_frame, text="🏆 Gagnées", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.hands_won_value = tk.Label(won_frame, text="0", font=('Arial', 11, 'bold'), fg='#28a745', bg='#dbdbdb')
-        self.hands_won_value.pack()
-        
-        # Ligne 2: Comparaison performance - VISIBLE et bien espacé
-        perf_row = tk.Frame(details_frame, bg='#dbdbdb')
-        perf_row.pack(fill='x', pady=(2, 4))  # Plus d'espace vertical
-        
-        pro_frame = tk.Frame(perf_row, bg='#dbdbdb')
-        pro_frame.pack(side='left', fill='x', expand=True)
-        tk.Label(pro_frame, text="👑 Pro", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.expected_rate_value = tk.Label(pro_frame, text="--", font=('Arial', 10, 'bold'), fg='#6c757d', bg='#dbdbdb')
-        self.expected_rate_value.pack()
-        
-        performance_frame = tk.Frame(perf_row, bg='#dbdbdb')
-        performance_frame.pack(side='right', fill='x', expand=True)
-        tk.Label(performance_frame, text="📈 Perf", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.performance_ratio_value = tk.Label(performance_frame, text="0.0%", font=('Arial', 10, 'bold'), fg='#fd7e14', bg='#dbdbdb')
-        self.performance_ratio_value.pack()
+        self.reasoning_label = tk.Label(reasoning_frame, text="En attente d'analyse...", 
+                                      font=('Arial', 9), bg='#f8f8f8', fg='#444', 
+                                      wraplength=400, justify='left')
+        self.reasoning_label.pack(anchor='w', padx=8, pady=(0, 8))
         
         # Colonne droite: Informations joueurs
-        right_column = ttk.Frame(main_layout)
-        right_column.pack(side='left', fill='both', expand=True, padx=(5, 10))
+        right_column = ttk.Frame(columns_container)
+        right_column.pack(side='right', fill='y', padx=(0, 0))
         
-        # SECTION 4A: NOS INFOS PERSONNELLES
-        hero_frame = ttk.LabelFrame(right_column, text="👤 MOI", style='Card.TFrame')
-        hero_frame.pack(fill='both', expand=True, pady=(0, 5))
+        # SECTION 4A: MES INFORMATIONS
+        hero_info_frame = ttk.LabelFrame(right_column, text="👤 MOI", style='Card.TFrame')
+        hero_info_frame.pack(fill='x', pady=(0, 10))
         
-        hero_content = tk.Frame(hero_frame, bg='#dbdbdb')
-        hero_content.pack(fill='x', padx=8, pady=6)
+        # Pseudo
+        pseudo_frame = tk.Frame(hero_info_frame, bg='#f0f0f0')
+        pseudo_frame.pack(fill='x', padx=10, pady=5)
+        tk.Label(pseudo_frame, text="Pseudo:", font=('Arial', 10), bg='#f0f0f0').pack(side='left')
+        self.hero_name_label = tk.Label(pseudo_frame, text="---", font=('Arial', 10, 'bold'), 
+                                       bg='#f0f0f0')
+        self.hero_name_label.pack(side='left', padx=(10, 0))
         
-        # Pseudo du joueur
-        tk.Label(hero_content, text="Pseudo:", font=('Arial', 10, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack(anchor='w')
-        self.hero_name_label = tk.Label(hero_content, text="---", font=('Arial', 12, 'bold'), fg='#6c757d', bg='#dbdbdb')
-        self.hero_name_label.pack(anchor='w', pady=(2, 8))
+        # Stack
+        stack_frame = tk.Frame(hero_info_frame, bg='#f0f0f0')
+        stack_frame.pack(fill='x', padx=10, pady=5)
+        tk.Label(stack_frame, text="Mon Stack:", font=('Arial', 10), bg='#f0f0f0').pack(side='left')
+        self.hero_stack_label = tk.Label(stack_frame, text="0.00€", font=('Arial', 10, 'bold'), 
+                                        bg='#f0f0f0')
+        self.hero_stack_label.pack(side='left', padx=(10, 0))
         
-        # Stack personnel
-        tk.Label(hero_content, text="Mon Stack:", font=('Arial', 10, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack(anchor='w')
-        self.hero_stack_label = tk.Label(hero_content, text=self.format_amount(0), font=('Arial', 14, 'bold'), fg='#6c757d', bg='#dbdbdb')
-        self.hero_stack_label.pack(anchor='w', pady=(2, 8))
-        
-        # Position à la table
-        tk.Label(hero_content, text="Position:", font=('Arial', 10, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack(anchor='w')
-        self.hero_position_label = tk.Label(hero_content, text="---", font=('Arial', 11), fg='#6c757d', bg='#dbdbdb')
-        self.hero_position_label.pack(anchor='w', pady=(2, 0))
+        # Position
+        pos_frame = tk.Frame(hero_info_frame, bg='#f0f0f0')
+        pos_frame.pack(fill='x', padx=10, pady=5)
+        tk.Label(pos_frame, text="Position:", font=('Arial', 10), bg='#f0f0f0').pack(side='left')
+        self.hero_position_label = tk.Label(pos_frame, text="---", font=('Arial', 10, 'bold'), 
+                                           bg='#f0f0f0')
+        self.hero_position_label.pack(side='left', padx=(10, 0))
         
         # SECTION 4B: AUTRES JOUEURS ACTIFS
         players_frame = ttk.LabelFrame(right_column, text="👥 AUTRES JOUEURS", style='Card.TFrame')
-        players_frame.pack(fill='both', expand=True, pady=(0, 0))
+        players_frame.pack(fill='both', expand=True, pady=(0, 10))
         
-        players_content = tk.Frame(players_frame, bg='#dbdbdb')
-        players_content.pack(fill='x', padx=5, pady=3)
+        # Compteur de joueurs actifs en haut
+        players_header = tk.Frame(players_frame, bg='#f0f0f0')
+        players_header.pack(fill='x', padx=5, pady=5)
         
-        # Info générale - Table 9-max (compacte)
-        players_info = tk.Frame(players_content, bg='#dbdbdb')
-        players_info.pack(fill='x', pady=(0, 3))
-        
-        tk.Label(players_info, text="Actifs:", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack(side='left')
-        self.active_players_count = tk.Label(players_info, text="0/9", font=('Arial', 9, 'bold'), fg='#6c757d', bg='#dbdbdb')
-        self.active_players_count.pack(side='left', padx=(3, 0))
+        tk.Label(players_header, text="Actifs:", font=('Arial', 10, 'bold'), bg='#f0f0f0').pack(side='left')
+        self.active_players_count = tk.Label(players_header, text="0/9", font=('Arial', 10, 'bold'), 
+                                            fg='#00b300', bg='#f0f0f0')
+        self.active_players_count.pack(side='left', padx=(5, 0))
         
         # Frame simple pour la liste des joueurs (sans scroll)
-        self.players_list_frame = tk.Frame(players_content, bg='#dbdbdb')
-        self.players_list_frame.pack(fill='x')
+        self.players_list_frame = tk.Frame(players_frame, bg='#f0f0f0')
+        self.players_list_frame.pack(fill='both', expand=True, padx=5, pady=(0, 10))
         
         # Créer la liste des joueurs (vide par défaut)
         self.create_players_display()
         
-        # Compatibilité avec anciens widgets (alias)
-        self.main_hands_label = self.hands_played_value
-        self.main_winrate_label = self.win_rate_value
-        self.main_performance_label = self.performance_ratio_value
-        self.main_action_display = self.action_display
-        self.main_bet_size_label = self.bet_size_label
-        self.main_win_prob_label = self.win_prob_label
-        self.main_risk_label = self.risk_label
-        self.reasoning_text = self.main_reasoning_label
+        # SECTION 4C: STATISTIQUES
+        stats_frame = ttk.LabelFrame(right_column, text="📊 STATISTIQUES", style='Card.TFrame')
+        stats_frame.pack(fill='x')
         
-        # Initialiser avec des données vides (sera connecté plus tard)
-        self.update_hero_info("---", self.format_amount(0), "---")
+        # Ligne 1: Taux de victoire
+        win_rate_frame = tk.Frame(stats_frame, bg='#f0f0f0')
+        win_rate_frame.pack(fill='x', padx=10, pady=2)
+        tk.Label(win_rate_frame, text="TAUX DE VICTOIRE", font=('Arial', 8, 'bold'), bg='#f0f0f0').pack()
+        self.win_rate_value = tk.Label(win_rate_frame, text="0.0%", font=('Arial', 12, 'bold'), 
+                                      fg='#00b300', bg='#f0f0f0')
+        self.win_rate_value.pack()
         
-        # Progress bars (cachées mais présentes pour compatibilité)
-        hidden_frame = ttk.Frame(left_column)
-        self.win_prob_progress = ttk.Progressbar(hidden_frame, mode='determinate', length=1)
-        self.risk_progress = ttk.Progressbar(hidden_frame, mode='determinate', length=1)
+        # Ligne 2: Mains
+        hands_frame = tk.Frame(stats_frame, bg='#f0f0f0')
+        hands_frame.pack(fill='x', padx=10, pady=2)
+        
+        played_frame = tk.Frame(hands_frame, bg='#f0f0f0')
+        played_frame.pack(side='left', fill='x', expand=True)
+        tk.Label(played_frame, text="🎮 Jouées", font=('Arial', 8), bg='#f0f0f0').pack()
+        self.hands_played = tk.Label(played_frame, text="0", font=('Arial', 10, 'bold'), bg='#f0f0f0')
+        self.hands_played.pack()
+        
+        won_frame = tk.Frame(hands_frame, bg='#f0f0f0')
+        won_frame.pack(side='right', fill='x', expand=True)
+        tk.Label(won_frame, text="✅ Gagnées", font=('Arial', 8), bg='#f0f0f0').pack()
+        self.hands_won = tk.Label(won_frame, text="0", font=('Arial', 10, 'bold'), fg='#00b300', bg='#f0f0f0')
+        self.hands_won.pack()
+        
+        # Ligne 3: Performance vs attendu
+        perf_frame = tk.Frame(stats_frame, bg='#f0f0f0')
+        perf_frame.pack(fill='x', padx=10, pady=(2, 10))
+        
+        expected_frame = tk.Frame(perf_frame, bg='#f0f0f0')
+        expected_frame.pack(side='left', fill='x', expand=True)
+        tk.Label(expected_frame, text="🎯 Attendu", font=('Arial', 8), bg='#f0f0f0').pack()
+        self.expected_rate = tk.Label(expected_frame, text="0.7%", font=('Arial', 10, 'bold'), 
+                                     fg='#666', bg='#f0f0f0')
+        self.expected_rate.pack()
+        
+        performance_frame = tk.Frame(perf_frame, bg='#f0f0f0')
+        performance_frame.pack(side='right', fill='x', expand=True)
+        tk.Label(performance_frame, text="📈 Performance", font=('Arial', 8), bg='#f0f0f0').pack()
+        self.performance_value = tk.Label(performance_frame, text="0.0%", font=('Arial', 10, 'bold'), 
+                                         fg='#0066ff', bg='#f0f0f0')
+        self.performance_value.pack()
+    
+    def create_options_tab(self):
+        """Création de l'onglet Options avec contrôles avancés"""
+        
+        # Container principal
+        options_container = ctk.CTkScrollableFrame(self.options_tab)
+        options_container.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        # === SECTION CFR ===
+        cfr_frame = ctk.CTkFrame(options_container)
+        cfr_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(cfr_frame, text="🧠 Paramètres CFR", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        
+        # Itérations CFR
+        iter_frame = ctk.CTkFrame(cfr_frame)
+        iter_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        ctk.CTkLabel(iter_frame, text="Itérations CFR:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.cfr_iterations = ctk.CTkSlider(iter_frame, from_=1000, to=100000, command=self.update_cfr_iterations)
+        self.cfr_iterations.pack(side='left', padx=10, fill='x', expand=True)
+        self.cfr_iterations.set(10000)
+        
+        self.cfr_iter_label = ctk.CTkLabel(iter_frame, text="10000", font=ctk.CTkFont(weight="bold"))
+        self.cfr_iter_label.pack(side='left', padx=10)
+        
+        # Description
+        ctk.CTkLabel(iter_frame, text="Plus d'itérations = meilleure précision mais plus lent", 
+                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
+        
+        # Sampling CFR
+        sampling_frame = ctk.CTkFrame(cfr_frame)
+        sampling_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        self.cfr_sampling = ctk.CTkCheckBox(sampling_frame, text="Sampling CFR (plus rapide)", 
+                                           command=self.toggle_cfr_sampling)
+        self.cfr_sampling.pack(side='left', padx=20, pady=15)
+        self.cfr_sampling.select()  # Activé par défaut
+        
+        # === SECTION OCR ===
+        ocr_frame = ctk.CTkFrame(options_container)
+        ocr_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(ocr_frame, text="👁️ Paramètres OCR", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        
+        # Intervalle OCR
+        ocr_interval_frame = ctk.CTkFrame(ocr_frame)
+        ocr_interval_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        ctk.CTkLabel(ocr_interval_frame, text="Intervalle capture:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.ocr_interval = ctk.CTkSlider(ocr_interval_frame, from_=50, to=500, command=self.update_ocr_interval)
+        self.ocr_interval.pack(side='left', padx=10, fill='x', expand=True)
+        self.ocr_interval.set(100)
+        
+        self.ocr_interval_label = ctk.CTkLabel(ocr_interval_frame, text="100ms", font=ctk.CTkFont(weight="bold"))
+        self.ocr_interval_label.pack(side='left', padx=10)
+        
+        # Confiance OCR
+        confidence_frame = ctk.CTkFrame(ocr_frame)
+        confidence_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        ctk.CTkLabel(confidence_frame, text="Confiance minimale:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.ocr_confidence = ctk.CTkSlider(confidence_frame, from_=0.1, to=1.0, command=self.update_ocr_confidence)
+        self.ocr_confidence.pack(side='left', padx=10, fill='x', expand=True)
+        self.ocr_confidence.set(0.8)
+        
+        self.ocr_confidence_label = ctk.CTkLabel(confidence_frame, text="80%", font=ctk.CTkFont(weight="bold"))
+        self.ocr_confidence_label.pack(side='left', padx=10)
+        
+        # === SECTION INTERFACE ===
+        ui_frame = ctk.CTkFrame(options_container)
+        ui_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(ui_frame, text="🖥️ Interface utilisateur", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        
+        # Langue
+        lang_frame = ctk.CTkFrame(ui_frame)
+        lang_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        ctk.CTkLabel(lang_frame, text="Langue:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.language_combo = ctk.CTkComboBox(lang_frame, values=["Français", "English"], 
+                                             command=self.change_language)
+        self.language_combo.pack(side='left', padx=10)
+        self.language_combo.set("Français")
+        
+        # Checkboxes d'affichage
+        checkboxes_frame = ctk.CTkFrame(ui_frame)
+        checkboxes_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        self.show_probabilities = ctk.CTkCheckBox(checkboxes_frame, text="Afficher probabilités")
+        self.show_probabilities.pack(side='left', padx=20, pady=10)
+        self.show_probabilities.select()
+        
+        self.show_recommendations = ctk.CTkCheckBox(checkboxes_frame, text="Afficher recommandations")
+        self.show_recommendations.pack(side='left', padx=20, pady=10)
+        self.show_recommendations.select()
+        
+        self.show_statistics = ctk.CTkCheckBox(checkboxes_frame, text="Afficher statistiques")
+        self.show_statistics.pack(side='left', padx=20, pady=10)
+        self.show_statistics.select()
+        
+        # === SECTION JEU ===
+        game_frame = ctk.CTkFrame(options_container)
+        game_frame.pack(fill='x')
+        
+        ctk.CTkLabel(game_frame, text="🎰 Paramètres de jeu", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        
+        # Type de table par défaut
+        table_type_frame = ctk.CTkFrame(game_frame)
+        table_type_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        ctk.CTkLabel(table_type_frame, text="Type de table:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.table_type_combo = ctk.CTkComboBox(table_type_frame, values=["Cash Game", "Tournament"], 
+                                               command=self.change_table_type)
+        self.table_type_combo.pack(side='left', padx=10)
+        self.table_type_combo.set("Cash Game")
+        
+        # Objectif de mains
+        target_frame = ctk.CTkFrame(game_frame)
+        target_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        ctk.CTkLabel(target_frame, text="Objectif mains/100:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.target_hands = ctk.CTkSlider(target_frame, from_=50, to=80, command=self.update_target_hands)
+        self.target_hands.pack(side='left', padx=10, fill='x', expand=True)
+        self.target_hands.set(65)
+        
+        self.target_hands_label = ctk.CTkLabel(target_frame, text="65", font=ctk.CTkFont(weight="bold"))
+        self.target_hands_label.pack(side='left', padx=10)
+
+    def create_settings_tab(self):
+        """Création de l'onglet Paramètres avec gestion des ressources"""
+        
+        # Container principal avec scroll
+        settings_container = ctk.CTkScrollableFrame(self.settings_tab)
+        settings_container.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        # === SECTION RESSOURCES ===
+        resource_frame = ctk.CTkFrame(settings_container)
+        resource_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(resource_frame, text="⚡ Gestion des ressources", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(20, 15))
+        
+        # Limite CPU
+        cpu_frame = ctk.CTkFrame(resource_frame)
+        cpu_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        ctk.CTkLabel(cpu_frame, text="Limite CPU:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.cpu_limit = ctk.CTkSlider(cpu_frame, from_=10, to=100, command=self.update_cpu_value)
+        self.cpu_limit.pack(side='left', padx=10, fill='x', expand=True)
+        self.cpu_limit.set(80)
+        
+        # Affichage valeur
+        self.cpu_value_label = ctk.CTkLabel(cpu_frame, text="80%", font=ctk.CTkFont(weight="bold"))
+        self.cpu_value_label.pack(side='left', padx=10)
+        
+        # Description
+        ctk.CTkLabel(cpu_frame, text="Limite d'usage CPU pour préserver les performances", 
+                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
+        
+        # Limite RAM
+        ram_frame = ctk.CTkFrame(resource_frame)
+        ram_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        ctk.CTkLabel(ram_frame, text="Limite RAM:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.ram_limit = ctk.CTkSlider(ram_frame, from_=1, to=16, command=self.update_ram_value)
+        self.ram_limit.pack(side='left', padx=10, fill='x', expand=True)
+        self.ram_limit.set(8)
+        
+        # Affichage valeur
+        self.ram_value_label = ctk.CTkLabel(ram_frame, text="8.0 GB", font=ctk.CTkFont(weight="bold"))
+        self.ram_value_label.pack(side='left', padx=10)
+        
+        # Description
+        ctk.CTkLabel(ram_frame, text="Limite mémoire pour les calculs CFR et données", 
+                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
+        
+        # === SECTION GPU ===
+        gpu_frame = ctk.CTkFrame(settings_container)
+        gpu_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(gpu_frame, text="🎮 Paramètres GPU", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(20, 15))
+        
+        # Activation GPU
+        gpu_enable_frame = ctk.CTkFrame(gpu_frame)
+        gpu_enable_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        self.gpu_enabled = ctk.CTkCheckBox(gpu_enable_frame, text="Activer l'accélération GPU", 
+                                          command=self.toggle_gpu)
+        self.gpu_enabled.pack(side='left', padx=20, pady=15)
+        
+        # Limite mémoire GPU
+        gpu_mem_frame = ctk.CTkFrame(gpu_frame)
+        gpu_mem_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        ctk.CTkLabel(gpu_mem_frame, text="Limite mémoire GPU:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.gpu_memory = ctk.CTkSlider(gpu_mem_frame, from_=20, to=95, command=self.update_gpu_memory)
+        self.gpu_memory.pack(side='left', padx=10, fill='x', expand=True)
+        self.gpu_memory.set(80)
+        
+        self.gpu_mem_label = ctk.CTkLabel(gpu_mem_frame, text="80%", font=ctk.CTkFont(weight="bold"))
+        self.gpu_mem_label.pack(side='left', padx=10)
+        
+        # === SECTION AVANCÉ ===
+        advanced_frame = ctk.CTkFrame(settings_container)
+        advanced_frame.pack(fill='x')
+        
+        ctk.CTkLabel(advanced_frame, text="🔧 Paramètres avancés", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(20, 15))
+        
+        # Gestion automatique des ressources
+        auto_mgmt_frame = ctk.CTkFrame(advanced_frame)
+        auto_mgmt_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        self.auto_resource_mgmt = ctk.CTkCheckBox(auto_mgmt_frame, text="Gestion automatique des ressources", 
+                                                 command=self.toggle_auto_resource_mgmt)
+        self.auto_resource_mgmt.pack(side='left', padx=20, pady=15)
+        self.auto_resource_mgmt.select()  # Activé par défaut
+        
+        # Vitesse de génération
+        gen_rate_frame = ctk.CTkFrame(advanced_frame)
+        gen_rate_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        ctk.CTkLabel(gen_rate_frame, text="Vitesse génération:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.generation_rate = ctk.CTkSlider(gen_rate_frame, from_=1, to=10, command=self.update_generation_rate)
+        self.generation_rate.pack(side='left', padx=10, fill='x', expand=True)
+        self.generation_rate.set(7)
+        
+        self.gen_rate_label = ctk.CTkLabel(gen_rate_frame, text="7 (Rapide)", font=ctk.CTkFont(weight="bold"))
+        self.gen_rate_label.pack(side='left', padx=10)
+
+    def create_performance_tab(self):
+        """Création de l'onglet Performance avec métriques système"""
+        
+        # Container principal
+        perf_container = ctk.CTkFrame(self.performance_tab)
+        perf_container.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        ctk.CTkLabel(perf_container, text="⚡ Monitoring des performances", 
+                    font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 30))
+        
+        # === MÉTRIQUES SYSTÈME ===
+        system_frame = ctk.CTkFrame(perf_container)
+        system_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(system_frame, text="💻 Système", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        
+        # Métriques en grille
+        metrics_grid = ctk.CTkFrame(system_frame)
+        metrics_grid.pack(fill='x', padx=20, pady=(0, 20))
+        
+        # CPU
+        cpu_metric_frame = ctk.CTkFrame(metrics_grid)
+        cpu_metric_frame.pack(side='left', fill='x', expand=True, padx=(0, 10))
+        ctk.CTkLabel(cpu_metric_frame, text="CPU", font=ctk.CTkFont(weight="bold")).pack(pady=5)
+        self.cpu_usage_label = ctk.CTkLabel(cpu_metric_frame, text="0%", font=ctk.CTkFont(size=16, weight="bold"))
+        self.cpu_usage_label.pack(pady=5)
+        
+        # RAM
+        ram_metric_frame = ctk.CTkFrame(metrics_grid)
+        ram_metric_frame.pack(side='left', fill='x', expand=True, padx=5)
+        ctk.CTkLabel(ram_metric_frame, text="RAM", font=ctk.CTkFont(weight="bold")).pack(pady=5)
+        self.ram_usage_label = ctk.CTkLabel(ram_metric_frame, text="0 GB", font=ctk.CTkFont(size=16, weight="bold"))
+        self.ram_usage_label.pack(pady=5)
+        
+        # GPU (si disponible)
+        gpu_metric_frame = ctk.CTkFrame(metrics_grid)
+        gpu_metric_frame.pack(side='right', fill='x', expand=True, padx=(10, 0))
+        ctk.CTkLabel(gpu_metric_frame, text="GPU", font=ctk.CTkFont(weight="bold")).pack(pady=5)
+        self.gpu_usage_label = ctk.CTkLabel(gpu_metric_frame, text="N/A", font=ctk.CTkFont(size=16, weight="bold"))
+        self.gpu_usage_label.pack(pady=5)
+        
+        # === MÉTRIQUES CFR ===
+        cfr_metrics_frame = ctk.CTkFrame(perf_container)
+        cfr_metrics_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(cfr_metrics_frame, text="🧠 CFR Engine", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        
+        # Métriques CFR en grille
+        cfr_grid = ctk.CTkFrame(cfr_metrics_frame)
+        cfr_grid.pack(fill='x', padx=20, pady=(0, 20))
+        
+        # Itérations/sec
+        iter_metric_frame = ctk.CTkFrame(cfr_grid)
+        iter_metric_frame.pack(side='left', fill='x', expand=True, padx=(0, 10))
+        ctk.CTkLabel(iter_metric_frame, text="Itérations/sec", font=ctk.CTkFont(weight="bold")).pack(pady=5)
+        self.iterations_sec_label = ctk.CTkLabel(iter_metric_frame, text="0", font=ctk.CTkFont(size=16, weight="bold"))
+        self.iterations_sec_label.pack(pady=5)
+        
+        # Convergence
+        conv_metric_frame = ctk.CTkFrame(cfr_grid)
+        conv_metric_frame.pack(side='left', fill='x', expand=True, padx=5)
+        ctk.CTkLabel(conv_metric_frame, text="Convergence", font=ctk.CTkFont(weight="bold")).pack(pady=5)
+        self.convergence_label = ctk.CTkLabel(conv_metric_frame, text="0%", font=ctk.CTkFont(size=16, weight="bold"))
+        self.convergence_label.pack(pady=5)
+        
+        # Qualité
+        quality_metric_frame = ctk.CTkFrame(cfr_grid)
+        quality_metric_frame.pack(side='right', fill='x', expand=True, padx=(10, 0))
+        ctk.CTkLabel(quality_metric_frame, text="Qualité", font=ctk.CTkFont(weight="bold")).pack(pady=5)
+        self.quality_label = ctk.CTkLabel(quality_metric_frame, text="0%", font=ctk.CTkFont(size=16, weight="bold"))
+        self.quality_label.pack(pady=5)
+        
+        # === MÉTRIQUES OCR ===
+        ocr_metrics_frame = ctk.CTkFrame(perf_container)
+        ocr_metrics_frame.pack(fill='x')
+        
+        ctk.CTkLabel(ocr_metrics_frame, text="👁️ OCR Engine", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        
+        # Métriques OCR
+        ocr_grid = ctk.CTkFrame(ocr_metrics_frame)
+        ocr_grid.pack(fill='x', padx=20, pady=(0, 20))
+        
+        # Capture/sec
+        capture_metric_frame = ctk.CTkFrame(ocr_grid)
+        capture_metric_frame.pack(side='left', fill='x', expand=True, padx=(0, 10))
+        ctk.CTkLabel(capture_metric_frame, text="Captures/sec", font=ctk.CTkFont(weight="bold")).pack(pady=5)
+        self.captures_sec_label = ctk.CTkLabel(capture_metric_frame, text="0", font=ctk.CTkFont(size=16, weight="bold"))
+        self.captures_sec_label.pack(pady=5)
+        
+        # Confiance
+        ocr_conf_metric_frame = ctk.CTkFrame(ocr_grid)
+        ocr_conf_metric_frame.pack(side='left', fill='x', expand=True, padx=5)
+        ctk.CTkLabel(ocr_conf_metric_frame, text="Confiance moy.", font=ctk.CTkFont(weight="bold")).pack(pady=5)
+        self.ocr_confidence_label = ctk.CTkLabel(ocr_conf_metric_frame, text="0%", font=ctk.CTkFont(size=16, weight="bold"))
+        self.ocr_confidence_label.pack(pady=5)
+        
+        # Temps traitement
+        ocr_time_metric_frame = ctk.CTkFrame(ocr_grid)
+        ocr_time_metric_frame.pack(side='right', fill='x', expand=True, padx=(10, 0))
+        ctk.CTkLabel(ocr_time_metric_frame, text="Temps moy.", font=ctk.CTkFont(weight="bold")).pack(pady=5)
+        self.ocr_time_label = ctk.CTkLabel(ocr_time_metric_frame, text="0ms", font=ctk.CTkFont(size=16, weight="bold"))
+        self.ocr_time_label.pack(pady=5)
+
+    def create_version_tab(self):
+        """Création de l'onglet Version et About"""
+        
+        # Container principal
+        version_container = ctk.CTkFrame(self.version_tab)
+        version_container.pack(fill='both', expand=True, padx=40, pady=40)
+        
+        # Logo/titre principal
+        ctk.CTkLabel(version_container, text="🎯 RTPA Studio", 
+                    font=ctk.CTkFont(size=32, weight="bold")).pack(pady=(40, 10))
+        
+        ctk.CTkLabel(version_container, text="Real-Time Poker Assistant", 
+                    font=ctk.CTkFont(size=18), text_color="gray").pack(pady=(0, 20))
+        
+        # Informations de version
+        version_info_frame = ctk.CTkFrame(version_container)
+        version_info_frame.pack(pady=(20, 30))
+        
+        ctk.CTkLabel(version_info_frame, text="Version 1.0.0", 
+                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=15)
+        ctk.CTkLabel(version_info_frame, text="Build 1000 - Version stable", 
+                    font=ctk.CTkFont(size=12), text_color="gray").pack(pady=(0, 15))
+        
+        # Fonctionnalités
+        features_frame = ctk.CTkFrame(version_container)
+        features_frame.pack(fill='x', pady=(20, 30))
+        
+        ctk.CTkLabel(features_frame, text="✨ Fonctionnalités", 
+                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(15, 10))
+        
+        features = [
+            "🧠 Intelligence Artificielle CFR/Nash",
+            "👁️ OCR automatique en temps réel",
+            "⚡ Accélération GPU avec CUDA",
+            "📊 Analyse avancée de performance",
+            "🎯 Recommandations stratégiques",
+            "📈 Statistiques détaillées"
+        ]
+        
+        for feature in features:
+            ctk.CTkLabel(features_frame, text=feature, font=ctk.CTkFont(size=11)).pack(anchor='w', padx=20, pady=2)
+        
+        # Bouton mise à jour
+        self.check_update_btn = ctk.CTkButton(version_container, 
+                                             text="🔄 Vérifier les mises à jour",
+                                             command=self.check_for_updates,
+                                             width=200)
+        self.check_update_btn.pack(pady=(30, 10))
+        
+        # Status de mise à jour
+        self.update_status_label = ctk.CTkLabel(version_container, text="", 
+                                               font=ctk.CTkFont(size=12))
+        self.update_status_label.pack(pady=5)
+        
+        # Copyright
+        ctk.CTkLabel(version_container, text="© 2025 RTPA Studio - Tous droits réservés", 
+                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='bottom', pady=(30, 20))
     
     def update_hero_info(self, pseudo, stack, position):
         """Met à jour les informations du joueur principal"""
@@ -653,534 +916,44 @@ class RTAPGUIWindow:
                         else:
                             stack_text = str(stack_value)
                         
-                        ttk.Label(main_line, text=stack_text, font=('Arial', 8, 'bold'), 
-                                 foreground='#28a745').pack(side='right')
-                else:
-                    # Joueur détecté mais sans nom (OCR partiel)
-                    ttk.Label(main_line, text="Joueur détecté", font=('Arial', 8, 'italic'), 
-                             foreground='#6c757d').pack(side='left')
+                        ttk.Label(main_line, text=stack_text, font=('Arial', 7), 
+                                 foreground=status_color).pack(side='right', padx=(5, 0))
             else:
-                # Position vide (aucune détection OCR)
-                ttk.Label(main_line, text="○", font=('Arial', 8), 
-                         foreground='#cccccc').pack(side='left', padx=(2, 3))
+                # Position vide - afficher seulement "Siège vide" (pas de données factices)
                 ttk.Label(main_line, text="Siège vide", font=('Arial', 8, 'italic'), 
-                         foreground='#999999').pack(side='left')
+                         foreground='#999999').pack(side='left', padx=(5, 0))
     
-    def create_options_tab(self):
-        """Création de l'onglet Options"""
+    def setup_styles(self):
+        """Configuration des styles pour l'interface"""
+        style = ttk.Style()
         
-        # Frame principal avec scroll
-        main_frame = ctk.CTkScrollableFrame(self.options_tab)
-        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
-        
-        # Section: Interface Automatique
-        interface_frame = ctk.CTkFrame(main_frame)
-        interface_frame.pack(fill='x', pady=(0, 20))
-        
-        ctk.CTkLabel(interface_frame, text="🤖 Interface Automatique Intelligente", 
-                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
-        
-        ctk.CTkLabel(interface_frame, 
-                    text="RTPA Studio détecte automatiquement les plateformes poker et démarre/arrête l'analyse intelligemment.",
-                    font=ctk.CTkFont(size=12), text_color="gray").pack(pady=(0, 15), padx=20)
-        
-        # Section supprimée : Personnalisation Interface (non indispensable)
-        
-        # Section: Gestion des Données (Simplifiée)
-        data_frame = ctk.CTkFrame(main_frame)
-        data_frame.pack(fill='x', pady=(0, 20))
-        
-        ctk.CTkLabel(data_frame, text="💾 Gestion des Données", 
-                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
-        
-        # Description
-        ctk.CTkLabel(data_frame, 
-                    text="Sauvegardez et restaurez vos données d'entraînement CFR pour préserver vos progrès.",
-                    font=ctk.CTkFont(size=12), text_color="gray").pack(pady=(0, 15), padx=20)
-        
-        # Boutons d'action
-        buttons_frame = ctk.CTkFrame(data_frame)
-        buttons_frame.pack(pady=(0, 15))
-        
-        export_btn = ctk.CTkButton(buttons_frame, text="📤 Exporter sur Bureau", 
-                                  command=self.export_cfr_data, height=40, width=180)
-        export_btn.pack(side='left', padx=15, pady=10)
-        
-        import_btn = ctk.CTkButton(buttons_frame, text="📥 Importer Fichier", 
-                                  command=self.import_cfr_data, height=40, width=180)
-        import_btn.pack(side='left', padx=15, pady=10)
-        
-        # Informations sur les formats
-        ctk.CTkLabel(data_frame, 
-                    text="Formats supportés: .rtpa (recommandé), .json | Export automatique vers le Bureau",
-                    font=ctk.CTkFont(size=10), text_color="gray").pack(pady=(0, 15), padx=20)
+        # Style pour les cadres de cartes
+        style.configure('Card.TFrame', relief='ridge', borderwidth=2, background='#f0f0f0')
     
-    def create_settings_tab(self):
-        """Création de l'onglet Paramètres"""
-        
-        # Frame principal avec scroll
-        main_frame = ctk.CTkScrollableFrame(self.settings_tab)
-        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
-        
-        # Section: Configuration CFR
-        cfr_frame = ctk.CTkFrame(main_frame)
-        cfr_frame.pack(fill='x', pady=(0, 20))
-        
-        ctk.CTkLabel(cfr_frame, text="🧠 Configuration CFR", 
-                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
-        
-        # Iterations CFR
-        iter_frame = ctk.CTkFrame(cfr_frame)
-        iter_frame.pack(fill='x', padx=20, pady=(0, 10))
-        
-        ctk.CTkLabel(iter_frame, text="Itérations CFR:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
-        self.cfr_iterations = ctk.CTkEntry(iter_frame, placeholder_text="100000")
-        self.cfr_iterations.pack(side='left', padx=10)
-        self.cfr_iterations.bind('<Return>', self.apply_cfr_iterations)
-        
-        apply_iter_btn = ctk.CTkButton(iter_frame, text="Appliquer", command=self.apply_cfr_iterations, width=80)
-        apply_iter_btn.pack(side='left', padx=10)
-        
-        # Description détaillée
-        ctk.CTkLabel(iter_frame, text="Nombre d'itérations d'entraînement CFR (plus = meilleure qualité)", 
-                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
-        
-        # Profondeur CFR
-        depth_frame = ctk.CTkFrame(cfr_frame)
-        depth_frame.pack(fill='x', padx=20, pady=(0, 10))
-        
-        ctk.CTkLabel(depth_frame, text="Profondeur CFR:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
-        self.cfr_depth = ctk.CTkEntry(depth_frame, placeholder_text="3")
-        self.cfr_depth.pack(side='left', padx=10)
-        self.cfr_depth.bind('<Return>', self.apply_cfr_depth)
-        
-        apply_depth_btn = ctk.CTkButton(depth_frame, text="Appliquer", command=self.apply_cfr_depth, width=80)
-        apply_depth_btn.pack(side='left', padx=10)
-        
-        # Description détaillée
-        ctk.CTkLabel(depth_frame, text="Profondeur d'analyse des actions (3-5 recommandé)", 
-                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
-        
-        # Epsilon Exploration
-        eps_frame = ctk.CTkFrame(cfr_frame)
-        eps_frame.pack(fill='x', padx=20, pady=(0, 15))
-        
-        ctk.CTkLabel(eps_frame, text="Epsilon Exploration:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
-        self.cfr_epsilon = ctk.CTkEntry(eps_frame, placeholder_text="0.3")
-        self.cfr_epsilon.pack(side='left', padx=10)
-        self.cfr_epsilon.bind('<Return>', self.apply_cfr_epsilon)
-        
-        apply_eps_btn = ctk.CTkButton(eps_frame, text="Appliquer", command=self.apply_cfr_epsilon, width=80)
-        apply_eps_btn.pack(side='left', padx=10)
-        
-        # Description détaillée
-        ctk.CTkLabel(eps_frame, text="Taux d'exploration vs exploitation (0.1-0.5)", 
-                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
-        
-        # Section: Génération Continue
-        generation_frame = ctk.CTkFrame(main_frame)
-        generation_frame.pack(fill='x', pady=(0, 20))
-        
-        ctk.CTkLabel(generation_frame, text="🔄 Génération Continue de Données", 
-                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
-        
-        # Activation/Désactivation
-        gen_control_frame = ctk.CTkFrame(generation_frame)
-        gen_control_frame.pack(fill='x', padx=20, pady=(0, 10))
-        
-        ctk.CTkLabel(gen_control_frame, text="Génération active:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
-        self.generation_enabled = ctk.CTkSwitch(gen_control_frame, text="", command=self.toggle_generation)
-        self.generation_enabled.pack(side='left', padx=10)
-        self.generation_enabled.select()  # Activé par défaut
-        
-        ctk.CTkLabel(gen_control_frame, text="Génération automatique de mains pour entraînement CFR", 
-                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
-        
-        # Vitesse de génération
-        gen_rate_frame = ctk.CTkFrame(generation_frame)
-        gen_rate_frame.pack(fill='x', padx=20, pady=(0, 10))
-        
-        ctk.CTkLabel(gen_rate_frame, text="Vitesse génération:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
-        self.generation_rate = ctk.CTkSlider(gen_rate_frame, from_=1, to=10, command=self.update_generation_rate)
-        self.generation_rate.pack(side='left', padx=10, fill='x', expand=True)
-        self.generation_rate.set(5)
-        
-        self.gen_rate_label = ctk.CTkLabel(gen_rate_frame, text="5 (Moyen)", font=ctk.CTkFont(weight="bold"))
-        self.gen_rate_label.pack(side='left', padx=10)
-        
-        ctk.CTkLabel(gen_rate_frame, text="Contrôle la vitesse de génération (1=Lent, 10=Rapide)", 
-                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
-        
-        # Limite ressources pour génération
-        gen_resource_frame = ctk.CTkFrame(generation_frame)
-        gen_resource_frame.pack(fill='x', padx=20, pady=(0, 15))
-        
-        ctk.CTkLabel(gen_resource_frame, text="Ressources génération:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
-        self.generation_cpu_limit = ctk.CTkSlider(gen_resource_frame, from_=10, to=80, command=self.update_gen_cpu_value)
-        self.generation_cpu_limit.pack(side='left', padx=10, fill='x', expand=True)
-        self.generation_cpu_limit.set(50)
-        
-        self.gen_cpu_label = ctk.CTkLabel(gen_resource_frame, text="50% CPU", font=ctk.CTkFont(weight="bold"))
-        self.gen_cpu_label.pack(side='left', padx=10)
-        
-        ctk.CTkLabel(gen_resource_frame, text="CPU dédié à la génération continue", 
-                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
-        
-        # Section: Gestion des Ressources
-        resource_frame = ctk.CTkFrame(main_frame)
-        resource_frame.pack(fill='x', pady=(0, 20))
-        
-        ctk.CTkLabel(resource_frame, text="⚡ Gestion des Ressources", 
-                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
-        
-        # Limite CPU
-        cpu_frame = ctk.CTkFrame(resource_frame)
-        cpu_frame.pack(fill='x', padx=20, pady=(0, 10))
-        
-        ctk.CTkLabel(cpu_frame, text="Limite CPU:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
-        self.cpu_limit = ctk.CTkSlider(cpu_frame, from_=10, to=100, command=self.update_cpu_value)
-        self.cpu_limit.pack(side='left', padx=10, fill='x', expand=True)
-        self.cpu_limit.set(80)
-        
-        # Affichage valeur
-        self.cpu_value_label = ctk.CTkLabel(cpu_frame, text="80%", font=ctk.CTkFont(weight="bold"))
-        self.cpu_value_label.pack(side='left', padx=10)
-        
-        # Description
-        ctk.CTkLabel(cpu_frame, text="Limite d'usage CPU pour préserver les performances", 
-                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
-        
-        # Limite RAM
-        ram_frame = ctk.CTkFrame(resource_frame)
-        ram_frame.pack(fill='x', padx=20, pady=(0, 15))
-        
-        ctk.CTkLabel(ram_frame, text="Limite RAM:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
-        self.ram_limit = ctk.CTkSlider(ram_frame, from_=1, to=16, command=self.update_ram_value)
-        self.ram_limit.pack(side='left', padx=10, fill='x', expand=True)
-        self.ram_limit.set(8)
-        
-        # Affichage valeur
-        self.ram_value_label = ctk.CTkLabel(ram_frame, text="8.0 GB", font=ctk.CTkFont(weight="bold"))
-        self.ram_value_label.pack(side='left', padx=10)
-        
-        # Description
-        ctk.CTkLabel(ram_frame, text="Limite mémoire pour les calculs CFR et données", 
-                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
-    
-    def create_performance_tab(self):
-        """Création de l'onglet Performance"""
-        
-        # Frame principal
-        main_frame = ctk.CTkFrame(self.performance_tab)
-        main_frame.pack(fill='both', expand=True, padx=20, pady=20)
-        
-        # Titre
-        ctk.CTkLabel(main_frame, text="⚡ Monitoring des Performances", 
-                    font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(20, 30))
-        
-        # Frame pour les métriques
-        metrics_frame = ctk.CTkFrame(main_frame)
-        metrics_frame.pack(fill='x', padx=20, pady=(0, 20))
-        
-        # CPU Usage
-        cpu_frame = ctk.CTkFrame(metrics_frame)
-        cpu_frame.pack(fill='x', padx=15, pady=10)
-        
-        ctk.CTkLabel(cpu_frame, text="🖥️ CPU", font=ctk.CTkFont(size=14, weight="bold")).pack(side='left', padx=10)
-        self.cpu_progress = ctk.CTkProgressBar(cpu_frame)
-        self.cpu_progress.pack(side='left', padx=20, fill='x', expand=True)
-        self.cpu_label = ctk.CTkLabel(cpu_frame, text="0%")
-        self.cpu_label.pack(side='right', padx=10)
-        
-        # RAM Usage
-        ram_frame = ctk.CTkFrame(metrics_frame)
-        ram_frame.pack(fill='x', padx=15, pady=10)
-        
-        ctk.CTkLabel(ram_frame, text="🧠 RAM", font=ctk.CTkFont(size=14, weight="bold")).pack(side='left', padx=10)
-        self.ram_progress = ctk.CTkProgressBar(ram_frame)
-        self.ram_progress.pack(side='left', padx=20, fill='x', expand=True)
-        self.ram_label = ctk.CTkLabel(ram_frame, text="0 GB")
-        self.ram_label.pack(side='right', padx=10)
-        
-        # Status PyTorch
-        torch_frame = ctk.CTkFrame(metrics_frame)
-        torch_frame.pack(fill='x', padx=15, pady=10)
-        
-        ctk.CTkLabel(torch_frame, text="🔥 PyTorch", font=ctk.CTkFont(size=14, weight="bold")).pack(side='left', padx=10)
-        self.torch_status = ctk.CTkLabel(torch_frame, text="Non installé", text_color="red")
-        self.torch_status.pack(side='left', padx=20)
-        
-        self.install_torch_btn = ctk.CTkButton(torch_frame, text="Installer PyTorch", 
-                                              command=self.install_pytorch)
-        self.install_torch_btn.pack(side='right', padx=10)
-        
-        # Vérifier PyTorch
-        self.check_pytorch_status()
-        
-        # Démarrer la mise à jour des performances
-        self.start_performance_monitoring()
-    
-    def change_accent_color(self, color):
-        """Change la couleur d'accent de l'interface"""
-        self.accent_color = color
-        ctk.set_default_color_theme(color)
-        # Note: redémarrage nécessaire pour application complète
-    
-    def change_font(self, font):
-        """Change la police de l'interface"""
-        self.font_family = font
-        self.setup_styles()
-    
-    def change_opacity(self, value):
-        """Change l'opacité de la fenêtre"""
-        self.opacity = value
-        self.root.attributes('-alpha', value)
-        self.opacity_label.configure(text=f"{int(value*100)}%")
-    
-    def export_cfr_data(self):
-        """Exporte les données CFR"""
-        if not self.app_manager:
-            messagebox.showwarning("Erreur", "Gestionnaire d'application non disponible")
-            return
-        
-        filename = filedialog.asksaveasfilename(
-            title="Exporter Base CFR",
-            defaultextension=".json",
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
-        )
-        
-        if filename:
-            try:
-                # Exporter les données CFR via l'app manager (si la méthode existe)
-                if hasattr(self.app_manager, 'export_cfr_data'):
-                    success = self.app_manager.export_cfr_data(filename)
-                    if success:
-                        messagebox.showinfo("Succès", f"Base CFR exportée vers:\n{filename}")
-                    else:
-                        messagebox.showerror("Erreur", "Échec de l'export")
-                else:
-                    messagebox.showinfo("Info", "Fonction d'export non disponible dans cette version")
-            except Exception as e:
-                messagebox.showerror("Erreur", f"Erreur lors de l'export:\n{str(e)}")
-    
-    def import_cfr_data(self):
-        """Importe les données CFR"""
-        if not self.app_manager:
-            messagebox.showwarning("Erreur", "Gestionnaire d'application non disponible")
-            return
-        
-        filename = filedialog.askopenfilename(
-            title="Importer Base CFR",
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
-        )
-        
-        if filename:
-            try:
-                # Confirmation utilisateur
-                result = messagebox.askyesno("Confirmation", 
-                    "L'import remplacera la base CFR actuelle.\nContinuer ?")
-                
-                if result:
-                    if hasattr(self.app_manager, 'import_cfr_data'):
-                        success = self.app_manager.import_cfr_data(filename)
-                        if success:
-                            messagebox.showinfo("Succès", "Base CFR importée avec succès")
-                        else:
-                            messagebox.showerror("Erreur", "Échec de l'import")
-                    else:
-                        messagebox.showinfo("Info", "Fonction d'import non disponible dans cette version")
-            except Exception as e:
-                messagebox.showerror("Erreur", f"Erreur lors de l'import:\n{str(e)}")
-    
-    def install_pytorch(self):
-        """Installe PyTorch"""
-        def install_thread():
-            try:
-                import subprocess
-                import sys
-                
-                self.install_torch_btn.configure(text="Installation...", state="disabled")
-                
-                # Installation PyTorch CPU
-                result = subprocess.run([
-                    sys.executable, "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", 
-                    "https://download.pytorch.org/whl/cpu"
-                ], capture_output=True, text=True)
-                
-                if result.returncode == 0:
-                    self.torch_status.configure(text="✅ Installé", text_color="green")
-                    self.install_torch_btn.configure(text="Réinstaller", state="normal")
-                    messagebox.showinfo("Succès", "PyTorch installé avec succès")
-                else:
-                    self.install_torch_btn.configure(text="Réessayer", state="normal")
-                    messagebox.showerror("Erreur", f"Échec installation:\n{result.stderr}")
-                    
-            except Exception as e:
-                self.install_torch_btn.configure(text="Réessayer", state="normal")
-                messagebox.showerror("Erreur", f"Erreur installation:\n{str(e)}")
-        
-        # Lancer dans un thread séparé
-        threading.Thread(target=install_thread, daemon=True).start()
-    
-    def check_pytorch_status(self):
-        """Vérifie le statut de PyTorch"""
+    def format_amount(self, amount):
+        """Formate un montant en euros avec 2 décimales"""
         try:
-            import torch
-            device_info = "CPU"
-            if torch.cuda.is_available():
-                device_info = f"GPU (CUDA {torch.version.cuda})"
-            
-            self.torch_status.configure(text=f"✅ {device_info}", text_color="green")
-            self.install_torch_btn.configure(text="Réinstaller")
-            
-        except ImportError:
-            self.torch_status.configure(text="❌ Non installé", text_color="red")
-            self.install_torch_btn.configure(text="Installer PyTorch")
+            return f"{float(amount):.2f}€"
+        except (ValueError, TypeError):
+            return "0.00€"
     
-    def start_performance_monitoring(self):
-        """Démarre le monitoring des performances"""
-        self.monitoring_active = True
-        
-        def update_metrics():
-            while self.monitoring_active and not getattr(self, '_stopping', False):
-                try:
-                    import psutil
-                    
-                    # CPU
-                    cpu_percent = psutil.cpu_percent(interval=1)
-                    if self.monitoring_active:  # Vérifier à nouveau après l'attente
-                        self.cpu_progress.set(cpu_percent / 100)
-                        self.cpu_label.configure(text=f"{cpu_percent:.1f}%")
-                    
-                    # RAM
-                    memory = psutil.virtual_memory()
-                    ram_gb = memory.used / (1024**3)
-                    ram_percent = memory.percent
-                    if self.monitoring_active:
-                        self.ram_progress.set(ram_percent / 100)
-                        self.ram_label.configure(text=f"{ram_gb:.1f} GB ({ram_percent:.1f}%)")
-                    
-                except (ImportError, AttributeError) as e:
-                    self.logger.error(f"Erreur monitoring (import/attribut): {e}")
-                    break
-                except Exception as e:
-                    self.logger.warning(f"Erreur monitoring: {e}")
-                
-                # Sleep avec vérification d'arrêt
-                for _ in range(20):  # 2 secondes = 20 * 0.1s
-                    if not self.monitoring_active:
-                        break
-                    time.sleep(0.1)
-        
-        # Lancer dans un thread séparé
-        monitoring_thread = threading.Thread(target=update_metrics, daemon=True)
-        monitoring_thread.start()
+    # Méthodes pour les menus (à implémenter selon besoins)
+    def setup_menu_bar(self):
+        """Configuration de la barre de menu"""
+        pass  # Implémentation future si nécessaire
     
-    def update_display(self, data):
-        """Met à jour l'affichage avec les nouvelles données"""
-        try:
-            if not data:
-                return
-            
-            # Mettre à jour les cartes
-            self.update_cards_display(data.get('hero_cards', []), data.get('board_cards', []))
-            
-            # Mettre à jour les informations de table
-            if 'pot' in data:
-                self.pot_label.config(text=f"{data['pot']}")
-            # Stack supprimé - redondant avec section MOI
-            if 'blinds' in data:
-                self.blinds_label.config(text=data['blinds'])
-            if 'table_type' in data:
-                self.table_type_label.config(text=data['table_type'])
-            
-            # Mettre à jour les recommandations
-            if 'action' in data:
-                # Simplification des actions techniques en actions claires
-                raw_action = data['action']
-                simplified_action = {
-                    'BET_SMALL': 'BET', 'BET_MEDIUM': 'BET', 'BET_LARGE': 'BET',
-                    'BET_POT': 'BET', 'BET_ALLIN': 'ALL-IN', 'ALL_IN': 'ALL-IN',
-                    'RAISE_SMALL': 'RAISE', 'RAISE_MEDIUM': 'RAISE', 'RAISE_LARGE': 'RAISE'
-                }.get(raw_action.upper(), raw_action.upper())
-                self.action_display.config(text=simplified_action)
-            if 'bet_size' in data:
-                self.bet_size_label.config(text=data['bet_size'])
-            if 'win_probability' in data:
-                self.win_prob_label.config(text=f"{data['win_probability']}")
-            if 'risk_level' in data:
-                self.risk_label.config(text=f"{data['risk_level']}")
-            if 'confidence' in data:
-                self.main_confidence_label.config(text=f"{data['confidence']}")
-            if 'reasoning' in data:
-                self.main_reasoning_label.config(text=data['reasoning'])
-            
-            # Mettre à jour les statistiques
-            if 'hands_played' in data:
-                self.hands_played_value.config(text=str(data['hands_played']))
-            if 'hands_won' in data:
-                self.hands_won_value.config(text=str(data['hands_won']))
-            if 'win_rate' in data:
-                self.win_rate_value.config(text=f"{data['win_rate']}")
-            if 'expected_rate' in data:
-                self.expected_rate_value.config(text=f"{data['expected_rate']}")
-            if 'performance' in data:
-                self.performance_ratio_value.config(text=f"{data['performance']}")
-                
-        except Exception as e:
-            print(f"Erreur mise à jour affichage: {e}")
+    def on_closing(self):
+        """Gestion propre de la fermeture"""
+        self.running = False
+        if self.update_thread and self.update_thread.is_alive():
+            self.update_thread.join(timeout=1)
+        self.root.destroy()
     
-    def update_cards_display(self, hero_cards, board_cards):
-        """Met à jour l'affichage des cartes"""
-        try:
-            # Cartes du héros
-            if len(hero_cards) >= 2:
-                self.update_card_display(self.hero_card1, hero_cards[0])
-                self.update_card_display(self.hero_card2, hero_cards[1])
-            
-            # Cartes du board
-            for i, card_label in enumerate(self.board_cards):
-                if i < len(board_cards):
-                    self.update_card_display(card_label, board_cards[i])
-                else:
-                    card_label.config(text="🂠", fg='gray')
-                    
-        except Exception as e:
-            print(f"Erreur mise à jour cartes: {e}")
-    
-    def update_card_display(self, label, card_str):
-        """Met à jour l'affichage d'une carte individuelle"""
-        try:
-            if not card_str or card_str == "":
-                label.config(text="🂠", fg='gray')
-                return
-            
-            # Conversion en format visuel
-            if len(card_str) >= 2:
-                rank = card_str[0]
-                suit = card_str[1].lower()
-                
-                # Symboles des couleurs
-                suit_symbols = {
-                    's': '♠', 'h': '♥', 'd': '♦', 'c': '♣'
-                }
-                
-                # Couleurs
-                color = 'red' if suit in ['h', 'd'] else 'black'
-                
-                # Affichage
-                display_text = f"{rank}{suit_symbols.get(suit, suit)}"
-                label.config(text=display_text, fg=color)
-            else:
-                label.config(text="🂠", fg='gray')
-                
-        except Exception as e:
-            print(f"Erreur affichage carte: {e}")
-            label.config(text="🂠", fg='gray')
-    
-    def update_status(self, status_text, color="white"):
-        """Met à jour le statut affiché"""
-        self.status_label.configure(text=status_text)
+    def run(self):
+        """Lance l'interface graphique"""
+        self.running = True
+        self.start_gui_update_thread()
+        self.root.mainloop()
     
     def start_gui_update_thread(self):
         """Démarre le thread de mise à jour de l'interface"""
@@ -1267,14 +1040,17 @@ class RTAPGUIWindow:
             cpu_value = int(float(value))
             self.cpu_value_label.configure(text=f"{cpu_value}%")
             
-            # Appliquer la limite CPU réelle
+            # Sauvegarder le paramètre de manière persistante
             if hasattr(self, 'app_manager') and self.app_manager:
+                # Sauvegarder dans settings.yaml
+                self.app_manager.update_settings({'cpu_usage_limit': float(cpu_value)})
+                
                 if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
-                    # Convertir en limite réelle (CPU disponible pour CFR)
+                    # Appliquer la limite CPU réelle
                     self.app_manager.cfr_trainer.configure_generation_resources(
                         cpu_percent=cpu_value
                     )
-                    print(f"✅ Limite CPU CFR appliquée: {cpu_value}%")
+                    print(f"✅ Limite CPU CFR appliquée et sauvegardée: {cpu_value}%")
         except Exception as e:
             print(f"Erreur mise à jour CPU: {e}")
     
@@ -1284,15 +1060,20 @@ class RTAPGUIWindow:
             ram_value = float(value)
             self.ram_value_label.configure(text=f"{ram_value:.1f} GB")
             
-            # Appliquer la limite RAM réelle
+            # Sauvegarder le paramètre de manière persistante
             if hasattr(self, 'app_manager') and self.app_manager:
+                # Convertir GB en pourcentage approximatif (pour 16GB total)
+                ram_percentage = (ram_value / 16.0) * 100
+                # Sauvegarder dans settings.yaml
+                self.app_manager.update_settings({'ram_usage_limit': ram_percentage})
+                
                 if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
-                    # Convertir GB en MB pour l'API
+                    # Appliquer la limite RAM réelle (convertir GB en MB)
                     ram_mb = ram_value * 1024
                     self.app_manager.cfr_trainer.configure_generation_resources(
                         memory_mb=ram_mb
                     )
-                    print(f"✅ Limite RAM CFR appliquée: {ram_value:.1f} GB")
+                    print(f"✅ Limite RAM CFR appliquée et sauvegardée: {ram_value:.1f} GB")
         except Exception as e:
             print(f"Erreur mise à jour RAM: {e}")
     
@@ -1312,889 +1093,132 @@ class RTAPGUIWindow:
             if hasattr(self, 'app_manager') and self.app_manager:
                 if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
                     # Convertir la valeur 1-10 en mains par seconde (1=1 main/s, 10=10 mains/s)
-                    rate_per_second = float(rate_value)
+                    hands_per_sec = rate_value
                     self.app_manager.cfr_trainer.configure_generation_resources(
-                        rate_per_second=rate_per_second
+                        generation_rate=hands_per_sec
                     )
-                    print(f"✅ Vitesse génération appliquée: {rate_per_second} mains/s")
+                    print(f"✅ Vitesse génération appliquée: {rate_value} ({display_text})")
         except Exception as e:
-            print(f"Erreur mise à jour vitesse génération: {e}")
+            print(f"Erreur mise à jour vitesse: {e}")
     
-    def update_gen_cpu_value(self, value):
-        """Met à jour l'affichage de la limite CPU pour génération et applique"""
+    def load_saved_settings(self):
+        """Charge les paramètres sauvegardés et met à jour l'interface"""
         try:
-            cpu_value = int(float(value))
-            self.gen_cpu_label.configure(text=f"{cpu_value}% CPU")
-            
-            # Appliquer la limite CPU spécifique pour la génération
-            if hasattr(self, 'app_manager') and self.app_manager:
-                if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
-                    self.app_manager.cfr_trainer.configure_generation_resources(
-                        cpu_percent=cpu_value
-                    )
-                    print(f"✅ Limite CPU génération appliquée: {cpu_value}%")
-        except Exception as e:
-            print(f"Erreur mise à jour CPU génération: {e}")
-    
-    def toggle_generation(self):
-        """Active/désactive la génération continue"""
-        try:
-            is_enabled = self.generation_enabled.get()
-            status = "Activé" if is_enabled else "Désactivé"
-            print(f"Génération continue: {status}")
-            
-            # Contrôler réellement la génération
-            if hasattr(self, 'app_manager') and self.app_manager:
-                if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
-                    if is_enabled:
-                        self.app_manager.cfr_trainer.start_continuous_generation()
-                        print("✅ Génération continue démarrée")
+            if hasattr(self, 'app_manager') and self.app_manager and hasattr(self.app_manager, 'settings'):
+                settings = self.app_manager.settings
+                
+                # Charger CPU (pourcentage direct)
+                if hasattr(self, 'cpu_limit') and self.cpu_limit:
+                    cpu_value = getattr(settings, 'cpu_usage_limit', 80.0)
+                    self.cpu_limit.set(cpu_value)
+                    if hasattr(self, 'cpu_value_label'):
+                        self.cpu_value_label.configure(text=f"{int(cpu_value)}%")
+                
+                # Charger RAM (convertir pourcentage en GB approximatif)
+                if hasattr(self, 'ram_limit') and self.ram_limit:
+                    ram_percentage = getattr(settings, 'ram_usage_limit', 70.0)
+                    # Convertir pourcentage en GB (assumant 16GB total)
+                    ram_gb = (ram_percentage / 100.0) * 16.0
+                    self.ram_limit.set(ram_gb)
+                    if hasattr(self, 'ram_value_label'):
+                        self.ram_value_label.configure(text=f"{ram_gb:.1f} GB")
+                
+                # Charger GPU
+                if hasattr(self, 'gpu_enabled') and self.gpu_enabled:
+                    gpu_enabled = getattr(settings, 'gpu_enabled', True)
+                    if gpu_enabled:
+                        self.gpu_enabled.select()
                     else:
-                        self.app_manager.cfr_trainer.stop_continuous_generation_user()
-                        print("❌ Génération continue arrêtée")
-                    
-        except Exception as e:
-            print(f"Erreur toggle génération: {e}")
-    
-    def apply_cfr_iterations(self, event=None):
-        """Applique le nombre d'itérations CFR"""
-        try:
-            value = self.cfr_iterations.get().strip()
-            if value:
-                iterations = int(value)
-                if 1000 <= iterations <= 1000000:
-                    if hasattr(self, 'app_manager') and self.app_manager:
-                        if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
-                            self.app_manager.cfr_trainer.target_iterations = iterations
-                            print(f"✅ Itérations CFR appliquées: {iterations}")
-                        if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine:
-                            self.app_manager.cfr_engine.iterations = iterations
-                else:
-                    print("❌ Itérations doivent être entre 1000 et 1000000")
-        except ValueError:
-            print("❌ Valeur d'itérations invalide")
-        except Exception as e:
-            print(f"Erreur application itérations: {e}")
-    
-    def apply_cfr_depth(self, event=None):
-        """Applique la profondeur CFR"""
-        try:
-            value = self.cfr_depth.get().strip()
-            if value:
-                depth = int(value)
-                if 1 <= depth <= 10:
-                    if hasattr(self, 'app_manager') and self.app_manager:
-                        if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine:
-                            self.app_manager.cfr_engine.abstraction_depth = depth
-                            print(f"✅ Profondeur CFR appliquée: {depth}")
-                else:
-                    print("❌ Profondeur doit être entre 1 et 10")
-        except ValueError:
-            print("❌ Valeur de profondeur invalide")
-        except Exception as e:
-            print(f"Erreur application profondeur: {e}")
-    
-    def apply_cfr_epsilon(self, event=None):
-        """Applique l'epsilon d'exploration CFR"""
-        try:
-            value = self.cfr_epsilon.get().strip()
-            if value:
-                epsilon = float(value)
-                if 0.01 <= epsilon <= 1.0:
-                    if hasattr(self, 'app_manager') and self.app_manager:
-                        if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine:
-                            self.app_manager.cfr_engine.exploration_rate = epsilon
-                            print(f"✅ Epsilon exploration appliqué: {epsilon}")
-                else:
-                    print("❌ Epsilon doit être entre 0.01 et 1.0")
-        except ValueError:
-            print("❌ Valeur d'epsilon invalide")
-        except Exception as e:
-            print(f"Erreur application epsilon: {e}")
-    
-    # Fonctions de personnalisation supprimées (non indispensables)
-    
-    
-    
-    
-    def export_cfr_data(self):
-        """Exporte automatiquement les données CFR sur le bureau"""
-        try:
-            print("📤 Export automatique des données CFR...")
-            
-            if hasattr(self, 'app_manager') and self.app_manager:
-                import json
-                import os
-                from pathlib import Path
-                from datetime import datetime
+                        self.gpu_enabled.deselect()
                 
-                # Chemin du bureau
-                desktop = os.path.join(os.path.expanduser('~'), 'Desktop')
-                if not os.path.exists(desktop):
-                    desktop = os.path.expanduser('~')  # Fallback vers home si pas de Desktop
+                # Charger mémoire GPU
+                if hasattr(self, 'gpu_memory') and self.gpu_memory:
+                    gpu_memory = getattr(settings, 'gpu_memory_limit', 80.0)
+                    self.gpu_memory.set(gpu_memory)
+                    if hasattr(self, 'gpu_mem_label'):
+                        self.gpu_mem_label.configure(text=f"{int(gpu_memory)}%")
                 
-                # Nom du fichier avec timestamp
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                filename = os.path.join(desktop, f"RTPA_Export_{timestamp}.rtpa")
-                
-                # Collecter toutes les données importantes (CORRIGER L'ACCÈS AUX DONNÉES)
-                export_data = {
-                    "rtpa_version": "1.0",
-                    "export_date": datetime.now().isoformat(),
-                    "export_timestamp": time.time(),
-                    "cfr_data": {},
-                    "database_stats": {},
-                    "performance_data": {
-                        "generation_speed": "Variable",
-                        "memory_usage": "Optimisé"
-                    }
-                }
-                
-                # Récupérer les données CFR réelles depuis le trainer
-                try:
-                    if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
-                        try:
-                            cfr_stats = self.app_manager.cfr_trainer.get_training_statistics()
-                            export_data["cfr_data"] = {
-                                "iterations": cfr_stats.get('iterations', 0),
-                                "convergence": cfr_stats.get('last_convergence', 0.0),
-                                "training_hands_count": cfr_stats.get('training_hands', 0),
-                                "current_quality": cfr_stats.get('current_quality', 0.0),
-                                "progress_percentage": cfr_stats.get('progress_percentage', 0.0),
-                                "info_sets_learned": cfr_stats.get('info_sets_learned', 0),
-                                "target_iterations": cfr_stats.get('target_iterations', 100000),
-                                "is_training": cfr_stats.get('is_training', False)
-                            }
-                        except Exception as cfr_error:
-                            print(f"⚠️ Erreur accès statistiques CFR: {cfr_error}")
-                            # Fallback - accès direct aux données de base
-                            trainer_hands = len(self.app_manager.cfr_trainer.training_hands) if hasattr(self.app_manager.cfr_trainer, 'training_hands') else 0
-                            export_data["cfr_data"] = {
-                                "iterations": 0,
-                                "convergence": 0.0,
-                                "training_hands_count": trainer_hands,
-                                "current_quality": 0.0,
-                                "progress_percentage": 0.0,
-                                "info_sets_learned": 0,
-                                "target_iterations": 100000,
-                                "is_training": False,
-                                "note": "Entraînement pas encore démarré - génération de mains en cours"
-                            }
-                    
-                    # Récupérer les données de la base
-                    if hasattr(self.app_manager, 'memory_db') and self.app_manager.memory_db:
-                        if hasattr(self.app_manager.memory_db, 'game_states'):
-                            total_db_hands = len(self.app_manager.memory_db.game_states)
-                        else:
-                            total_db_hands = 0
-                        
-                        export_data["database_stats"] = {
-                            "total_hands": total_db_hands,
-                            "unique_scenarios": total_db_hands  # Approximation
-                        }
-                    
-                    # Note: Les données du trainer sont déjà récupérées via get_training_statistics() ci-dessus
-                    
-                    print(f"📊 Données collectées pour export:")
-                    print(f"   CFR Iterations: {export_data['cfr_data'].get('iterations', 0)}")
-                    print(f"   Training Hands: {export_data['cfr_data'].get('training_hands_count', 0)}")
-                    print(f"   Database Hands: {export_data['database_stats'].get('total_hands', 0)}")
-                    print(f"   Convergence: {export_data['cfr_data'].get('convergence', 0.0)}")
-                
-                except Exception as data_error:
-                    print(f"⚠️ Erreur collecte données: {data_error}")
-                    # Valeurs par défaut si erreur globale
-                    export_data["cfr_data"] = {
-                        "iterations": 0,
-                        "convergence": 0.0,
-                        "training_hands_count": 0,
-                        "current_quality": 0.0,
-                        "progress_percentage": 0.0,
-                        "info_sets_learned": 0,
-                        "target_iterations": 100000,
-                        "is_training": False,
-                        "note": "Erreur de collecte des données"
-                    }
-                    export_data["database_stats"] = {
-                        "total_hands": 0,
-                        "unique_scenarios": 0
-                    }
-                
-                # Écrire le fichier
-                with open(filename, 'w', encoding='utf-8') as f:
-                    json.dump(export_data, f, indent=2, ensure_ascii=False)
-                
-                print(f"✅ Données exportées vers: {filename}")
-                
-                # Notification utilisateur (sécurisée)
-                from tkinter import messagebox
-                iterations = export_data.get('cfr_data', {}).get('iterations', 0)
-                training_hands = export_data.get('cfr_data', {}).get('training_hands_count', 0)
-                training_status = export_data.get('cfr_data', {}).get('note', '')
-                
-                message = f"Données RTPA exportées avec succès!\n\nFichier: RTPA_Export_{timestamp}.rtpa\nEmplacement: Bureau\n\nContient: {iterations} itérations CFR, {training_hands} mains d'entraînement"
-                
-                if training_status:
-                    message += f"\n\nNote: {training_status}"
-                
-                messagebox.showinfo("Export réussi", message)
-                
-            else:
-                print("⚠️ Aucun gestionnaire disponible pour l'export")
-                messagebox.showerror("Erreur", "Système non initialisé pour l'export")
+                print("✅ Paramètres chargés depuis settings.yaml")
                 
         except Exception as e:
-            print(f"❌ Erreur export CFR: {e}")
-            from tkinter import messagebox
-            messagebox.showerror("Erreur Export", f"Impossible d'exporter les données:\n{str(e)}")
+            print(f"Erreur chargement paramètres: {e}")
     
-    def import_cfr_data(self):
-        """Importe les données CFR depuis les formats supportés"""
-        try:
-            print("📥 Import des données CFR...")
-            
-            # Sélectionner uniquement les formats supportés
-            from tkinter import filedialog, messagebox
-            filename = filedialog.askopenfilename(
-                title="Importer les données RTPA",
-                filetypes=[
-                    ("Fichiers RTPA", "*.rtpa"),
-                    ("Fichiers JSON", "*.json"),
-                    ("Fichiers supportés", "*.rtpa;*.json")
-                ]
-            )
-            
-            if filename:
-                # Vérifier l'extension
-                file_ext = os.path.splitext(filename)[1].lower()
-                if file_ext not in ['.rtpa', '.json']:
-                    messagebox.showerror(
-                        "Format non supporté", 
-                        f"Format de fichier non supporté: {file_ext}\n\nFormats acceptés: .rtpa, .json"
-                    )
-                    return
-                
-                # Confirmer l'import
-                confirm = messagebox.askyesno(
-                    "Confirmer l'import",
-                    f"Import du fichier: {os.path.basename(filename)}\n\n⚠️  Attention: L'import va remplacer les données d'entraînement actuelles.\n\nContinuer?"
-                )
-                
-                if confirm:
-                    try:
-                        import json
-                        
-                        # Lire et valider le fichier
-                        with open(filename, 'r', encoding='utf-8') as f:
-                            import_data = json.load(f)
-                        
-                        # Validation du format RTPA
-                        if file_ext == '.rtpa':
-                            if 'rtpa_version' not in import_data:
-                                raise ValueError("Fichier RTPA invalide: version manquante")
-                            if 'cfr_data' not in import_data:
-                                raise ValueError("Fichier RTPA invalide: données CFR manquantes")
-                        
-                        # Extraire les informations
-                        version = import_data.get('rtpa_version', import_data.get('version', 'Inconnue'))
-                        cfr_data = import_data.get('cfr_data', import_data)
-                        iterations = cfr_data.get('iterations', import_data.get('cfr_iterations', 0))
-                        hands_count = cfr_data.get('training_hands_count', import_data.get('hands_count', 0))
-                        export_date = import_data.get('export_date', 'Inconnue')
-                        
-                        print(f"✅ Données importées depuis: {filename}")
-                        print(f"Version: {version}")
-                        print(f"Itérations CFR: {iterations}")
-                        print(f"Mains d'entraînement: {hands_count}")
-                        print(f"Date export: {export_date}")
-                        
-                        # Ici vous pourriez ajouter la logique pour restaurer les données réelles
-                        # dans le système CFR si nécessaire
-                        
-                        messagebox.showinfo(
-                            "Import réussi", 
-                            f"Données RTPA importées avec succès!\n\nVersion: {version}\nItérations CFR: {iterations}\nMains: {hands_count}\n\nLe système va redémarrer l'entraînement avec ces paramètres."
-                        )
-                        
-                    except json.JSONDecodeError as e:
-                        print(f"❌ Erreur format JSON: {e}")
-                        messagebox.showerror("Erreur Format", f"Fichier JSON invalide:\n{str(e)}")
-                    except ValueError as e:
-                        print(f"❌ Erreur validation: {e}")
-                        messagebox.showerror("Erreur Validation", str(e))
-                    except Exception as import_error:
-                        print(f"❌ Erreur lecture fichier: {import_error}")
-                        messagebox.showerror("Erreur Import", f"Impossible de lire le fichier:\n{str(import_error)}")
-                
-        except Exception as e:
-            print(f"❌ Erreur import CFR: {e}")
-            messagebox.showerror("Erreur", f"Erreur lors de l'import:\n{str(e)}")
+    # Autres méthodes callback (à implémenter selon besoins)
+    def update_cfr_iterations(self, value):
+        """Met à jour le nombre d'itérations CFR"""
+        iterations = int(float(value))
+        self.cfr_iter_label.configure(text=str(iterations))
+        if hasattr(self, 'app_manager') and self.app_manager:
+            self.app_manager.update_settings({'cfr_iterations': iterations})
     
-    def install_pytorch(self):
-        """Installe PyTorch"""
-        try:
-            print("Installation PyTorch...")
-            
-            from tkinter import messagebox
-            
-            # Confirmer l'installation
-            confirm = messagebox.askyesno(
-                "Installation PyTorch",
-                "PyTorch sera installé via pip.\n\nCela peut prendre plusieurs minutes.\n\nContinuer?"
-            )
-            
-            if confirm:
-                try:
-                    import subprocess
-                    import sys
-                    
-                    # Mettre à jour le statut
-                    self.torch_status.configure(text="Installation en cours...", text_color="orange")
-                    self.install_torch_btn.configure(state="disabled")
-                    self.root.update()
-                    
-                    # Installer PyTorch
-                    print("📦 Installation de PyTorch...")
-                    result = subprocess.run(
-                        [sys.executable, "-m", "pip", "install", "torch", "--no-cache-dir"],
-                        capture_output=True, text=True, timeout=300
-                    )
-                    
-                    if result.returncode == 0:
-                        print("✅ PyTorch installé avec succès!")
-                        self.torch_status.configure(text="Installé ✓", text_color="green")
-                        messagebox.showinfo("Installation réussie", "PyTorch a été installé avec succès!")
-                    else:
-                        print(f"❌ Erreur installation: {result.stderr}")
-                        self.torch_status.configure(text="Erreur installation", text_color="red")
-                        self.install_torch_btn.configure(state="normal")
-                        messagebox.showerror("Erreur", f"Installation échouée:\n{result.stderr[:200]}")
-                        
-                except subprocess.TimeoutExpired:
-                    print("⏰ Installation timeout")
-                    self.torch_status.configure(text="Timeout", text_color="red")
-                    self.install_torch_btn.configure(state="normal")
-                    messagebox.showerror("Timeout", "Installation trop longue (> 5 min)")
-                    
-        except Exception as e:
-            print(f"Erreur installation PyTorch: {e}")
-            if hasattr(self, 'torch_status'):
-                self.torch_status.configure(text="Erreur", text_color="red")
-                self.install_torch_btn.configure(state="normal")
+    def toggle_cfr_sampling(self):
+        """Active/désactive le sampling CFR"""
+        sampling_enabled = self.cfr_sampling.get()
+        if hasattr(self, 'app_manager') and self.app_manager:
+            self.app_manager.update_settings({'cfr_sampling_enabled': sampling_enabled})
     
-    def check_pytorch_status(self):
-        """Vérifie le statut de PyTorch"""
-        try:
-            import torch
-            self.torch_status.configure(text="Installé ✓", text_color="green")
-            self.install_torch_btn.configure(state="disabled")
-        except ImportError:
-            self.torch_status.configure(text="Non installé", text_color="red")
-            self.install_torch_btn.configure(state="normal")
+    def update_ocr_interval(self, value):
+        """Met à jour l'intervalle OCR"""
+        interval = int(float(value))
+        self.ocr_interval_label.configure(text=f"{interval}ms")
+        if hasattr(self, 'app_manager') and self.app_manager:
+            self.app_manager.update_settings({'ocr_interval_ms': interval})
     
-    # ========================================
-    # FONCTIONS HELPER SUPPRIMÉES
-    # ========================================
-    # Les fonctions de personnalisation ont été supprimées pour simplifier l'interface
-
-    def _update_status_display(self):
-        """Met à jour l'affichage du statut en temps réel"""
-        try:
-            # Ligne 1: État de connexion
-            if self.current_connection_status == "waiting":
-                self.connection_status_label.configure(
-                    text="En attente de plateforme",
-                    text_color="#ff6b6b"  # Rouge
-                )
-            elif self.current_connection_status == "active":
-                # Afficher le nom de la plateforme connectée
-                if self.current_platform:
-                    platform_names = {
-                        'pokerstars': 'PokerStars',
-                        'winamax': 'Winamax',
-                        'pmu': 'PMU Poker',
-                        'partypoker': 'PartyPoker'
-                    }
-                    platform_display = platform_names.get(self.current_platform, self.current_platform.title())
-                    self.connection_status_label.configure(
-                        text=platform_display,
-                        text_color="#51cf66"  # Vert
-                    )
-                else:
-                    self.connection_status_label.configure(
-                        text="Plateforme active",
-                        text_color="#51cf66"  # Vert
-                    )
-            elif self.current_connection_status == "error":
-                self.connection_status_label.configure(
-                    text="Erreur de connexion",
-                    text_color="#ff8c82"  # Rouge clair
-                )
-            
-            # Ligne 2: Activité du système avec statuts plus précis
-            activity_text = "Système en attente"
-            try:
-                platform_status = self.get_platform_status()
-                if platform_status and platform_status.get('status') == 'connected':
-                    activity_text = "Analyse poker en cours"
-                elif hasattr(self, 'app_manager') and self.app_manager:
-                    # Vérifier si le CFR est actif (plus de vérifications)
-                    cfr_engine = getattr(self.app_manager, 'cfr_engine', None)
-                    if cfr_engine:
-                        trainer = getattr(cfr_engine, 'trainer', None)
-                        if trainer and hasattr(trainer, 'training_active'):
-                            if getattr(trainer, 'training_active', False):
-                                activity_text = "Moteur CFR actif"
-                            else:
-                                activity_text = "CFR initialisé"
-                        else:
-                            # Fallback: si CFR engine existe, c'est qu'il est actif
-                            activity_text = "Moteur CFR actif"
-                    else:
-                        activity_text = "Initialisation système"
-                else:
-                    activity_text = "Mode surveillance"
-            except Exception as e:
-                # En cas d'erreur, vérifier si CFR est mentionné dans les logs récents
-                try:
-                    if hasattr(self, 'app_manager') and self.app_manager:
-                        activity_text = "Moteur CFR actif"
-                    else:
-                        activity_text = "Mode surveillance"
-                except (AttributeError, KeyError):
-                    activity_text = "Mode surveillance"
-            
-            self.activity_status_label.configure(text=activity_text)
-            
-            # Ligne 3: Temps restant CFR - mise à jour séparée
-            self.update_cfr_time_display()
-            
-        except Exception as e:
-            print(f"Erreur mise à jour statut: {e}")
-        
-        # Programmer la prochaine mise à jour
-        self.root.after(1000, self._update_status_display)
+    def update_ocr_confidence(self, value):
+        """Met à jour la confiance OCR"""
+        confidence = float(value)
+        self.ocr_confidence_label.configure(text=f"{int(confidence*100)}%")
+        if hasattr(self, 'app_manager') and self.app_manager:
+            self.app_manager.update_settings({'ocr_confidence_threshold': confidence})
     
-    def update_connection_status(self, status):
-        """Met à jour l'état de connexion (waiting/active/error)"""
-        self.current_connection_status = status
+    def change_language(self, selection):
+        """Change la langue"""
+        lang = "fr" if selection == "Français" else "en"
+        if hasattr(self, 'app_manager') and self.app_manager:
+            self.app_manager.update_settings({'language': lang})
     
-    def update_activity_status(self, activity):
-        """Met à jour l'activité actuelle (idle/generating/training/analyzing/ocr)"""
-        self.current_activity = activity
+    def change_table_type(self, selection):
+        """Change le type de table"""
+        table_type = "cashgame" if selection == "Cash Game" else "tournament"
+        if hasattr(self, 'app_manager') and self.app_manager:
+            self.app_manager.update_settings({'default_table_type': table_type})
     
-    def on_platform_detected(self, platform_name):
-        """Appelé quand une plateforme est détectée"""
-        self.current_platform = platform_name
-        self.update_connection_status("active")
-        self.update_activity_status("analyzing")
-        self._update_window_title()
+    def update_target_hands(self, value):
+        """Met à jour l'objectif de mains"""
+        target = int(float(value))
+        self.target_hands_label.configure(text=str(target))
+        if hasattr(self, 'app_manager') and self.app_manager:
+            self.app_manager.update_settings({'target_hands_per_100': target})
     
-    def on_platform_closed(self):
-        """Appelé quand aucune plateforme n'est active"""
-        self.current_platform = None
-        self.update_connection_status("waiting")
-        self.update_activity_status("idle")
-        self._update_window_title()
+    def toggle_gpu(self):
+        """Active/désactive le GPU"""
+        gpu_enabled = self.gpu_enabled.get()
+        if hasattr(self, 'app_manager') and self.app_manager:
+            self.app_manager.update_settings({'gpu_enabled': gpu_enabled})
     
-    def on_cfr_training_update(self, iteration_count):
-        """Appelé pendant l'entraînement CFR"""
-        if iteration_count > 0:
-            self.update_activity_status("training")
+    def update_gpu_memory(self, value):
+        """Met à jour la limite mémoire GPU"""
+        gpu_mem = int(float(value))
+        self.gpu_mem_label.configure(text=f"{gpu_mem}%")
+        if hasattr(self, 'app_manager') and self.app_manager:
+            self.app_manager.update_settings({'gpu_memory_limit': float(gpu_mem)})
     
-    def on_hand_generation_update(self, hands_generated):
-        """Appelé pendant la génération de mains"""
-        if hands_generated > 0:
-            self.update_activity_status("generating")
+    def toggle_auto_resource_mgmt(self):
+        """Active/désactive la gestion automatique des ressources"""
+        auto_mgmt = self.auto_resource_mgmt.get()
+        if hasattr(self, 'app_manager') and self.app_manager:
+            self.app_manager.update_settings({'auto_resource_management': auto_mgmt})
     
-    def _update_window_title(self):
-        """Met à jour le titre de la fenêtre avec la plateforme connectée"""
-        try:
-            if self.current_platform:
-                # Mapper les noms de plateformes vers des noms affichables
-                platform_names = {
-                    'pokerstars': 'PokerStars',
-                    'winamax': 'Winamax',
-                    'pmu': 'PMU Poker',
-                    'partypoker': 'PartyPoker'
-                }
-                platform_display = platform_names.get(self.current_platform, self.current_platform.title())
-                title = f"RTPA Studio :: {platform_display}"
-            else:
-                title = "RTPA Studio"
-            
-            self.root.title(title)
-        except Exception as e:
-            print(f"Erreur mise à jour titre: {e}")
-
-    def get_currency_symbol(self, table_type=None):
-        """Retourne le symbole de devise approprié selon le type de table"""
-        if table_type is None:
-            table_type = self.current_table_type
-        
-        if table_type == "tournament":
-            return ""  # Pas de symbole pour les jetons en tournoi
-        else:  # cashgame
-            return "€"
-    
-    def format_amount(self, amount, table_type=None):
-        """Formate un montant avec le bon symbole selon le type de table"""
-        symbol = self.get_currency_symbol(table_type)
-        if table_type == "tournament":
-            # En tournoi, on affiche juste le nombre (jetons)
-            return f"{amount:.0f}"
-        else:
-            # En cash game, on affiche avec euros et décimales
-            return f"{amount:.2f}{symbol}"
-
-    def _connect_to_system_events(self):
-        """Connecte l'interface aux événements réels du système"""
-        try:
-            if self.app_manager and hasattr(self.app_manager, 'cfr_engine'):
-                # Essayer de récupérer le trainer CFR
-                def check_cfr_status():
-                    try:
-                        if hasattr(self.app_manager.cfr_engine, 'trainer') and self.app_manager.cfr_engine.trainer:
-                            trainer = self.app_manager.cfr_engine.trainer
-                            # Vérifier si la génération continue est active
-                            if hasattr(trainer, 'continuous_generator') and trainer.continuous_generator:
-                                if hasattr(trainer.continuous_generator, 'is_running') and trainer.continuous_generator.is_running:
-                                    self.update_activity_status("continuous")
-                                else:
-                                    self.update_activity_status("training")
-                            else:
-                                self.update_activity_status("training")
-                    except Exception as e:
-                        print(f"Erreur vérification statut CFR: {e}")
-                    
-                    # Programmer la prochaine vérification
-                    self.root.after(3000, check_cfr_status)
-                
-                # Démarrer la vérification périodique
-                self.root.after(5000, check_cfr_status)  # Premier check après 5s
-                
-        except Exception as e:
-            print(f"Erreur connexion événements système: {e}")
-
-    def _get_activity_with_time_estimate(self):
-        """Retourne le message d'activité avec estimation du temps restant"""
-        try:
-            base_messages = {
-                "idle": "Système en attente",
-                "generating": "Génération de mains...",
-                "analyzing": "Analyse de la situation",
-                "ocr": "Capture d'écran OCR",
-                "continuous": "Génération continue active"
-            }
-            
-            if self.current_activity == "training":
-                # Essayer d'obtenir les informations de progression CFR
-                time_estimate = self._get_cfr_time_estimate()
-                if time_estimate and time_estimate != "En cours...":
-                    return time_estimate
-                else:
-                    return "Entraînement CFR en cours"
-            
-            return base_messages.get(self.current_activity, "Système opérationnel")
-            
-        except Exception as e:
-            print(f"Erreur calcul estimation temps: {e}")
-            return "Entraînement CFR en cours"
-
-    def _get_cfr_time_estimate(self):
-        """Calcule l'estimation du temps restant pour l'entraînement CFR"""
-        try:
-            if not self.app_manager:
-                return None
-                
-            if not hasattr(self.app_manager, 'cfr_engine') or not self.app_manager.cfr_engine:
-                return None
-                
-            cfr_engine = self.app_manager.cfr_engine
-            if not (hasattr(cfr_engine, 'trainer') and cfr_engine.trainer):
-                return None
-                
-            trainer = cfr_engine.trainer
-            
-            # Essayer différentes propriétés possibles pour la progression
-            completed = 0
-            target = 100000  # Valeur par défaut visible dans les logs
-            
-            # Utiliser les métriques du trainer CFR
-            completed = getattr(trainer, 'current_iteration', 0)
-            target = getattr(trainer, 'target_iterations', 100000)
-            
-            # Si on a une progression valide
-            if completed > 0 and target > completed:
-                progress_percent = int((completed / target) * 100)
-                
-                # Calcul estimation temps si on a le temps de démarrage
-                if hasattr(trainer, 'start_time') and trainer.start_time:
-                    import time
-                    elapsed_time = time.time() - trainer.start_time
-                    if elapsed_time > 5:  # Au moins 5 secondes d'entraînement
-                        iterations_per_second = completed / elapsed_time
-                        if iterations_per_second > 0:
-                            remaining_iterations = target - completed
-                            remaining_seconds = remaining_iterations / iterations_per_second
-                            
-                            if remaining_seconds < 60:
-                                return f"CFR: {progress_percent}% ({int(remaining_seconds)}s restant)"
-                            elif remaining_seconds < 3600:
-                                minutes = int(remaining_seconds / 60)
-                                return f"CFR: {progress_percent}% ({minutes}min restant)"
-                            else:
-                                hours = int(remaining_seconds / 3600)
-                                minutes = int((remaining_seconds % 3600) / 60)
-                                return f"CFR: {progress_percent}% ({hours}h{minutes}min restant)"
-                
-                return f"CFR: {progress_percent}% terminé"
-            elif completed >= target and target > 0:
-                return "CFR: Entraînement terminé"
-            elif completed > 0:
-                # Affichage basique avec itérations
-                return f"CFR: {completed:,} itérations"
-            else:
-                # Pas de métriques fiables - afficher simulation avec contenu dynamique
-                import random
-                sim_percent = random.randint(45, 85)
-                sim_time = random.randint(3, 25)
-                return f"Calcul CFR: {sim_percent}% - {sim_time}min restant"
-                
-        except Exception as e:
-            print(f"Erreur calcul estimation CFR: {e}")
-            # En cas d'erreur, toujours afficher quelque chose
-            import random
-            sim_percent = random.randint(60, 90)
-            sim_time = random.randint(5, 20)
-            return f"Calcul CFR: {sim_percent}% - {sim_time}min restant"
-
-    def update_cfr_time_display(self):
-        """Met à jour l'affichage du temps restant CFR sur sa ligne dédiée"""
-        try:
-            if not hasattr(self, 'cfr_time_label'):
-                return
-                
-            # Récupération du temps restant - toujours afficher quelque chose
-            time_estimate = self._get_cfr_time_estimate()
-            
-            # S'assurer qu'on a toujours un affichage
-            if not time_estimate:
-                import random
-                sim_percent = random.randint(55, 80)
-                sim_time = random.randint(4, 18)
-                time_estimate = f"Calcul CFR: {sim_percent}% - {sim_time}min restant"
-            
-            if time_estimate:
-                # Affichage en noir pour meilleure lisibilité
-                self.cfr_time_label.configure(
-                    text=time_estimate,
-                    text_color="black"
-                )
-            else:
-                # Masquer si pas d'entraînement en cours
-                self.cfr_time_label.configure(text="")
-                
-        except Exception as e:
-            print(f"Erreur mise à jour temps CFR: {e}")
-
-    def _ensure_update_dependencies(self):
-        """S'assure que toutes les dépendances pour les mises à jour sont installées"""
-        missing_deps = []
-        
-        # Vérification des dépendances critiques
-        try:
-            import requests
-        except ImportError:
-            missing_deps.append("requests")
-            
-        try:
-            import packaging
-        except ImportError:
-            missing_deps.append("packaging")
-            
-        # Installation automatique si dépendances manquantes
-        if missing_deps:
-            try:
-                import subprocess
-                import sys
-                
-                for dep in missing_deps:
-                    print(f"Installation automatique de {dep}...")
-                    subprocess.check_call([sys.executable, "-m", "pip", "install", dep])
-                
-                print("✅ Toutes les dépendances sont maintenant installées")
-                return True
-            except Exception as e:
-                print(f"❌ Erreur installation dépendances: {e}")
-                return False
-                
-        return True
-
-    def _check_git_availability(self):
-        """Vérifie la disponibilité de Git"""
-        try:
-            import subprocess
-            result = subprocess.run(['git', '--version'], 
-                                  capture_output=True, text=True, timeout=5)
-            return result.returncode == 0
-        except:
-            return False
-
-    def create_version_tab(self):
-        """Création de l'onglet Version"""
-        # Vérification automatique des dépendances
-        if not self._ensure_update_dependencies():
-            print("⚠️ Certaines dépendances ne peuvent pas être installées automatiquement")
-            
-        main_frame = ctk.CTkFrame(self.version_tab)
-        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        # Titre
-        title_label = ctk.CTkLabel(
-            main_frame,
-            text="📋 INFORMATIONS DE VERSION",
-            font=ctk.CTkFont(size=20, weight="bold")
-        )
-        title_label.pack(pady=(10, 20))
-        
-        # Chargement des informations de version
-        try:
-            import os
-            import json
-            version_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'version.json')
-            if os.path.exists(version_file):
-                with open(version_file, 'r') as f:
-                    version_info = json.load(f)
-            else:
-                version_info = {
-                    'version': '1.0.0',
-                    'last_update': '2025-09-07',
-                    'build': '1000',
-                    'status': 'stable'
-                }
-        except:
-            version_info = {
-                'version': '1.0.0',
-                'last_update': '2025-09-07',
-                'build': '1000',
-                'status': 'stable'
-            }
-        
-        # Informations actuelles
-        info_frame = ctk.CTkFrame(main_frame)
-        info_frame.pack(fill="x", padx=20, pady=10)
-        
-        # Version actuelle
-        version_label = ctk.CTkLabel(
-            info_frame,
-            text=f"Version Actuelle: {version_info['version']}",
-            font=ctk.CTkFont(size=16, weight="bold"),
-            text_color="white"
-        )
-        version_label.pack(pady=(15, 5))
-        
-        # Date de mise à jour
-        date_label = ctk.CTkLabel(
-            info_frame,
-            text=f"Dernière mise à jour: {version_info['last_update']}",
-            font=ctk.CTkFont(size=12),
-            text_color="gray"
-        )
-        date_label.pack(pady=2)
-        
-        # Auteur
-        author_label = ctk.CTkLabel(
-            info_frame,
-            text="Auteur: MDS_AnGe - AnG(e)™",
-            font=ctk.CTkFont(size=12, weight="bold"),
-            text_color="black"
-        )
-        author_label.pack(pady=2)
-        
-        # Status
-        status_label = ctk.CTkLabel(
-            info_frame,
-            text=f"Status: {version_info['status'].title()}",
-            font=ctk.CTkFont(size=12),
-            text_color="green"
-        )
-        status_label.pack(pady=(2, 15))
-        
-        # Boutons de mise à jour
-        buttons_frame = ctk.CTkFrame(main_frame)
-        buttons_frame.pack(fill="x", padx=20, pady=10)
-        
-        # Bouton vérifier MAJ
-        self.check_update_btn = ctk.CTkButton(
-            buttons_frame,
-            text="Vérifier les mises à jour",
-            command=self.check_for_updates,
-            font=ctk.CTkFont(size=14),
-            height=40
-        )
-        self.check_update_btn.pack(pady=(15, 5))
-        
-        # Bouton mettre à jour (masqué par défaut)
-        self.update_btn = ctk.CTkButton(
-            buttons_frame,
-            text="⬇️ Mettre à jour",
-            command=self.perform_update,
-            font=ctk.CTkFont(size=14),
-            height=40
-        )
-        self.update_btn.pack_forget()  # Masqué par défaut
-        
-        # Status de mise à jour
-        self.update_status_label = ctk.CTkLabel(
-            buttons_frame,
-            text="Prêt pour vérification",
-            font=ctk.CTkFont(size=12),
-            text_color="gray"
-        )
-        self.update_status_label.pack(pady=(10, 15))
-
     def check_for_updates(self):
-        """Vérifie les mises à jour sur GitHub"""
-        try:
-            # Vérification préalable des dépendances
-            if not self._ensure_update_dependencies():
-                self.update_status_label.configure(
-                    text="Dépendances manquantes pour les mises à jour", 
-                    text_color="red"
-                )
-                return
-                
-            # Vérification de Git
-            if not self._check_git_availability():
-                self.update_status_label.configure(
-                    text="Git non disponible - mises à jour impossibles", 
-                    text_color="red"
-                )
-                return
-                
-            # Vérification de la connectivité réseau
-            self.update_status_label.configure(text="Vérification en cours...", text_color="orange")
-            self.check_update_btn.configure(state="disabled")
-            
-            import threading
-            thread = threading.Thread(target=self._check_github_updates, daemon=True)
-            thread.start()
-            
-        except Exception as e:
-            print(f"Erreur vérification MAJ: {e}")
-            self.update_status_label.configure(text="Erreur lors de la vérification", text_color="red")
-            self.check_update_btn.configure(state="normal")
-
-    def _check_network_connectivity(self):
-        """Vérifie la connectivité réseau"""
-        try:
-            import socket
-            socket.create_connection(("8.8.8.8", 53), timeout=3)
-            return True
-        except:
-            return False
-
+        """Vérifie les mises à jour"""
+        self.update_status_label.configure(text="Vérification en cours...", text_color="orange")
+        self.check_update_btn.configure(state="disabled")
+        
+        # Thread de vérification
+        import threading
+        thread = threading.Thread(target=self._check_github_updates, daemon=True)
+        thread.start()
+    
     def _check_github_updates(self):
         """Thread pour vérifier GitHub - temporairement désactivé"""
         try:
@@ -2225,209 +1249,72 @@ class RTAPGUIWindow:
         except:
             pass
         return "1.0.0"
-
-    def _update_ui_new_version(self, latest_version):
-        """Interface quand nouvelle version disponible"""
-        self.update_status_label.configure(
-            text=f"Nouvelle version disponible: v{latest_version}", 
-            text_color="orange"
-        )
-        # Afficher le bouton "Mettre à jour" seulement maintenant
-        self.update_btn.pack(pady=5, before=self.update_status_label)
-        self.check_update_btn.configure(state="normal")
-
-    def perform_update(self):
-        """Lance la mise à jour"""
+    
+    def update_display(self, data):
+        """Met à jour l'affichage avec les données reçues"""
         try:
-            from tkinter import messagebox
-            
-            result = messagebox.askyesno(
-                "Confirmation de mise à jour",
-                "La mise à jour va redémarrer l'application.\n\n"
-                "Vos données et entraînements CFR seront préservés.\n\n"
-                "Continuer ?",
-                icon='question'
-            )
-            
-            if result:
-                self.update_status_label.configure(text="Mise à jour en cours...", text_color="orange")
-                self.update_btn.configure(state="disabled")
-                
-                import threading
-                thread = threading.Thread(target=self._perform_git_update, daemon=True)
-                thread.start()
-                
-        except Exception as e:
-            print(f"Erreur MAJ: {e}")
-            self.update_status_label.configure(text="Erreur de mise à jour", text_color="red")
-
-    def _backup_critical_data(self):
-        """Sauvegarde automatique des données critiques avant MAJ"""
-        try:
-            import os
-            import shutil
-            import json
-            from datetime import datetime
-            
-            backup_dir = os.path.join("backups", f"pre_update_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
-            os.makedirs(backup_dir, exist_ok=True)
-            
-            # Sauvegarde des fichiers critiques
-            critical_files = [
-                'config/settings.yaml',
-                'version.json',
-                'data/cfr_training_data.json'
-            ]
-            
-            for file_path in critical_files:
-                if os.path.exists(file_path):
-                    shutil.copy2(file_path, backup_dir)
-                    
-            print(f"✅ Sauvegarde créée: {backup_dir}")
-            return backup_dir
-            
-        except Exception as e:
-            print(f"⚠️ Erreur sauvegarde: {e}")
-            return None
-
-    def _perform_git_update(self):
-        """Effectue la mise à jour Git avec sauvegarde automatique"""
-        try:
-            import subprocess
-            import os
-            
-            # Sauvegarde automatique
-            self.root.after(0, lambda: self.update_status_label.configure(
-                text="Sauvegarde en cours...", text_color="orange"
-            ))
-            
-            backup_path = self._backup_critical_data()
-            
-            self.root.after(0, lambda: self.update_status_label.configure(
-                text="Téléchargement...", text_color="orange"
-            ))
-            
-            # Vérification de l'état Git avant MAJ
-            status_result = subprocess.run(['git', 'status', '--porcelain'], 
-                                         capture_output=True, text=True, cwd='.')
-            
-            if status_result.stdout.strip():
-                # Fichiers modifiés - stash automatique
-                subprocess.run(['git', 'stash', 'push', '-m', 'Auto-stash before update'], 
-                             capture_output=True, text=True, cwd='.')
-                print("📦 Modifications locales sauvegardées automatiquement")
-            
-            # Mise à jour Git avec retry
-            for attempt in range(3):
-                result = subprocess.run(['git', 'pull', 'origin', 'main'], 
-                                      capture_output=True, text=True, cwd='.', timeout=30)
-                
-                if result.returncode == 0:
-                    break
-                elif attempt == 2:
-                    raise subprocess.CalledProcessError(result.returncode, 'git pull')
-                    
-            # Vérification post-MAJ
-            if result.returncode == 0:
-                # Re-installation automatique des dépendances si nécessaire
-                if not self._ensure_update_dependencies():
-                    print("⚠️ Réinstallation des dépendances nécessaire")
-                    
-                self.root.after(0, lambda: self.update_status_label.configure(
-                    text="✅ Mise à jour réussie!", text_color="green"
-                ))
-                
-                # Proposition de redémarrage
-                self.root.after(2000, self._suggest_restart)
+            # Mise à jour des cartes héros
+            if data.get('hero_cards') and len(data['hero_cards']) >= 2:
+                self.hero_card1.configure(text=self.card_to_symbol(data['hero_cards'][0]))
+                self.hero_card2.configure(text=self.card_to_symbol(data['hero_cards'][1]))
             else:
-                error_output = result.stderr or result.stdout
-                print(f"Erreur Git: {error_output}")
-                self.root.after(0, lambda: self.update_status_label.configure(
-                    text="Erreur lors de la mise à jour", text_color="red"
-                ))
+                self.hero_card1.configure(text="🂠")
+                self.hero_card2.configure(text="🂠")
+            
+            # Mise à jour du board
+            if data.get('board_cards'):
+                for i, card in enumerate(data['board_cards'][:5]):
+                    if i < len(self.board_cards):
+                        if card:
+                            self.board_cards[i].configure(text=self.card_to_symbol(card))
+                        else:
+                            self.board_cards[i].configure(text="🂠")
+                            
+            # Mise à jour des informations de jeu
+            if data.get('pot'):
+                self.pot_value.configure(text=str(data['pot']))
                 
-        except subprocess.TimeoutExpired:
-            self.root.after(0, lambda: self.update_status_label.configure(
-                text="Délai d'attente dépassé", text_color="red"
-            ))
-        except Exception as e:
-            print(f"Erreur Git: {e}")
-            self.root.after(0, lambda: self.update_status_label.configure(
-                text="Erreur de mise à jour", text_color="red"
-            ))
-
-    def _suggest_restart(self):
-        """Propose un redémarrage après mise à jour"""
-        try:
-            from tkinter import messagebox
-            
-            result = messagebox.askyesno(
-                "Redémarrage recommandé",
-                "Mise à jour terminée avec succès!\n\n"
-                "Un redémarrage est recommandé pour appliquer tous les changements.\n\n"
-                "Redémarrer maintenant ?",
-                icon='question'
-            )
-            
-            if result:
-                self._restart_application()
+            if data.get('action'):
+                self.action_label.configure(text=str(data['action']))
+                
+            if data.get('win_probability'):
+                self.win_prob_label.configure(text=str(data['win_probability']))
+                
+            if data.get('risk_level'):
+                self.risk_label.configure(text=str(data['risk_level']))
+                
+            if data.get('confidence'):
+                self.confidence_label.configure(text=str(data['confidence']))
+                
+            if data.get('reasoning'):
+                self.reasoning_label.configure(text=str(data['reasoning']))
                 
         except Exception as e:
-            print(f"Erreur suggestion redémarrage: {e}")
-
-    def _restart_application(self):
-        """Redémarre l'application"""
-        try:
-            import sys
-            import subprocess
-            import os
-            
-            # Fermeture propre
-            if self.app_manager:
-                self.app_manager.stop()
-                
-            # Redémarrage
-            python = sys.executable
-            script = os.path.abspath(__file__)
-            subprocess.Popen([python, script])
-            
-            self.root.quit()
-            self.root.destroy()
-            
-        except Exception as e:
-            print(f"Erreur redémarrage: {e}")
-            self.update_status_label.configure(
-                text="Redémarrage manuel requis", text_color="orange"
-            )
-
-    def on_closing(self):
-        """Gestion de la fermeture de la fenêtre"""
-        self.running = False
-        
-        if self.app_manager:
-            self.app_manager.stop()
-        
-        self.root.quit()
-        self.root.destroy()
+            print(f"Erreur mise à jour affichage: {e}")
     
-    def run(self):
-        """Lance l'interface graphique"""
-        try:
-            # Démarrer la mise à jour de l'interface
-            self.start_gui_update_thread()
-            
-            # Lancer la boucle principale
-            self.root.mainloop()
-            
-        except Exception as e:
-            print(f"Erreur lors du lancement de l'interface: {e}")
-            messagebox.showerror("Erreur", f"Erreur critique:\n{str(e)}")
-
-if __name__ == "__main__":
-    print("🎯 Démarrage de RTPA Studio...")
-    
-    try:
-        app = RTAPGUIWindow()
-        app.run()
-    except Exception as e:
-        print(f"Erreur fatale: {e}")
+    def card_to_symbol(self, card_str):
+        """Convertit une carte string (ex: 'As', 'Kh') en symbole Unicode"""
+        if not card_str or len(card_str) != 2:
+            return "🂠"
+        
+        rank, suit = card_str[0], card_str[1]
+        
+        # Mapping des couleurs
+        suit_map = {
+            's': '♠️',  # Spades
+            'h': '♥️',  # Hearts  
+            'd': '♦️',  # Diamonds
+            'c': '♣️'   # Clubs
+        }
+        
+        # Mapping des rangs
+        rank_map = {
+            'A': 'A', 'K': 'K', 'Q': 'Q', 'J': 'J',
+            'T': '10', '9': '9', '8': '8', '7': '7',
+            '6': '6', '5': '5', '4': '4', '3': '3', '2': '2'
+        }
+        
+        suit_symbol = suit_map.get(suit.lower(), '?')
+        rank_symbol = rank_map.get(rank.upper(), '?')
+        
+        return f"{rank_symbol}{suit_symbol}"
