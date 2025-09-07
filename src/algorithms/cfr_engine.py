@@ -232,13 +232,34 @@ class CFREngine:
                 
                 return recommendation
                 
+        except KeyError as e:
+            self.logger.error(f"Erreur données manquantes pour recommandation: {e}")
+            return self._get_default_recommendation()
+        except ValueError as e:
+            self.logger.error(f"Erreur valeur invalide dans calcul CFR: {e}")
+            return self._get_default_recommendation()
+        except ZeroDivisionError as e:
+            self.logger.error(f"Erreur division par zéro dans calculs: {e}")
+            return self._get_default_recommendation()
         except Exception as e:
-            self.logger.error(f"Erreur calcul recommandation: {e}")
+            self.logger.error(f"Erreur inattendue calcul recommandation: {e}")
+            import traceback
+            self.logger.debug(f"Traceback: {traceback.format_exc()}")
             return self._get_default_recommendation()
     
     def _convert_to_poker_state(self, game_state) -> PokerState:
-        """Convertit l'état de jeu en état poker"""
+        """Convertit l'état de jeu en état poker avec validation"""
         try:
+            # Validation des données critiques
+            if not hasattr(game_state, 'hero_cards') or not game_state.hero_cards:
+                raise ValueError("Cartes héros manquantes")
+            
+            if not hasattr(game_state, 'pot_size') or game_state.pot_size < 0:
+                raise ValueError("Taille pot invalide")
+            
+            if not hasattr(game_state, 'hero_stack') or game_state.hero_stack < 0:
+                raise ValueError("Stack héros invalide")
+            
             # Détermination de la street
             board_count = len(game_state.board_cards) if game_state.board_cards else 0
             if board_count == 0:
@@ -254,14 +275,18 @@ class CFREngine:
                 street=street,
                 hero_cards=game_state.hero_cards,
                 board_cards=game_state.board_cards or [],
-                pot_size=game_state.pot_size,
-                hero_stack=game_state.hero_stack,
-                position=game_state.hero_position,
-                num_players=game_state.players_count,
-                current_bet=game_state.current_bet,
+                pot_size=float(game_state.pot_size),
+                hero_stack=float(game_state.hero_stack),
+                position=getattr(game_state, 'hero_position', 0),
+                num_players=getattr(game_state, 'players_count', 9),
+                current_bet=float(getattr(game_state, 'current_bet', 0)),
                 action_history=[],  # À implémenter
-                table_type=game_state.table_type
+                table_type=getattr(game_state, 'table_type', 'cashgame')
             )
+        except (AttributeError, TypeError, ValueError) as e:
+            self.logger.error(f"Erreur conversion état poker: {e}")
+            # Retourner un état par défaut plutôt que d'échouer
+            return self._get_default_poker_state()
             
         except Exception as e:
             self.logger.error(f"Erreur conversion état: {e}")

@@ -195,31 +195,61 @@ class RTAPStudioManager:
         self.status_callbacks.append(callback)
     
     def _notify_status_change(self, status, details=None):
-        """Notifie les callbacks des changements d'état"""
+        """Notifie les callbacks des changements d'état avec gestion robuste"""
         self.current_status = status
-        for callback in self.status_callbacks:
+        failed_callbacks = []
+        
+        for i, callback in enumerate(self.status_callbacks):
             try:
-                callback(status, details)
+                if callable(callback):
+                    callback(status, details)
+                else:
+                    self.logger.warning(f"Callback {i} n'est pas callable")
+                    failed_callbacks.append(i)
+            except TypeError as e:
+                self.logger.error(f"Erreur type callback {i}: {e}")
+                failed_callbacks.append(i)
             except Exception as e:
-                self.logger.error(f"Erreur callback status: {e}")
+                self.logger.error(f"Erreur callback {i}: {e}")
+                import traceback
+                self.logger.debug(f"Traceback callback: {traceback.format_exc()}")
+                failed_callbacks.append(i)
+        
+        # Nettoyer les callbacks défaillants
+        if failed_callbacks:
+            self.logger.info(f"Suppression de {len(failed_callbacks)} callbacks défaillants")
+            for i in reversed(failed_callbacks):
+                self.status_callbacks.pop(i)
     
     def _on_platform_status_change(self, event_type, data):
-        """Gère les changements de statut des plateformes"""
-        if event_type == 'platform_detected':
-            self.logger.info(f"Plateforme détectée: {data}")
-            if not self.running:
-                self._auto_start()
-        
-        elif event_type == 'platform_closed':
-            self.logger.info(f"Plateforme fermée: {data}")
-            if not self.platform_detector.is_any_platform_active():
-                self._auto_stop()
-        
-        elif event_type == 'status':
-            if data == 'active' and not self.running:
-                self._auto_start()
-            elif data == 'waiting' and self.running:
-                self._auto_stop()
+        """Gère les changements de statut des plateformes avec validation"""
+        try:
+            if not isinstance(event_type, str):
+                self.logger.warning(f"Type d'événement invalide: {type(event_type)}")
+                return
+            
+            if event_type == 'platform_detected':
+                self.logger.info(f"Plateforme détectée: {data}")
+                if not self.running and hasattr(self, '_auto_start'):
+                    self._auto_start()
+            
+            elif event_type == 'platform_closed':
+                self.logger.info(f"Plateforme fermée: {data}")
+                if (hasattr(self, 'platform_detector') and 
+                    hasattr(self.platform_detector, 'is_any_platform_active') and
+                    not self.platform_detector.is_any_platform_active()):
+                    self._auto_stop()
+            
+            elif event_type == 'status':
+                if data == 'active' and not self.running:
+                    self._auto_start()
+                elif data == 'waiting' and self.running:
+                    self._auto_stop()
+                    
+        except Exception as e:
+            self.logger.error(f"Erreur gestion changement statut plateforme: {e}")
+            import traceback
+            self.logger.debug(f"Traceback: {traceback.format_exc()}")
     
     def _auto_start(self):
         """Démarrage automatique de l'analyse"""
