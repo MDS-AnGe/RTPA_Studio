@@ -26,6 +26,8 @@ except ImportError:
 
 from numba import jit, prange
 from ..utils.logger import get_logger
+from .card_abstraction import CardAbstraction
+from .action_abstraction import ActionAbstraction
 
 @dataclass
 class PokerState:
