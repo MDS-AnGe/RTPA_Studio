@@ -223,11 +223,11 @@ class RTAPGUIWindow:
         
         # Colonne gauche: Informations table et recommandations
         left_column = ttk.Frame(main_layout)
-        left_column.pack(side='left', fill='y', padx=(0, 15))
+        left_column.pack(side='left', fill='both', expand=True, padx=(0, 15))
         
         # SOUS-SECTION: Informations de table
         table_info_frame = ttk.LabelFrame(left_column, text="📊 INFORMATIONS TABLE", style='Card.TFrame')
-        table_info_frame.pack(fill='x', pady=(0, 10))
+        table_info_frame.pack(fill='both', expand=True, pady=(0, 5))
         
         table_content = ttk.Frame(table_info_frame)
         table_content.pack(padx=10, pady=8)
@@ -257,7 +257,7 @@ class RTAPGUIWindow:
         
         # SOUS-SECTION: Recommandation principale
         rec_frame = ttk.LabelFrame(left_column, text="🎯 RECOMMANDATION", style='Card.TFrame')
-        rec_frame.pack(fill='x', pady=(0, 10))
+        rec_frame.pack(fill='both', expand=True, pady=(0, 5))
         
         rec_content = ttk.Frame(rec_frame)
         rec_content.pack(padx=10, pady=8)
@@ -296,7 +296,7 @@ class RTAPGUIWindow:
         
         # SOUS-SECTION: Statistiques compactes
         stats_frame = ttk.LabelFrame(left_column, text="📈 STATISTIQUES", style='Card.TFrame')
-        stats_frame.pack(fill='x')
+        stats_frame.pack(fill='both', expand=True)
         
         stats_content = ttk.Frame(stats_frame)
         stats_content.pack(padx=10, pady=6)
@@ -335,7 +335,7 @@ class RTAPGUIWindow:
         
         # SECTION 4A: NOS INFOS PERSONNELLES
         hero_frame = ttk.LabelFrame(right_column, text="👤 MOI", style='Card.TFrame')
-        hero_frame.pack(fill='x', pady=(0, 10))  # Suppression des contraintes de largeur
+        hero_frame.pack(fill='both', expand=True, pady=(0, 5))
         
         hero_content = ttk.Frame(hero_frame)
         hero_content.pack(fill='x', padx=8, pady=6)
@@ -357,7 +357,7 @@ class RTAPGUIWindow:
         
         # SECTION 4B: AUTRES JOUEURS ACTIFS
         players_frame = ttk.LabelFrame(right_column, text="👥 AUTRES JOUEURS", style='Card.TFrame')
-        players_frame.pack(fill='x', pady=(10, 0))  # fill='x' au lieu de 'both' et pas expand
+        players_frame.pack(fill='both', expand=True, pady=(0, 0))
         
         players_content = ttk.Frame(players_frame)
         players_content.pack(fill='x', padx=5, pady=3)
