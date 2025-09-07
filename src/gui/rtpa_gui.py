@@ -1231,25 +1231,67 @@ class RTAPGUIWindow:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = os.path.join(desktop, f"RTPA_Export_{timestamp}.rtpa")
                 
-                # Collecter toutes les données importantes
+                # Collecter toutes les données importantes (CORRIGER L'ACCÈS AUX DONNÉES)
                 export_data = {
                     "rtpa_version": "1.0",
                     "export_date": datetime.now().isoformat(),
                     "export_timestamp": time.time(),
-                    "cfr_data": {
-                        "iterations": getattr(self.app_manager.cfr_engine, 'iterations', 0) if hasattr(self.app_manager, 'cfr_engine') else 0,
-                        "convergence": getattr(self.app_manager.cfr_engine, 'best_convergence', 0) if hasattr(self.app_manager, 'cfr_engine') else 0,
-                        "training_hands_count": len(getattr(self.app_manager.cfr_trainer, 'training_hands', [])) if hasattr(self.app_manager, 'cfr_trainer') else 0
-                    },
-                    "database_stats": {
-                        "total_hands": getattr(self.app_manager.memory_db, 'get_hand_count', lambda: 0)() if hasattr(self.app_manager, 'memory_db') else 0,
-                        "unique_scenarios": 0  # À implémenter si nécessaire
-                    },
+                    "cfr_data": {},
+                    "database_stats": {},
                     "performance_data": {
                         "generation_speed": "Variable",
                         "memory_usage": "Optimisé"
                     }
                 }
+                
+                # Récupérer les données CFR réelles depuis le trainer
+                try:
+                    if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
+                        cfr_stats = self.app_manager.cfr_trainer.get_training_statistics()
+                        export_data["cfr_data"] = {
+                            "iterations": cfr_stats.get('iterations', 0),
+                            "convergence": cfr_stats.get('last_convergence', 0.0),
+                            "training_hands_count": cfr_stats.get('training_hands', 0),
+                            "current_quality": cfr_stats.get('current_quality', 0.0),
+                            "progress_percentage": cfr_stats.get('progress_percentage', 0.0),
+                            "info_sets_learned": cfr_stats.get('info_sets_learned', 0),
+                            "target_iterations": cfr_stats.get('target_iterations', 0),
+                            "is_training": cfr_stats.get('is_training', False)
+                        }
+                    
+                    # Récupérer les données de la base
+                    if hasattr(self.app_manager, 'memory_db') and self.app_manager.memory_db:
+                        if hasattr(self.app_manager.memory_db, 'game_states'):
+                            total_db_hands = len(self.app_manager.memory_db.game_states)
+                        else:
+                            total_db_hands = 0
+                        
+                        export_data["database_stats"] = {
+                            "total_hands": total_db_hands,
+                            "unique_scenarios": total_db_hands  # Approximation
+                        }
+                    
+                    # Note: Les données du trainer sont déjà récupérées via get_training_statistics() ci-dessus
+                    
+                    print(f"📊 Données collectées pour export:")
+                    print(f"   CFR Iterations: {export_data['cfr_data'].get('iterations', 0)}")
+                    print(f"   Training Hands: {export_data['cfr_data'].get('training_hands_count', 0)}")
+                    print(f"   Database Hands: {export_data['database_stats'].get('total_hands', 0)}")
+                    print(f"   Convergence: {export_data['cfr_data'].get('convergence', 0.0)}")
+                
+                except Exception as data_error:
+                    print(f"⚠️ Erreur collecte données: {data_error}")
+                    # Valeurs par défaut si erreur
+                    export_data["cfr_data"] = {
+                        "iterations": 0,
+                        "convergence": 0.0,
+                        "training_hands_count": 0,
+                        "note": "Erreur de collecte des données"
+                    }
+                    export_data["database_stats"] = {
+                        "total_hands": 0,
+                        "unique_scenarios": 0
+                    }
                 
                 # Écrire le fichier
                 with open(filename, 'w', encoding='utf-8') as f:
