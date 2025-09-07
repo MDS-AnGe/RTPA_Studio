@@ -586,18 +586,29 @@ class RTAPGUIWindow:
             main_line = ttk.Frame(player_frame)
             main_line.pack(fill='x')
             
-            # Position avec icône selon le type
+            # Position avec couleur et icône selon le type
             pos_text = pos['name']
             position_icon = ""
-            if pos['index'] == 6:  # BTN
-                position_icon = " 🟢"
-            elif pos['index'] == 7:  # SB
-                position_icon = " 🟡"  
-            elif pos['index'] == 8:  # BB
-                position_icon = " 🔵"
+            text_color = '#ffffff'  # Couleur par défaut (blanc)
             
-            ttk.Label(main_line, text=f"{pos_text}{position_icon}", 
-                     font=('Arial', 8, 'bold')).pack(side='left')
+            if pos['index'] == 6:  # BTN (Button)
+                position_icon = " 🟢"
+                text_color = '#FFD700'  # Or
+            elif pos['index'] == 7:  # SB (Small Blind) 
+                position_icon = " 🟡"
+                text_color = '#FF6B35'  # Orange-rouge
+            elif pos['index'] == 8:  # BB (Big Blind)
+                position_icon = " 🔵"
+                text_color = '#FF1744'  # Rouge
+            else:
+                text_color = '#87CEEB'  # Bleu clair pour les autres positions
+            
+            # Appliquer la couleur avec tkinter au lieu de ttk pour supporter les couleurs
+            pos_label = tk.Label(main_line, text=f"{pos_text}{position_icon}", 
+                               font=('Arial', 8, 'bold'),
+                               fg=text_color,
+                               bg='#2b2b2b')
+            pos_label.pack(side='left')
             
             # Vérifier si la position est occupée
             player = players_by_position.get(pos['index'])
