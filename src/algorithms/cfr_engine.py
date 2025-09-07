@@ -63,7 +63,7 @@ class CFREngine:
         # Configuration d'accélération GPU/CPU
         self.device = self._setup_compute_device()
         self.use_acceleration = TORCH_AVAILABLE
-        self.gpu_enabled = False  # Sera configuré via l'interface
+        self.gpu_enabled = True  # Activé par défaut pour performance maximale
         self.gpu_memory_limit = 0.8  # 80% max mémoire GPU
         self.cpu_threads = mp.cpu_count()
         
@@ -76,12 +76,14 @@ class CFREngine:
         self._tensor_cache = {}
         self._computation_cache = {}
         
-        # Configuration CFR
+        # Configuration CFR optimisée GPU
         self.iterations = 0
         self.iterations_count = 0  # Pour compatibilité avec export/import
         self.total_training_time = 0.0  # Temps total d'entraînement
         self.discount_factor = 0.95
         self.exploration_rate = 0.1
+        self.gpu_batch_size = 2000  # Taille batch optimale GPU
+        self.gpu_auto_scaling = True  # Scaling automatique selon charge
         
         # Nouveaux composants pour entraînement massif
         self.cfr_trainer = None
@@ -178,15 +180,15 @@ class CFREngine:
         }
     
     def compute_strategy_regrets(self, utilities, strategy_probs):
-        """Calcul optimisé des regrets avec accélération"""
-        if self.gpu_accelerator and len(utilities) > 100:
-            # Utiliser l'accélérateur pour gros calculs
+        """Calcul optimisé des regrets avec accélération GPU prioritaire"""
+        if self.gpu_accelerator and len(utilities) > 50:  # Seuil abaissé pour plus d'usage GPU
+            # Utiliser l'accélérateur GPU pour la majorité des calculs
             utilities_batch = utilities.reshape(1, -1)
             strategy_batch = strategy_probs.reshape(1, -1)
             regrets = self.gpu_accelerator.compute_regrets_batch(utilities_batch, strategy_batch)
             return regrets.flatten()
         else:
-            # Utiliser Numba pour petits calculs
+            # Utiliser Numba pour très petits calculs uniquement
             return self._compute_regrets_numba(utilities, strategy_probs)
     
     @jit(nopython=True)
