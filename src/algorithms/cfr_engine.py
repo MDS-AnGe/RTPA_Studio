@@ -529,9 +529,15 @@ class CFREngine:
             if poker_state.table_type == "tournament":
                 base_risk *= 1.2  # Plus risqué en tournoi
             
-            # Ajustement selon la position
-            if poker_state.position < 3:  # Early position
-                base_risk *= 1.1
+            # Ajustement selon la position pour 9-max
+            if poker_state.position <= 2:  # UTG, UTG+1, MP1 (early position)
+                base_risk *= 1.15
+            elif poker_state.position == 6:  # Button
+                base_risk *= 0.9  # Moins risqué au button
+            elif poker_state.position == 7:  # Small Blind  
+                base_risk *= 1.1  # Plus risqué SB
+            elif poker_state.position == 8:  # Big Blind
+                base_risk *= 1.05  # Légèrement plus risqué BB
             
             return min(base_risk, 100.0)
             

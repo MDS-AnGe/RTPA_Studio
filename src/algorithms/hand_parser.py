@@ -27,7 +27,7 @@ class ParsedHand:
     pot_size: float
     hero_stack: float
     villain_stack: float
-    position: int  # 0 = small blind, 1 = big blind
+    position: int  # 9-max: 0=UTG, 1=UTG+1, 2=MP1, 3=MP2, 4=MP3, 5=CO, 6=BTN, 7=SB, 8=BB
     blinds: Tuple[float, float]  # (small_blind, big_blind)
     result: float  # Gain/perte pour le héros
     street: int  # 0=preflop, 1=flop, 2=turn, 3=river
