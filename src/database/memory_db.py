@@ -158,7 +158,7 @@ class MemoryDatabase:
             ))
             self.conn.commit()
             
-            return cursor.lastrowid
+            return True
     
     def store_recommendation(self, recommendation: Dict[str, Any], game_state=None):
         """Stocke une recommandation"""

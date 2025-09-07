@@ -75,7 +75,7 @@ class PerformanceBenchmark:
         # Test lecture
         start_time = time.time()
         for i in range(operations):
-            recent = db.get_recent_recommendations(10)
+            recent = db.get_latest_recommendation()
         read_time = time.time() - start_time
         
         self.results['database_speed'] = {
