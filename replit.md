@@ -18,6 +18,24 @@ Date completed: September 7, 2025
 
 ## Recent Updates (September 7, 2025)
 
+### Interface Automatique Intelligente (NOUVEAU)
+- **Détection automatique**: Surveillance continue des plateformes poker (PokerStars, Winamax, PMU)
+- **Démarrage automatique**: Lancement automatique dès qu'une plateforme est détectée
+- **Arrêt automatique**: Pause automatique quand aucune plateforme n'est active
+- **Indicateur d'état**: Affichage temps réel en haut à droite (attente/actif/pause)
+- **Suppression boutons**: Plus de boutons manuels démarrer/arrêter - tout est géré automatiquement
+
+### Logo et Branding
+- **Logo officiel**: Intégration du logo RTPA Studio dans l'interface
+- **Icône application**: Icône personnalisée pour la fenêtre principale
+- **Identité visuelle**: Design cohérent et professionnel
+
+### Détection Plateformes Avancée
+- **Surveillance processus**: Détection par nom de processus (PokerStars.exe, Winamax.exe, etc.)
+- **Détection fenêtres**: Reconnaissance par titre de fenêtre
+- **Support multi-plateformes**: PokerStars, Winamax, PMU, PartyPoker
+- **Callback temps réel**: Notifications instantanées des changements d'état
+
 ### Visual Interface Improvements
 - **Cartes réalistes**: Système d'affichage de cartes avec couleurs rouge/noir et symboles réels (♠ ♥ ♦ ♣)
 - **Renommage**: "Cartes du Héros" renommé en "Main" pour meilleure ergonomie

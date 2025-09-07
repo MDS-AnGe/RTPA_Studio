@@ -21,6 +21,7 @@ else:
 from ..algorithms.cfr_engine import CFREngine
 from ..utils.logger import get_logger
 from ..config.settings import Settings
+from ..utils.platform_detector import PlatformDetector
 
 @dataclass
 class GameState:
@@ -49,10 +50,17 @@ class RTAPStudioManager:
         self.database = MemoryDatabase()
         self.screen_capture = ScreenCapture()
         self.cfr_engine = CFREngine()
+        self.platform_detector = PlatformDetector()
         
         self.game_state = GameState()
         self.running = False
         self.analysis_thread = None
+        self.auto_mode = True  # Mode automatique activé
+        self.current_status = "waiting"  # waiting, active, paused
+        self.status_callbacks = []
+        
+        # Configuration du détecteur de plateformes
+        self.platform_detector.set_status_callback(self._on_platform_status_change)
         self.ocr_thread = None
         
         # Statistiques
@@ -62,6 +70,9 @@ class RTAPStudioManager:
         self.expected_win_rate = 0.65  # Taux normal d'un joueur pro
         
         self.logger.info("RTAPStudioManager initialisé")
+        
+        # Démarrer la surveillance automatique des plateformes
+        self.platform_detector.start_monitoring()
     
     def start(self):
         """Démarre le système d'analyse en temps réel"""
@@ -155,3 +166,72 @@ class RTAPStudioManager:
         self.settings.risk_percentage = risk_percentage
         self.settings.manual_risk_override = True
         self.logger.info(f"Override manuel du risque: {risk_percentage}%")
+    
+    def add_status_callback(self, callback):
+        """Ajoute un callback pour les changements d'état"""
+        self.status_callbacks.append(callback)
+    
+    def _notify_status_change(self, status, details=None):
+        """Notifie les callbacks des changements d'état"""
+        self.current_status = status
+        for callback in self.status_callbacks:
+            try:
+                callback(status, details)
+            except Exception as e:
+                self.logger.error(f"Erreur callback status: {e}")
+    
+    def _on_platform_status_change(self, event_type, data):
+        """Gère les changements de statut des plateformes"""
+        if event_type == 'platform_detected':
+            self.logger.info(f"Plateforme détectée: {data}")
+            if not self.running:
+                self._auto_start()
+        
+        elif event_type == 'platform_closed':
+            self.logger.info(f"Plateforme fermée: {data}")
+            if not self.platform_detector.is_any_platform_active():
+                self._auto_stop()
+        
+        elif event_type == 'status':
+            if data == 'active' and not self.running:
+                self._auto_start()
+            elif data == 'waiting' and self.running:
+                self._auto_stop()
+    
+    def _auto_start(self):
+        """Démarrage automatique de l'analyse"""
+        if self.running or not self.auto_mode:
+            return
+        
+        self.running = True
+        self.logger.info("Démarrage automatique du système d'analyse")
+        
+        # Démarrage des threads d'analyse
+        self.ocr_thread = threading.Thread(target=self._ocr_loop, daemon=True)
+        self.analysis_thread = threading.Thread(target=self._analysis_loop, daemon=True)
+        
+        self.ocr_thread.start()
+        self.analysis_thread.start()
+        
+        platform = self.platform_detector.get_primary_platform()
+        self._notify_status_change('active', {'platform': platform})
+    
+    def _auto_stop(self):
+        """Arrêt automatique de l'analyse"""
+        if not self.running:
+            return
+        
+        self.running = False
+        self.logger.info("Arrêt automatique - Aucune plateforme détectée")
+        self._notify_status_change('waiting')
+    
+    def get_system_status(self):
+        """Retourne l'état actuel du système"""
+        platforms = self.platform_detector.get_detected_platforms()
+        return {
+            'status': self.current_status,
+            'running': self.running,
+            'auto_mode': self.auto_mode,
+            'platforms': platforms,
+            'primary_platform': self.platform_detector.get_primary_platform()
+        }

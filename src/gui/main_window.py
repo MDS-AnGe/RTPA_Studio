@@ -30,10 +30,22 @@ class RTAPMainWindow:
         self.root.geometry("1400x900")
         self.root.minsize(1200, 800)
         
+        # Configuration du logo et icône
+        try:
+            # Utiliser le logo comme icône si disponible
+            self.root.iconbitmap("attached_assets/RTPA_Studio_icon_1757250204909.ico")
+        except:
+            # Fallback si l'icône n'est pas trouvée
+            pass
+        
         # Variables de l'interface
         self.language = tk.StringVar(value="fr")
         self.is_running = False
         self.update_thread = None
+        self.system_status = "waiting"  # waiting, active, paused
+        
+        # Callback pour les changements d'état automatiques
+        self.app_manager.add_status_callback(self._on_system_status_change)
         
         # Configuration multilingue
         self.translations = {
@@ -109,23 +121,42 @@ class RTAPMainWindow:
         # Frame principal
         self.main_frame = ctk.CTkFrame(self.root)
         
-        # Barre de contrôle supérieure
-        self.control_frame = ctk.CTkFrame(self.main_frame)
+        # En-tête avec logo et indicateur d'état
+        self.header_frame = ctk.CTkFrame(self.main_frame)
         
-        self.start_button = ctk.CTkButton(
-            self.control_frame,
-            text=self.get_text("start"),
-            command=self.toggle_analysis,
-            width=120,
-            height=40,
-            font=ctk.CTkFont(size=14, weight="bold")
+        # Logo RTPA Studio
+        try:
+            from PIL import Image
+            logo_image = Image.open("attached_assets/RTPA_Studio_logo_1757250204909.png")
+            logo_image = logo_image.resize((200, 60), Image.Resampling.LANCZOS)
+            self.logo_ctk = ctk.CTkImage(light_image=logo_image, dark_image=logo_image, size=(200, 60))
+            self.logo_label = ctk.CTkLabel(self.header_frame, image=self.logo_ctk, text="")
+        except:
+            # Fallback texte si logo non trouvé
+            self.logo_label = ctk.CTkLabel(
+                self.header_frame,
+                text="🎯 RTPA STUDIO",
+                font=ctk.CTkFont(size=20, weight="bold")
+            )
+        
+        # Indicateur d'état automatique (haut droite)
+        self.status_indicator = ctk.CTkFrame(self.header_frame)
+        self.status_icon = ctk.CTkLabel(
+            self.status_indicator,
+            text="⏸️",
+            font=ctk.CTkFont(size=20)
         )
-        
-        self.status_label = ctk.CTkLabel(
-            self.control_frame,
-            text="● Arrêté",
-            font=ctk.CTkFont(size=12),
-            text_color="red"
+        self.status_text = ctk.CTkLabel(
+            self.status_indicator,
+            text="En attente de plateforme poker",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color="orange"
+        )
+        self.platform_label = ctk.CTkLabel(
+            self.status_indicator,
+            text="Aucune plateforme détectée",
+            font=ctk.CTkFont(size=10),
+            text_color="gray"
         )
         
         # Frame de contenu principal (3 colonnes)
@@ -258,10 +289,19 @@ class RTAPMainWindow:
         # Frame principal
         self.main_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
-        # Barre de contrôle
-        self.control_frame.pack(fill="x", pady=(0, 10))
-        self.start_button.pack(side="left", padx=(10, 20))
-        self.status_label.pack(side="left", padx=10)
+        # En-tête avec logo et status
+        self.header_frame.pack(fill="x", pady=(0, 10))
+        self.logo_label.pack(side="left", padx=(10, 0))
+        
+        # Indicateur d'état à droite
+        self.status_indicator.pack(side="right", padx=(0, 10))
+        self.status_icon.pack(side="left", padx=(10, 5))
+        
+        # Textes de status en colonne
+        status_text_frame = ctk.CTkFrame(self.status_indicator, fg_color="transparent")
+        status_text_frame.pack(side="left", padx=(0, 10))
+        self.status_text.pack(anchor="w")
+        self.platform_label.pack(anchor="w")
         
         # Frame de contenu (3 colonnes)
         self.content_frame.pack(fill="both", expand=True)
@@ -363,48 +403,43 @@ class RTAPMainWindow:
         """Met à jour tous les textes de l'interface"""
         self.root.title(self.get_text("title"))
         
-        # Mise à jour des textes (implémentation simplifiée)
-        if hasattr(self, 'start_button'):
-            if not self.is_running:
-                self.start_button.configure(text=self.get_text("start"))
-            else:
-                self.start_button.configure(text=self.get_text("stop"))
+        # Mise à jour des textes de l'interface
+        # Les boutons ont été remplacés par l'indicateur automatique
+        pass
     
-    def toggle_analysis(self):
-        """Démarre/arrête l'analyse"""
-        if not self.is_running:
-            self.start_analysis()
-        else:
-            self.stop_analysis()
-    
-    def start_analysis(self):
-        """Démarre l'analyse temps réel"""
+    def _on_system_status_change(self, status, details):
+        """Callback appelé lors des changements d'état du système"""
         try:
-            self.app_manager.start()
-            self.is_running = True
+            self.system_status = status
             
-            self.start_button.configure(text=self.get_text("stop"))
-            self.status_label.configure(text="● En cours", text_color="green")
+            # Mise à jour de l'indicateur visuel
+            if status == "active":
+                self.status_icon.configure(text="▶️")
+                self.status_text.configure(text="Analyse en cours", text_color="green")
+                if details and 'platform' in details:
+                    platform_name = details['platform'] or "Inconnue"
+                    platform_info = self.app_manager.platform_detector.supported_platforms.get(
+                        platform_name, {'name': platform_name}
+                    )
+                    self.platform_label.configure(
+                        text=f"Plateforme: {platform_info['name']}", 
+                        text_color="lightgreen"
+                    )
+                
+            elif status == "waiting":
+                self.status_icon.configure(text="⏸️")
+                self.status_text.configure(text="En attente de plateforme poker", text_color="orange")
+                self.platform_label.configure(text="Aucune plateforme détectée", text_color="gray")
             
-            self.logger.info("Analyse démarrée")
+            elif status == "paused":
+                self.status_icon.configure(text="⏸️")
+                self.status_text.configure(text="En pause", text_color="yellow")
+                self.platform_label.configure(text="Plateforme fermée", text_color="gray")
+            
+            self.logger.info(f"État système mis à jour: {status}")
             
         except Exception as e:
-            self.logger.error(f"Erreur démarrage analyse: {e}")
-            messagebox.showerror("Erreur", f"Impossible de démarrer l'analyse: {e}")
-    
-    def stop_analysis(self):
-        """Arrête l'analyse"""
-        try:
-            self.app_manager.stop()
-            self.is_running = False
-            
-            self.start_button.configure(text=self.get_text("start"))
-            self.status_label.configure(text="● Arrêté", text_color="red")
-            
-            self.logger.info("Analyse arrêtée")
-            
-        except Exception as e:
-            self.logger.error(f"Erreur arrêt analyse: {e}")
+            self.logger.error(f"Erreur mise à jour status: {e}")
     
     def update_interface(self):
         """Met à jour l'interface avec les dernières données"""
