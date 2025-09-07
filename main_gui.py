@@ -10,6 +10,24 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent
 sys.path.append(str(PROJECT_ROOT))
 
+# Configuration pour Windows - Nom du processus dans le gestionnaire des tâches
+if sys.platform == "win32":
+    try:
+        import ctypes
+        # Définir le nom de l'application pour Windows
+        ctypes.windll.kernel32.SetConsoleTitleW("RTPA Studio")
+        
+        # Essayer de changer l'identifiant du processus (si possible)
+        try:
+            # Note: cela nécessite des privilèges élevés et peut ne pas fonctionner
+            app_id = "RTAPStudio.PokerAnalysis.1.0"
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+        except Exception:
+            pass  # Ne pas échouer si cela ne fonctionne pas
+            
+    except ImportError:
+        pass  # ctypes n'est pas disponible
+
 def main():
     """Lance RTPA Studio avec interface graphique"""
     

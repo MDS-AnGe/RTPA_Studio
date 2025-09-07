@@ -8,6 +8,8 @@ import tkinter.ttk as ttk
 import customtkinter as ctk
 import threading
 import time
+import sys
+import os
 from typing import Dict, Any, Optional, List
 
 # Configuration CustomTkinter
@@ -36,6 +38,29 @@ class RTAPGUIWindow:
         self.root.geometry("1400x900")
         self.root.minsize(1200, 800)
         
+        # Configuration Windows spécifique pour le gestionnaire des tâches
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                from ctypes import wintypes
+                
+                # Obtenir le handle de la fenêtre
+                def get_hwnd():
+                    def callback(hwnd, pid):
+                        if ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(wintypes.DWORD())) == os.getpid():
+                            return hwnd
+                        return True
+                    
+                    return ctypes.windll.user32.EnumWindows(callback, 0)
+                
+                # Définir l'icône et le titre de l'application
+                self.root.after(100, self._set_windows_properties)
+                
+            except ImportError:
+                pass
+            except Exception:
+                pass
+        
         # Variables de contrôle pour les sliders
         self.cpu_limit = None
         self.ram_limit = None
@@ -47,6 +72,22 @@ class RTAPGUIWindow:
         
         # Configuration de l'événement de fermeture
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+    
+    def _set_windows_properties(self):
+        """Configure les propriétés Windows pour une meilleure identification"""
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                from ctypes import wintypes
+                
+                # Essayer de définir le nom de classe de la fenêtre
+                hwnd = self.root.winfo_id()
+                if hwnd:
+                    # Définir le titre de la fenêtre pour le gestionnaire des tâches
+                    ctypes.windll.user32.SetWindowTextW(hwnd, "RTPA Studio")
+                    
+            except Exception as e:
+                pass  # Ignorer les erreurs de configuration Windows
     
     def create_interface(self):
         """Crée tous les éléments de l'interface"""
