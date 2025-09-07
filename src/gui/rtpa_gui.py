@@ -102,35 +102,94 @@ class RTAPGUIWindow:
         self.main_frame = ctk.CTkFrame(self.root)
         self.main_frame.pack(fill='both', expand=True, padx=10, pady=10)
         
-        # Frame de contrôle compact en haut
-        self.controls_frame = ctk.CTkFrame(self.main_frame, height=80)
+        # Header avec logo - Style professionnel
+        self.controls_frame = ctk.CTkFrame(self.main_frame, height=100)
         self.controls_frame.pack(fill='x', pady=(0, 10))
+        self.controls_frame.pack_propagate(False)
         
-        # Ligne 1: Statut principal - Plus compact
+        # Container horizontal pour logo + informations
+        header_container = ctk.CTkFrame(self.controls_frame)
+        header_container.pack(fill='both', expand=True, padx=15, pady=10)
+        
+        # Essayer de charger le logo RTPA Studio
+        try:
+            from PIL import Image
+            import os
+            
+            # Chercher le logo dans les différents emplacements
+            logo_paths = [
+                "assets/RTPA_Studio_logo_1757286600683.png",
+                "attached_assets/RTPA_Studio_logo_1757286600683.png",
+                "assets/RTPA_Studio_icon_1024_1757286600683.png",
+                "attached_assets/RTPA_Studio_icon_1024_1757286600683.png"
+            ]
+            
+            logo_loaded = False
+            for logo_path in logo_paths:
+                if os.path.exists(logo_path):
+                    logo_image = Image.open(logo_path)
+                    # Adapter la taille selon le type de fichier
+                    if "logo" in logo_path:
+                        logo_image = logo_image.resize((180, 50), Image.Resampling.LANCZOS)
+                        self.header_logo = ctk.CTkImage(light_image=logo_image, dark_image=logo_image, size=(180, 50))
+                    else:
+                        logo_image = logo_image.resize((50, 50), Image.Resampling.LANCZOS)
+                        self.header_logo = ctk.CTkImage(light_image=logo_image, dark_image=logo_image, size=(50, 50))
+                    
+                    # Frame gauche pour le logo
+                    logo_frame = ctk.CTkFrame(header_container, fg_color="transparent")
+                    logo_frame.pack(side='left', padx=(5, 20), pady=5)
+                    
+                    logo_label = ctk.CTkLabel(logo_frame, image=self.header_logo, text="")
+                    logo_label.pack()
+                    logo_loaded = True
+                    break
+                    
+            if not logo_loaded:
+                raise FileNotFoundError("Aucun logo trouvé")
+                
+        except Exception as e:
+            # Fallback avec icône stylisée si pas de logo
+            logo_frame = ctk.CTkFrame(header_container, fg_color="transparent")
+            logo_frame.pack(side='left', padx=(5, 20), pady=5)
+            
+            fallback_label = ctk.CTkLabel(
+                logo_frame,
+                text="🎯\nRTPA",
+                font=ctk.CTkFont(size=14, weight="bold"),
+                justify="center"
+            )
+            fallback_label.pack()
+        
+        # Frame droite pour les informations système
+        info_frame = ctk.CTkFrame(header_container, fg_color="transparent")
+        info_frame.pack(side='left', fill='both', expand=True)
+        
+        # Titre principal
         self.status_label = ctk.CTkLabel(
-            self.controls_frame,
+            info_frame,
             text="Real-Time Poker Assistant (CFR/Nash)",
-            font=ctk.CTkFont(size=20, weight="bold")
+            font=ctk.CTkFont(size=18, weight="bold")
         )
-        self.status_label.pack(pady=(10, 2))
+        self.status_label.pack(anchor='w', pady=(0, 2))
         
-        # Ligne 2: Activité du système - Espacement ultra-réduit
+        # Status surveillance avec icône
         self.activity_status_label = ctk.CTkLabel(
-            self.controls_frame,
-            text="Surveillance active",
-            font=ctk.CTkFont(size=13),
-            text_color="#666666"  # Gris plus foncé pour meilleure lisibilité
+            info_frame,
+            text="🟢 Surveillance active",
+            font=ctk.CTkFont(size=12),
+            text_color="#00b300"
         )
-        self.activity_status_label.pack(pady=(1, 0))
+        self.activity_status_label.pack(anchor='w', pady=(0, 2))
         
-        # Ligne 3: Temps restant CFR - Collé à la ligne précédente
+        # Temps restant CFR
         self.cfr_time_label = ctk.CTkLabel(
-            self.controls_frame,
+            info_frame,
             text="",
-            font=ctk.CTkFont(size=11, weight="bold"),
-            text_color="black"  # Noir pour meilleure lisibilité
+            font=ctk.CTkFont(size=10, weight="bold"),
+            text_color="#666666"
         )
-        self.cfr_time_label.pack(pady=(1, 3))
+        self.cfr_time_label.pack(anchor='w')
         
         # Notebook avec onglets
         self.notebook = ttk.Notebook(self.main_frame)
@@ -828,22 +887,60 @@ class RTAPGUIWindow:
         version_container = ctk.CTkFrame(self.version_tab)
         version_container.pack(fill='both', expand=True, padx=40, pady=40)
         
-        # Logo principal
+        # Logo principal avec support des nouveaux assets
         try:
             from PIL import Image
             import os
-            logo_path = "attached_assets/RTPA_Studio_logo_1757285479377.png"
-            if os.path.exists(logo_path):
-                logo_image = Image.open(logo_path)
-                logo_image = logo_image.resize((250, 80), Image.Resampling.LANCZOS)
-                self.version_logo = ctk.CTkImage(light_image=logo_image, dark_image=logo_image, size=(250, 80))
-                logo_label = ctk.CTkLabel(version_container, image=self.version_logo, text="")
-                logo_label.pack(pady=(40, 20))
-            else:
-                raise FileNotFoundError("Logo non trouvé")
-        except:
-            # Fallback texte si logo non trouvé
-            ctk.CTkLabel(version_container, text="🎯 RTPA Studio", 
+            
+            # Chemins des logos par ordre de préférence
+            logo_paths = [
+                "assets/RTPA_Studio_logo_1757286600683.png",
+                "attached_assets/RTPA_Studio_logo_1757286600683.png",
+                "attached_assets/RTPA_Studio_logo_1757285479377.png"
+            ]
+            
+            logo_loaded = False
+            for logo_path in logo_paths:
+                if os.path.exists(logo_path):
+                    logo_image = Image.open(logo_path)
+                    logo_image = logo_image.resize((300, 90), Image.Resampling.LANCZOS)
+                    self.version_logo = ctk.CTkImage(light_image=logo_image, dark_image=logo_image, size=(300, 90))
+                    logo_label = ctk.CTkLabel(version_container, image=self.version_logo, text="")
+                    logo_label.pack(pady=(40, 20))
+                    logo_loaded = True
+                    break
+                    
+            if not logo_loaded:
+                # Essayer avec l'icône si pas de logo complet
+                icon_paths = [
+                    "assets/RTPA_Studio_icon_1024_1757286600683.png",
+                    "attached_assets/RTPA_Studio_icon_1024_1757286600683.png"
+                ]
+                
+                for icon_path in icon_paths:
+                    if os.path.exists(icon_path):
+                        icon_image = Image.open(icon_path)
+                        icon_image = icon_image.resize((80, 80), Image.Resampling.LANCZOS)
+                        self.version_icon = ctk.CTkImage(light_image=icon_image, dark_image=icon_image, size=(80, 80))
+                        
+                        # Container pour icône + titre
+                        icon_title_frame = ctk.CTkFrame(version_container, fg_color="transparent")
+                        icon_title_frame.pack(pady=(30, 10))
+                        
+                        icon_label = ctk.CTkLabel(icon_title_frame, image=self.version_icon, text="")
+                        icon_label.pack(pady=(10, 5))
+                        
+                        ctk.CTkLabel(icon_title_frame, text="RTPA Studio", 
+                                    font=ctk.CTkFont(size=28, weight="bold")).pack()
+                        logo_loaded = True
+                        break
+                
+                if not logo_loaded:
+                    raise FileNotFoundError("Aucun logo trouvé")
+                        
+        except Exception as e:
+            # Fallback texte si aucune image trouvée
+            ctk.CTkLabel(version_container, text="RTPA Studio", 
                         font=ctk.CTkFont(size=32, weight="bold")).pack(pady=(40, 10))
         
         ctk.CTkLabel(version_container, text="Real-Time Poker Assistant", 
