@@ -9,6 +9,7 @@ import threading
 import time
 import os
 import json
+import subprocess
 from pathlib import Path
 
 # Configuration CustomTkinter
@@ -38,6 +39,7 @@ class RTAPGUIWindow:
         
         # Charger logo si disponible
         self.logo = None
+        self.logo_image = None
         self.load_logo()
         
         # Configuration du style
@@ -51,19 +53,38 @@ class RTAPGUIWindow:
             self.app_manager.start_platform_detection()
         
     def load_logo(self):
-        """Charge le logo RTPA Studio si disponible"""
-        logo_path = "attached_assets/rtpa_logo.png"
+        """Charge le logo et l'icône RTPA Studio si disponibles"""
+        # Logo principal
+        logo_path = "attached_assets/RTPA_Studio_logo_1757263280355.png"
         if os.path.exists(logo_path):
             try:
                 from PIL import Image
                 self.logo_image = ctk.CTkImage(
                     light_image=Image.open(logo_path),
                     dark_image=Image.open(logo_path),
-                    size=(64, 64)
+                    size=(200, 60)  # Taille adaptée au logo horizontal
                 )
                 self.logo = True
-            except Exception:
+            except Exception as e:
+                print(f"Erreur chargement logo: {e}")
                 self.logo = None
+        
+        # Icône de fenêtre
+        icon_path = "attached_assets/RTPA_Studio_icon_1757263280355.ico"
+        if os.path.exists(icon_path):
+            try:
+                self.root.iconbitmap(icon_path)
+            except Exception as e:
+                # Fallback avec l'icône PNG
+                icon_png = "attached_assets/RTPA_Studio_icon_1024_1757263280355.png"
+                if os.path.exists(icon_png):
+                    try:
+                        from PIL import Image
+                        icon_img = Image.open(icon_png)
+                        icon_photo = tk.PhotoImage(icon_img.resize((64, 64)))
+                        self.root.iconphoto(True, icon_photo)
+                    except Exception:
+                        pass
     
     def setup_styles(self):
         """Configuration des styles CustomTkinter"""

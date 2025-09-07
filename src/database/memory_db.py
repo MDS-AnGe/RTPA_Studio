@@ -290,15 +290,30 @@ class MemoryDatabase:
             # Export des données CFR si moteur fourni
             if cfr_engine:
                 try:
+                    # Récupérer les vraies statistiques d'entraînement depuis le trainer
+                    trainer_stats = {}
+                    if hasattr(cfr_engine, 'cfr_trainer') and cfr_engine.cfr_trainer:
+                        trainer_stats = cfr_engine.cfr_trainer.get_training_statistics()
+                        self.logger.info(f"📊 Statistiques CFR récupérées: {trainer_stats.get('iterations', 0)} itérations, {trainer_stats.get('training_hands', 0)} mains")
+                    
                     export_data['cfr_data'] = {
-                        'regret_sum': dict(cfr_engine.regret_sum),
-                        'strategy_sum': dict(cfr_engine.strategy_sum),
-                        'iterations_count': getattr(cfr_engine, 'iterations_count', 0),
-                        'total_training_time': getattr(cfr_engine, 'total_training_time', 0.0)
+                        'regret_sum': dict(getattr(cfr_engine, 'regret_sum', {})),
+                        'strategy_sum': dict(getattr(cfr_engine, 'strategy_sum', {})),
+                        'iterations_count': trainer_stats.get('iterations', getattr(cfr_engine, 'iterations', 0)),
+                        'total_training_time': trainer_stats.get('total_training_time', 0.0),
+                        'training_hands_count': trainer_stats.get('training_hands', 0),
+                        'convergence_threshold': trainer_stats.get('convergence_threshold', 0.01),
+                        'quality_threshold': trainer_stats.get('quality_threshold', 0.85),
+                        'current_quality': trainer_stats.get('current_quality', 0.0),
+                        'last_convergence': trainer_stats.get('last_convergence', 0.0),
+                        'progress_percentage': trainer_stats.get('progress_percentage', 0.0)
                     }
-                    self.logger.info("Données CFR ajoutées à l'export")
+                    
+                    print(f"📤 Export CFR: {trainer_stats.get('iterations', 0)} itérations, {trainer_stats.get('training_hands', 0)} mains")
+                    self.logger.info("Données CFR complètes ajoutées à l'export")
                 except Exception as e:
                     self.logger.warning(f"Impossible d'exporter les données CFR: {e}")
+                    print(f"❌ Erreur export CFR: {e}")
             
             # Export SQLite complet
             try:
