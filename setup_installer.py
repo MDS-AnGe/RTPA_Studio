@@ -173,6 +173,7 @@ class RTAPInstaller:
             "customtkinter>=5.0.0",
             "mss>=6.1.0",
             "psutil>=5.8.0",
+            "pybind11>=2.12.0",
             "pyyaml>=6.0",
             "matplotlib>=3.5.0",
             "seaborn>=0.11.0",
