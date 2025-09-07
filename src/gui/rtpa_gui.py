@@ -173,12 +173,12 @@ class RTAPGUIWindow:
         )
         self.status_label.pack(anchor='w', pady=(0, 2))
         
-        # Status surveillance avec icône
+        # Status surveillance avec icône (orange par défaut)
         self.activity_status_label = ctk.CTkLabel(
             info_frame,
-            text="🟢 Surveillance active",
+            text="🟠 Surveillance active",
             font=ctk.CTkFont(size=12),
-            text_color="#00b300"
+            text_color="#ff8c00"
         )
         self.activity_status_label.pack(anchor='w', pady=(0, 2))
         
@@ -1095,8 +1095,18 @@ class RTAPGUIWindow:
         """Callback quand une plateforme poker est détectée"""
         try:
             if hasattr(self, 'activity_status_label'):
+                # Mapping des noms de plateformes pour affichage
+                platform_names = {
+                    'winamax': 'Winamax',
+                    'pokerstars': 'PokerStars', 
+                    'pmu': 'PMU Poker',
+                    'partypoker': 'PartyPoker',
+                    'unibet': 'Unibet Poker'
+                }
+                display_name = platform_names.get(platform_name.lower(), platform_name)
+                
                 self.activity_status_label.configure(
-                    text=f"🟢 Connecté à {platform_name}",
+                    text=f"🟢 Connecté à {display_name}",
                     text_color="#00b300"
                 )
         except Exception as e:
@@ -1107,19 +1117,31 @@ class RTAPGUIWindow:
         try:
             if hasattr(self, 'activity_status_label'):
                 if connected and platform:
+                    # Mapping des noms de plateformes pour affichage
+                    platform_names = {
+                        'winamax': 'Winamax',
+                        'pokerstars': 'PokerStars', 
+                        'pmu': 'PMU Poker',
+                        'partypoker': 'PartyPoker',
+                        'unibet': 'Unibet Poker'
+                    }
+                    display_name = platform_names.get(platform.lower(), platform)
+                    
                     self.activity_status_label.configure(
-                        text=f"🟢 Connecté à {platform}",
+                        text=f"🟢 Connecté à {display_name}",
                         text_color="#00b300"
                     )
                 elif connected:
+                    # Surveillance active mais aucune plateforme détectée - reste orange
                     self.activity_status_label.configure(
-                        text="🟢 Surveillance active",
-                        text_color="#00b300"
+                        text="🟠 Surveillance active",
+                        text_color="#ff8c00"
                     )
                 else:
+                    # Surveillance arrêtée ou en attente - orange/gris
                     self.activity_status_label.configure(
-                        text="🔄 Surveillance active",
-                        text_color="#666666"
+                        text="🟠 Surveillance active",
+                        text_color="#ff8c00"
                     )
         except Exception as e:
             print(f"Erreur update connection status: {e}")
