@@ -130,41 +130,31 @@ class RTAPGUIWindow:
         # Notebook avec onglets
         self.notebook = ttk.Notebook(self.main_frame)
         
-        # Onglet 1: État du Jeu
-        self.game_tab = ttk.Frame(self.notebook)
-        self.notebook.add(self.game_tab, text="🎮 État du Jeu")
-        self.create_game_tab()
+        # Onglet 1: Tableau de Bord (principal)
+        self.dashboard_tab = ttk.Frame(self.notebook)
+        self.notebook.add(self.dashboard_tab, text="📊 Tableau de Bord")
+        self.create_dashboard_tab()
         
-        # Onglet 2: Recommandations
-        self.recommendations_tab = ttk.Frame(self.notebook)
-        self.notebook.add(self.recommendations_tab, text="🎯 Recommandations")
-        self.create_recommendations_tab()
-        
-        # Onglet 3: Statistiques
-        self.stats_tab = ttk.Frame(self.notebook)
-        self.notebook.add(self.stats_tab, text="📊 Statistiques")
-        self.create_stats_tab()
-        
-        # Onglet 4: Options
+        # Onglet 2: Options
         self.options_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.options_tab, text="⚙️ Options")
         self.create_options_tab()
         
-        # Onglet 5: Paramètres
+        # Onglet 3: Paramètres
         self.settings_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.settings_tab, text="🔧 Paramètres")
         self.create_settings_tab()
         
-        # Onglet 6: Performance
+        # Onglet 4: Performance
         self.performance_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.performance_tab, text="⚡ Performance")
         self.create_performance_tab()
     
-    def create_game_tab(self):
-        """Création de l'onglet État du Jeu avec recommandations intégrées"""
+    def create_dashboard_tab(self):
+        """Création de l'onglet Tableau de Bord complet (état du jeu + recommandations + statistiques)"""
         
-        # Frame principal
-        main_container = ttk.Frame(self.game_tab)
+        # Frame principal avec scrollbar
+        main_container = ttk.Frame(self.dashboard_tab)
         main_container.pack(fill='both', expand=True, padx=20, pady=20)
         
         # Partie haute : Cartes et informations
@@ -358,178 +348,101 @@ class RTAPGUIWindow:
         )
         self.main_reasoning_label.pack(anchor='w', pady=(5, 0))
         
-        # SECTION STATISTIQUES
-        stats_frame = ttk.LabelFrame(main_container, text="📊 STATISTIQUES", style='Card.TFrame')
-        stats_frame.pack(fill='x', pady=(0, 0))
+        # SECTION RECOMMANDATIONS (INTÉGRÉE)
+        recommendations_frame = ttk.LabelFrame(main_container, text="🎯 RECOMMANDATIONS & ANALYSE", style='Card.TFrame')
+        recommendations_frame.pack(fill='x', pady=(15, 0))
         
-        stats_grid = ttk.Frame(stats_frame)
-        stats_grid.pack(fill='x', padx=15, pady=10)
+        # Première ligne: Action + Probabilité + Risque
+        action_row = ttk.Frame(recommendations_frame)
+        action_row.pack(fill='x', padx=15, pady=15)
         
-        # Ligne de statistiques
-        stats_left = ttk.Frame(stats_grid)
-        stats_left.pack(side='left', fill='x', expand=True)
+        # Action recommandée (plus compacte)
+        action_container = ttk.Frame(action_row)
+        action_container.pack(side='left', fill='both', expand=True)
         
-        stats_right = ttk.Frame(stats_grid)
-        stats_right.pack(side='right', fill='x', expand=True)
+        ttk.Label(action_container, text="Action:", style='Heading.TLabel').pack(anchor='w')
+        self.action_display = ttk.Label(action_container, text="CHECK", font=('Arial', 20, 'bold'), foreground='green')
+        self.action_display.pack(anchor='w')
+        self.bet_size_label = ttk.Label(action_container, text="Taille: 0.00€", style='Card.TLabel')
+        self.bet_size_label.pack(anchor='w')
         
-        # Mains jouées/gagnées
-        ttk.Label(stats_left, text="Mains:", style='Heading.TLabel').grid(row=0, column=0, sticky='w', padx=5)
-        self.main_hands_label = ttk.Label(stats_left, text="0 / 0", style='Card.TLabel')
-        self.main_hands_label.grid(row=0, column=1, sticky='w', padx=5)
+        # Probabilité (compacte)
+        prob_container = ttk.Frame(action_row)
+        prob_container.pack(side='left', fill='both', expand=True, padx=(20, 0))
         
-        # Taux victoire
-        ttk.Label(stats_left, text="Taux Victoire:", style='Heading.TLabel').grid(row=0, column=2, sticky='w', padx=(15, 5))
-        self.main_winrate_label = ttk.Label(stats_left, text="0%", style='Card.TLabel')
-        self.main_winrate_label.grid(row=0, column=3, sticky='w', padx=5)
-        
-        # Performance vs Pro
-        ttk.Label(stats_right, text="Performance vs Pro (68%):", style='Heading.TLabel').pack(side='left', padx=5)
-        self.main_performance_label = ttk.Label(stats_right, text="0%", style='Card.TLabel')
-        self.main_performance_label.pack(side='left', padx=5)
-        
-        stats_grid = ttk.Frame(stats_frame)
-        stats_grid.pack(fill='x', padx=15, pady=10)
-        
-        # Ligne de statistiques
-        stats_left = ttk.Frame(stats_grid)
-        stats_left.pack(side='left', fill='x', expand=True)
-        
-        stats_right = ttk.Frame(stats_grid)
-        stats_right.pack(side='right', fill='x', expand=True)
-        
-        # Mains jouées/gagnées
-        ttk.Label(stats_left, text="Mains:", style='Heading.TLabel').grid(row=0, column=0, sticky='w', padx=5)
-        self.main_hands_label = ttk.Label(stats_left, text="0 / 0", style='Card.TLabel')
-        self.main_hands_label.grid(row=0, column=1, sticky='w', padx=5)
-        
-        # Taux victoire
-        ttk.Label(stats_left, text="Taux Victoire:", style='Heading.TLabel').grid(row=0, column=2, sticky='w', padx=(15, 5))
-        self.main_winrate_label = ttk.Label(stats_left, text="0%", style='Card.TLabel')
-        self.main_winrate_label.grid(row=0, column=3, sticky='w', padx=5)
-        
-        # Performance vs Pro
-        ttk.Label(stats_right, text="Performance vs Pro (68%):", style='Heading.TLabel').pack(side='left', padx=5)
-        self.main_performance_label = ttk.Label(stats_right, text="0%", style='Card.TLabel')
-        self.main_performance_label.pack(side='left', padx=5)
-    
-    def create_recommendations_tab(self):
-        """Création de l'onglet Recommandations"""
-        
-        main_container = ttk.Frame(self.recommendations_tab)
-        main_container.pack(fill='both', expand=True, padx=20, pady=20)
-        
-        # Action Recommandée (Grand affichage)
-        action_frame = ttk.LabelFrame(main_container, text="🎯 Action Recommandée", style='Card.TFrame')
-        action_frame.pack(fill='x', pady=(0, 20))
-        
-        self.action_display = ttk.Label(
-            action_frame, 
-            text="CHECK", 
-            font=('Arial', 32, 'bold'),
-            foreground='green'
-        )
-        self.action_display.pack(pady=20)
-        
-        self.bet_size_label = ttk.Label(action_frame, text="Taille: 0.00€", style='Heading.TLabel')
-        self.bet_size_label.pack(pady=(0, 15))
-        
-        # Probabilités et Risques
-        prob_container = ttk.Frame(main_container)
-        prob_container.pack(fill='both', expand=True)
-        
-        # Probabilité de Victoire
-        prob_frame = ttk.LabelFrame(prob_container, text="🎲 Probabilité de Victoire", style='Card.TFrame')
-        prob_frame.pack(side='left', fill='both', expand=True, padx=(0, 10))
-        
-        self.win_prob_label = ttk.Label(prob_frame, text="50.0%", font=('Arial', 28, 'bold'))
-        self.win_prob_label.pack(pady=15)
-        
-        # Barre de progression pour probabilité
-        self.win_prob_progress = ttk.Progressbar(
-            prob_frame, 
-            mode='determinate', 
-            length=250,
-            style='TProgressbar'
-        )
-        self.win_prob_progress.pack(pady=10)
+        ttk.Label(prob_container, text="🎲 Probabilité:", style='Heading.TLabel').pack(anchor='w')
+        self.win_prob_label = ttk.Label(prob_container, text="50.0%", font=('Arial', 20, 'bold'))
+        self.win_prob_label.pack(anchor='w')
+        self.win_prob_progress = ttk.Progressbar(prob_container, mode='determinate', length=120)
+        self.win_prob_progress.pack(fill='x', pady=2)
         self.win_prob_progress['value'] = 50
         
-        # Niveau de Risque
-        risk_frame = ttk.LabelFrame(prob_container, text="⚠️ Niveau de Risque", style='Card.TFrame')
-        risk_frame.pack(side='right', fill='both', expand=True, padx=(10, 0))
+        # Risque (compacte)
+        risk_container = ttk.Frame(action_row)
+        risk_container.pack(side='left', fill='both', expand=True, padx=(20, 0))
         
-        self.risk_label = ttk.Label(risk_frame, text="30%", font=('Arial', 28, 'bold'))
-        self.risk_label.pack(pady=15)
-        
-        # Barre de progression pour risque
-        self.risk_progress = ttk.Progressbar(
-            risk_frame, 
-            mode='determinate', 
-            length=250,
-            style='TProgressbar'
-        )
-        self.risk_progress.pack(pady=10)
+        ttk.Label(risk_container, text="⚠️ Risque:", style='Heading.TLabel').pack(anchor='w')
+        self.risk_label = ttk.Label(risk_container, text="30%", font=('Arial', 20, 'bold'))
+        self.risk_label.pack(anchor='w')
+        self.risk_progress = ttk.Progressbar(risk_container, mode='determinate', length=120)
+        self.risk_progress.pack(fill='x', pady=2)
         self.risk_progress['value'] = 30
         
-        # Raisonnement
-        reasoning_frame = ttk.LabelFrame(main_container, text="🧠 Raisonnement", style='Card.TFrame')
-        reasoning_frame.pack(fill='x', pady=(20, 0))
+        # Raisonnement (deuxième ligne)
+        reasoning_container = ttk.Frame(recommendations_frame)
+        reasoning_container.pack(fill='x', padx=15, pady=(0, 15))
         
-        self.reasoning_text = tk.Text(
-            reasoning_frame, 
-            height=4, 
-            wrap='word',
-            font=('Arial', 11),
-            state='disabled'
-        )
-        self.reasoning_text.pack(fill='x', padx=15, pady=15)
-    
-    def create_stats_tab(self):
-        """Création de l'onglet Statistiques"""
+        ttk.Label(reasoning_container, text="🧠 Raisonnement:", style='Heading.TLabel').pack(anchor='w')
+        self.reasoning_text = tk.Text(reasoning_container, height=2, wrap='word', font=('Arial', 10), state='disabled')
+        self.reasoning_text.pack(fill='x', pady=(5, 0))
         
-        main_container = ttk.Frame(self.stats_tab)
-        main_container.pack(fill='both', expand=True, padx=20, pady=20)
+        # SECTION STATISTIQUES (INTÉGRÉE)
+        stats_frame = ttk.LabelFrame(main_container, text="📈 STATISTIQUES DE PERFORMANCE", style='Card.TFrame')
+        stats_frame.pack(fill='x', pady=(15, 0))
         
-        # Section Performance
-        perf_frame = ttk.LabelFrame(main_container, text="📈 Performance", style='Card.TFrame')
-        perf_frame.pack(fill='x', pady=(0, 20))
-        
-        # Grille de statistiques
-        stats_grid = ttk.Frame(perf_frame)
+        stats_grid = ttk.Frame(stats_frame)
         stats_grid.pack(fill='x', padx=15, pady=15)
         
-        # Mains Jouées
-        ttk.Label(stats_grid, text="Mains Jouées:", style='Heading.TLabel').grid(row=0, column=0, sticky='w', padx=5, pady=5)
-        self.hands_played_value = ttk.Label(stats_grid, text="0", style='Card.TLabel')
-        self.hands_played_value.grid(row=0, column=1, sticky='e', padx=5, pady=5)
+        # Statistiques en colonnes compactes
+        stats_left = ttk.Frame(stats_grid)
+        stats_left.pack(side='left', fill='x', expand=True)
         
-        # Mains Gagnées
-        ttk.Label(stats_grid, text="Mains Gagnées:", style='Heading.TLabel').grid(row=1, column=0, sticky='w', padx=5, pady=5)
-        self.hands_won_value = ttk.Label(stats_grid, text="0", style='Card.TLabel')
-        self.hands_won_value.grid(row=1, column=1, sticky='e', padx=5, pady=5)
+        stats_center = ttk.Frame(stats_grid)
+        stats_center.pack(side='left', fill='x', expand=True)
         
-        # Taux de Victoire
-        ttk.Label(stats_grid, text="Taux de Victoire:", style='Heading.TLabel').grid(row=2, column=0, sticky='w', padx=5, pady=5)
-        self.win_rate_value = ttk.Label(stats_grid, text="0.0%", style='Card.TLabel')
-        self.win_rate_value.grid(row=2, column=1, sticky='e', padx=5, pady=5)
+        stats_right = ttk.Frame(stats_grid)
+        stats_right.pack(side='right', fill='x', expand=True)
         
-        # Taux Attendu (Pro)
-        ttk.Label(stats_grid, text="Taux Attendu (Pro):", style='Heading.TLabel').grid(row=3, column=0, sticky='w', padx=5, pady=5)
-        self.expected_rate_value = ttk.Label(stats_grid, text="65.0%", style='Card.TLabel', foreground='blue')
-        self.expected_rate_value.grid(row=3, column=1, sticky='e', padx=5, pady=5)
+        # Colonne gauche
+        ttk.Label(stats_left, text="Mains Jouées:", style='Heading.TLabel').grid(row=0, column=0, sticky='w', padx=5, pady=2)
+        self.hands_played_value = ttk.Label(stats_left, text="0", style='Card.TLabel')
+        self.hands_played_value.grid(row=0, column=1, sticky='e', padx=5, pady=2)
         
-        # Performance Ratio
-        ttk.Label(stats_grid, text="Ratio Performance:", style='Heading.TLabel').grid(row=4, column=0, sticky='w', padx=5, pady=5)
-        self.performance_ratio_value = ttk.Label(stats_grid, text="0.0%", style='Card.TLabel')
-        self.performance_ratio_value.grid(row=4, column=1, sticky='e', padx=5, pady=5)
+        ttk.Label(stats_left, text="Mains Gagnées:", style='Heading.TLabel').grid(row=1, column=0, sticky='w', padx=5, pady=2)
+        self.hands_won_value = ttk.Label(stats_left, text="0", style='Card.TLabel')
+        self.hands_won_value.grid(row=1, column=1, sticky='e', padx=5, pady=2)
         
-        # Graphique de Performance
-        chart_frame = ttk.LabelFrame(main_container, text="📊 Évolution", style='Card.TFrame')
-        chart_frame.pack(fill='both', expand=True)
+        # Colonne centre
+        ttk.Label(stats_center, text="Taux Victoire:", style='Heading.TLabel').grid(row=0, column=0, sticky='w', padx=5, pady=2)
+        self.win_rate_value = ttk.Label(stats_center, text="0.0%", style='Card.TLabel')
+        self.win_rate_value.grid(row=0, column=1, sticky='e', padx=5, pady=2)
         
-        # Placeholder pour graphique (à implémenter avec matplotlib)
-        self.chart_label = ttk.Label(chart_frame, text="📊 Graphique de performance\n(En cours de développement)", style='Heading.TLabel')
-        self.chart_label.pack(expand=True)
+        ttk.Label(stats_center, text="Attendu Pro:", style='Heading.TLabel').grid(row=1, column=0, sticky='w', padx=5, pady=2)
+        self.expected_rate_value = ttk.Label(stats_center, text="68.0%", style='Card.TLabel', foreground='blue')
+        self.expected_rate_value.grid(row=1, column=1, sticky='e', padx=5, pady=2)
+        
+        # Colonne droite
+        ttk.Label(stats_right, text="Performance:", style='Heading.TLabel').grid(row=0, column=0, sticky='w', padx=5, pady=2)
+        self.performance_ratio_value = ttk.Label(stats_right, text="0.0%", style='Card.TLabel')
+        self.performance_ratio_value.grid(row=0, column=1, sticky='e', padx=5, pady=2)
+        
+        # Compatibilité avec les anciens widgets
+        self.main_hands_label = self.hands_played_value
+        self.main_winrate_label = self.win_rate_value
+        self.main_performance_label = self.performance_ratio_value
+        self.main_reasoning_label = self.reasoning_text
+    
+    
     
     def create_options_tab(self):
         """Création de l'onglet Options"""
