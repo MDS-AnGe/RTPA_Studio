@@ -694,7 +694,7 @@ class CFRTrainer:
             # Extract bet size
             try:
                 bet_size = float(action.split('_')[1]) if '_' in action else poker_state.pot_size * 0.5
-            except:
+            except (ValueError, IndexError, AttributeError):
                 bet_size = poker_state.pot_size * 0.5
             
             # Agressivité récompensée selon force de main

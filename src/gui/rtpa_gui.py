@@ -1028,27 +1028,38 @@ class RTAPGUIWindow:
     
     def start_performance_monitoring(self):
         """Démarre le monitoring des performances"""
+        self.monitoring_active = True
+        
         def update_metrics():
-            while True:
+            while self.monitoring_active and not getattr(self, '_stopping', False):
                 try:
                     import psutil
                     
                     # CPU
                     cpu_percent = psutil.cpu_percent(interval=1)
-                    self.cpu_progress.set(cpu_percent / 100)
-                    self.cpu_label.configure(text=f"{cpu_percent:.1f}%")
+                    if self.monitoring_active:  # Vérifier à nouveau après l'attente
+                        self.cpu_progress.set(cpu_percent / 100)
+                        self.cpu_label.configure(text=f"{cpu_percent:.1f}%")
                     
                     # RAM
                     memory = psutil.virtual_memory()
                     ram_gb = memory.used / (1024**3)
                     ram_percent = memory.percent
-                    self.ram_progress.set(ram_percent / 100)
-                    self.ram_label.configure(text=f"{ram_gb:.1f} GB ({ram_percent:.1f}%)")
+                    if self.monitoring_active:
+                        self.ram_progress.set(ram_percent / 100)
+                        self.ram_label.configure(text=f"{ram_gb:.1f} GB ({ram_percent:.1f}%)")
                     
+                except (ImportError, AttributeError) as e:
+                    self.logger.error(f"Erreur monitoring (import/attribut): {e}")
+                    break
                 except Exception as e:
-                    print(f"Erreur monitoring: {e}")
+                    self.logger.warning(f"Erreur monitoring: {e}")
                 
-                time.sleep(2)
+                # Sleep avec vérification d'arrêt
+                for _ in range(20):  # 2 secondes = 20 * 0.1s
+                    if not self.monitoring_active:
+                        break
+                    time.sleep(0.1)
         
         # Lancer dans un thread séparé
         monitoring_thread = threading.Thread(target=update_metrics, daemon=True)
@@ -1747,7 +1758,7 @@ class RTAPGUIWindow:
                         activity_text = "Moteur CFR actif"
                     else:
                         activity_text = "Mode surveillance"
-                except:
+                except (AttributeError, KeyError):
                     activity_text = "Mode surveillance"
             
             self.activity_status_label.configure(text=activity_text)
