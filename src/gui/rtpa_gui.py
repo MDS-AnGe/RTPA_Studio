@@ -237,6 +237,10 @@ class RTAPGUIWindow:
         # Démarrer les mises à jour
         self.root.after(1000, self.update_cfr_progress)  # Démarrer après 1 seconde
         self.root.after(2000, self.update_system_metrics)  # Métriques système
+        
+        # Initialiser l'affichage de la tâche
+        if hasattr(self, 'main_task_label'):
+            self.main_task_label.configure(text="Démarrage du système...", text_color="#ff8c00")
     
     def create_dashboard_tab(self):
         """Création de l'onglet Tableau de Bord complet (état du jeu + recommandations + statistiques)"""
@@ -769,22 +773,29 @@ class RTAPGUIWindow:
         ctk.CTkLabel(perf_container, text="⚡ Monitoring des performances", 
                     font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 15))
         
-        # === AFFICHAGE TÂCHE EN COURS ===
+        # === AFFICHAGE TÂCHE EN COURS UNIFIÉ ===
         task_frame = ctk.CTkFrame(perf_container)
         task_frame.pack(fill='x', pady=(0, 20))
         
         ctk.CTkLabel(task_frame, text="📋 Tâche en cours", 
-                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(10, 5))
+                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
         
-        self.current_task_label = ctk.CTkLabel(task_frame, text="Initialisation...", 
-                                              font=ctk.CTkFont(size=12, weight="bold"), 
-                                              text_color="#00b300")
-        self.current_task_label.pack(pady=(0, 5))
+        # Affichage principal de la tâche avec progression
+        self.main_task_label = ctk.CTkLabel(task_frame, text="Initialisation du système...", 
+                                           font=ctk.CTkFont(size=14, weight="bold"), 
+                                           text_color="#00b300")
+        self.main_task_label.pack(pady=(5, 10))
         
-        self.task_time_label = ctk.CTkLabel(task_frame, text="", 
-                                           font=ctk.CTkFont(size=10), 
-                                           text_color="gray")
-        self.task_time_label.pack(pady=(0, 10))
+        # Barre de progression visuelle
+        self.task_progress_bar = ctk.CTkProgressBar(task_frame, width=400, height=20)
+        self.task_progress_bar.pack(pady=(0, 10))
+        self.task_progress_bar.set(0)
+        
+        # Détail de progression (pourcentage et temps)
+        self.task_detail_label = ctk.CTkLabel(task_frame, text="", 
+                                             font=ctk.CTkFont(size=11), 
+                                             text_color="gray")
+        self.task_detail_label.pack(pady=(0, 15))
         
         # Vérification PyTorch et bouton d'installation si nécessaire
         pytorch_frame = ctk.CTkFrame(perf_container)
@@ -1334,45 +1345,107 @@ class RTAPGUIWindow:
             print(f"Erreur mise à jour tâche: {e}")
     
     def update_cfr_progress(self):
-        """Met à jour l'affichage du progrès CFR en temps réel"""
+        """Met à jour la progression de la tâche principale en temps réel"""
         try:
-            if hasattr(self, 'app_manager') and self.app_manager:
-                # Récupérer les statistiques CFR
-                if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
-                    stats = self.app_manager.cfr_trainer.get_training_statistics()
+            # Vérifier s'il y a une tâche CFR en cours
+            if hasattr(self, 'app_manager') and self.app_manager and hasattr(self.app_manager, 'cfr_engine'):
+                cfr_engine = self.app_manager.cfr_engine
+                
+                # Priorité: Tâche CFR en cours
+                if hasattr(cfr_engine, 'cfr_trainer') and cfr_engine.cfr_trainer:
+                    trainer = cfr_engine.cfr_trainer
                     
-                    if stats:
-                        # Calculer le pourcentage et temps restant
-                        progress = stats.get('progress_percentage', 0)
-                        time_remaining = stats.get('estimated_time_remaining', 0)
-                        iterations = stats.get('iterations', 0)
-                        target = stats.get('target_iterations', 100000)
+                    # Vérifier si l'entraînement est actif
+                    if hasattr(trainer, 'training_active') and getattr(trainer, 'training_active', False):
+                        # Récupérer les informations de progression CFR
+                        iterations = getattr(trainer, 'current_iteration', 0)
+                        target = getattr(trainer, 'target_iterations', 100000)
                         
-                        # Formater le temps restant
-                        if time_remaining > 3600:  # Plus d'1 heure
-                            time_str = f"{int(time_remaining/3600)}h{int((time_remaining%3600)/60):02d}m"
-                        elif time_remaining > 60:  # Plus d'1 minute
-                            time_str = f"{int(time_remaining/60)}m{int(time_remaining%60):02d}s"
-                        else:  # Moins d'1 minute
-                            time_str = f"{int(time_remaining)}s"
+                        if target > 0:
+                            progress = min(100.0, (iterations / target) * 100)
+                            
+                            # Calculer le temps restant
+                            time_str = "Calcul..."
+                            if hasattr(trainer, 'training_start_time') and iterations > 50:
+                                import time
+                                elapsed = time.time() - trainer.training_start_time
+                                if elapsed > 0 and iterations > 0:
+                                    rate = iterations / elapsed  # itérations par seconde
+                                    remaining_iterations = max(0, target - iterations)
+                                    remaining_seconds = remaining_iterations / rate if rate > 0 else 0
+                                    
+                                    # Formatage du temps
+                                    if remaining_seconds > 3600:
+                                        hours = int(remaining_seconds // 3600)
+                                        minutes = int((remaining_seconds % 3600) // 60)
+                                        time_str = f"{hours}h{minutes:02d}m"
+                                    elif remaining_seconds > 60:
+                                        minutes = int(remaining_seconds // 60)
+                                        seconds = int(remaining_seconds % 60)
+                                        time_str = f"{minutes}m{seconds:02d}s"
+                                    else:
+                                        time_str = f"{int(remaining_seconds)}s"
+                            
+                            # Affichage unifié de la tâche CFR
+                            task_text = f"Calcul CFR: {progress:.1f}% ({iterations:,}/{target:,}) - Reste: {time_str}"
+                            
+                            # Mettre à jour l'interface
+                            if hasattr(self, 'main_task_label'):
+                                self.main_task_label.configure(text=task_text, text_color="#00b300")
+                            
+                            if hasattr(self, 'task_progress_bar'):
+                                self.task_progress_bar.set(progress / 100.0)
+                            
+                            if hasattr(self, 'task_detail_label'):
+                                detail_text = f"Itérations: {iterations:,} sur {target:,}"
+                                if hasattr(trainer, 'training_start_time'):
+                                    import time
+                                    elapsed = time.time() - trainer.training_start_time
+                                    detail_text += f" | Temps écoulé: {int(elapsed//60)}m{int(elapsed%60):02d}s"
+                                self.task_detail_label.configure(text=detail_text)
+                            
+                            # Programmer la prochaine mise à jour
+                            self.root.after(1000, self.update_cfr_progress)  # Mise à jour chaque seconde
+                            return
+                    
+                    # Vérifier s'il y a une génération de mains en cours
+                    elif hasattr(trainer, 'is_generating') and getattr(trainer, 'is_generating', False):
+                        # Génération en cours
+                        generated = getattr(trainer, 'hands_generated', 0)
+                        target_gen = getattr(trainer, 'target_hands', 200000)
                         
-                        # Affichage du progrès
-                        if progress > 0:
-                            display_text = f"🧠 CFR: {progress:.1f}% ({iterations:,}/{target:,}) - Reste: {time_str}"
-                        else:
-                            display_text = f"🧠 CFR: {iterations:,} itérations - Entraînement actif"
-                        
-                        self.cfr_time_label.configure(text=display_text)
-                    else:
-                        self.cfr_time_label.configure(text="🧠 CFR: Initialisation...")
-                else:
-                    self.cfr_time_label.configure(text="🧠 CFR: Démarrage...")
+                        if target_gen > 0:
+                            progress = min(100.0, (generated / target_gen) * 100)
+                            
+                            task_text = f"Génération mains: {progress:.1f}% ({generated:,}/{target_gen:,})"
+                            
+                            if hasattr(self, 'main_task_label'):
+                                self.main_task_label.configure(text=task_text, text_color="#ff8c00")
+                            
+                            if hasattr(self, 'task_progress_bar'):
+                                self.task_progress_bar.set(progress / 100.0)
+                            
+                            if hasattr(self, 'task_detail_label'):
+                                self.task_detail_label.configure(text=f"Mains générées: {generated:,} sur {target_gen:,}")
+                            
+                            self.root.after(1000, self.update_cfr_progress)
+                            return
             
-            # Programmer la prochaine mise à jour
-            self.root.after(2000, self.update_cfr_progress)  # Mise à jour toutes les 2 secondes
+            # Aucune tâche en cours - affichage par défaut
+            if hasattr(self, 'main_task_label'):
+                self.main_task_label.configure(text="Système en attente", text_color="#666666")
+            
+            if hasattr(self, 'task_progress_bar'):
+                self.task_progress_bar.set(0)
+            
+            if hasattr(self, 'task_detail_label'):
+                self.task_detail_label.configure(text="Aucune tâche en cours")
+            
+            # Programmer la prochaine vérification
+            self.root.after(3000, self.update_cfr_progress)
             
         except Exception as e:
-            print(f"Erreur update CFR progress: {e}")
+            print(f"Erreur update progress: {e}")
             # Reprogram même en cas d'erreur
             self.root.after(5000, self.update_cfr_progress)
     
