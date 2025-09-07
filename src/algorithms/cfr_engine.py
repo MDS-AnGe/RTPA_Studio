@@ -11,10 +11,20 @@ from typing import Dict, List, Tuple, Any, Optional
 from dataclasses import dataclass
 from collections import defaultdict, deque
 import itertools
-import torch
-import torch.nn as nn
-import torch.optim as optim
+import multiprocessing as mp
 
+# GPU/CPU Acceleration support
+try:
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+    import torch.nn.functional as F
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    torch = None
+
+from numba import jit, prange
 from ..utils.logger import get_logger
 
 @dataclass
@@ -43,15 +53,26 @@ class ActionSpace:
             self.bet_sizes = [0.25, 0.33, 0.5, 0.66, 0.75, 1.0, 1.5, 2.0]  # Pourcentages du pot
 
 class CFREngine:
-    """Moteur CFR+ optimisé pour poker temps réel"""
+    """Moteur CFR+ optimisé pour poker temps réel avec accélération GPU/CPU"""
     
     def __init__(self):
         self.logger = get_logger(__name__)
+        
+        # Configuration d'accélération GPU/CPU
+        self.device = self._setup_compute_device()
+        self.use_acceleration = TORCH_AVAILABLE
+        self.gpu_enabled = False  # Sera configuré via l'interface
+        self.gpu_memory_limit = 0.8  # 80% max mémoire GPU
+        self.cpu_threads = mp.cpu_count()
         
         # Tables de regrets et stratégies
         self.regret_sum = defaultdict(lambda: defaultdict(float))
         self.strategy_sum = defaultdict(lambda: defaultdict(float))
         self.current_strategy = defaultdict(lambda: defaultdict(float))
+        
+        # Cache tenseurs pour optimisation
+        self._tensor_cache = {}
+        self._computation_cache = {}
         
         # Configuration CFR
         self.iterations = 0
@@ -73,10 +94,15 @@ class CFREngine:
         self.equity_cache = {}
         self.abstraction_cache = {}
         
-        # Multithreading
+        # Multithreading optimisé
         self.calculation_lock = threading.RLock()
         self.background_thread = None
         self.is_running = False
+        
+        # Configuration du threading optimal
+        if TORCH_AVAILABLE:
+            torch.set_num_threads(self.cpu_threads)
+            torch.set_num_interop_threads(self.cpu_threads // 2)
         
         # Modèle Deep CFR (optionnel)
         self.deep_cfr_enabled = False
@@ -86,7 +112,124 @@ class CFREngine:
         # Initialisation de l'entraîneur CFR (sera fait plus tard pour éviter import circulaire)
         self.cfr_trainer = None
         
+        # Initialiser l'accélérateur GPU
+        self._init_gpu_accelerator()
+        
         self.logger.info("CFREngine initialisé avec entraînement automatique")
+        if self.use_acceleration:
+            self.logger.info(f"Accélération disponible: {self.device}")
+        else:
+            self.logger.warning("PyTorch non disponible - utilisation CPU uniquement")
+    
+    def _setup_compute_device(self):
+        """Configure le device optimal pour les calculs"""
+        if not TORCH_AVAILABLE:
+            return "cpu"
+        
+        # Vérifier disponibilité GPU
+        if torch.cuda.is_available():
+            device = torch.device("cuda:0")
+            gpu_props = torch.cuda.get_device_properties(0)
+            self.logger.info(f"GPU détecté: {gpu_props.name} ({gpu_props.total_memory // 1024**2} MB)")
+            return device
+        else:
+            device = torch.device("cpu")
+            self.logger.info(f"Utilisation CPU optimisé: {self.cpu_threads} threads")
+            return device
+    
+    def set_gpu_enabled(self, enabled: bool, memory_limit: float = 0.8):
+        """Active/désactive l'utilisation du GPU"""
+        self.gpu_enabled = enabled and torch.cuda.is_available() if TORCH_AVAILABLE else False
+        self.gpu_memory_limit = memory_limit
+        
+        if self.gpu_enabled:
+            self.device = torch.device("cuda:0")
+            # Limiter l'utilisation mémoire GPU
+            torch.cuda.set_per_process_memory_fraction(memory_limit)
+            self.logger.info(f"GPU activé avec limite mémoire: {memory_limit*100:.0f}%")
+        else:
+            self.device = torch.device("cpu")
+            self.logger.info("Utilisation CPU forcée")
+        
+        # Vider les caches
+        self._clear_tensor_cache()
+    
+    def _clear_tensor_cache(self):
+        """Vide les caches de tenseurs"""
+        self._tensor_cache.clear()
+        self._computation_cache.clear()
+        if self.gpu_enabled and torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    
+    def get_gpu_memory_usage(self):
+        """Retourne l'utilisation mémoire GPU"""
+        if not self.gpu_enabled or not torch.cuda.is_available():
+            return {"available": False, "used": 0, "total": 0}
+        
+        used = torch.cuda.memory_allocated() / 1024**2
+        total = torch.cuda.get_device_properties(0).total_memory / 1024**2
+        return {
+            "available": True,
+            "used": used,
+            "total": total,
+            "percent": (used / total) * 100
+        }
+    
+    @jit(nopython=True)
+    def _compute_regrets_numba(self, utilities, strategy_probs):
+        """Calcul optimisé des regrets avec Numba"""
+        regrets = np.zeros_like(utilities)
+        ev = np.sum(utilities * strategy_probs)
+        
+        for i in prange(len(utilities)):
+            regrets[i] = utilities[i] - ev
+        
+        return regrets
+    
+    def _compute_regrets_torch(self, utilities_tensor, strategy_tensor):
+        """Calcul optimisé des regrets avec PyTorch"""
+        if not self.use_acceleration:
+            return None
+        
+        # Calculer la valeur espérée
+        ev = torch.sum(utilities_tensor * strategy_tensor)
+        
+        # Calculer les regrets
+        regrets = utilities_tensor - ev
+        
+        return regrets.cpu().numpy()
+    
+    def _init_gpu_accelerator(self):
+        """Initialise l'accélérateur GPU/CPU"""
+        try:
+            from .gpu_accelerator import GPUAccelerator, AccelerationConfig
+            
+            config = AccelerationConfig(
+                gpu_enabled=self.gpu_enabled,
+                gpu_memory_limit=self.gpu_memory_limit,
+                cpu_threads=self.cpu_threads
+            )
+            
+            self.gpu_accelerator = GPUAccelerator(config)
+            self.logger.info("Accélérateur GPU/CPU initialisé")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur initialisation accélérateur: {e}")
+            self.gpu_accelerator = None
+    
+    def update_gpu_settings(self, gpu_enabled: bool, memory_limit: float):
+        """Met à jour les paramètres GPU depuis l'interface"""
+        self.set_gpu_enabled(gpu_enabled, memory_limit)
+        
+        if self.gpu_accelerator:
+            self.gpu_accelerator.update_config(gpu_enabled, memory_limit)
+            self.logger.info(f"Paramètres GPU mis à jour: enabled={gpu_enabled}, memory={memory_limit*100:.0f}%")
+    
+    def get_acceleration_stats(self):
+        """Retourne les statistiques d'accélération"""
+        if self.gpu_accelerator:
+            return self.gpu_accelerator.get_performance_stats()
+        return {}
     
     def init_trainer(self):
         """Initialise l'entraîneur CFR (séparé pour éviter import circulaire)"""

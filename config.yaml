@@ -35,6 +35,12 @@ performance:
   memory_limit: 75.0
   threads: 4
 
+gpu:
+  enabled: false
+  memory_limit: 80.0
+  mixed_precision: true
+  batch_size: 1000
+
 gui:
   theme: "light"
   accent_color: "blue"
