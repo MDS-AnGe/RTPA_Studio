@@ -1,0 +1,474 @@
+"""
+Entraîneur CFR intensif pour convergence Nash rapide
+Implémentation optimisée avec métriques de qualité
+"""
+
+import time
+import threading
+import numpy as np
+from typing import Dict, List, Any, Optional
+from collections import defaultdict, deque
+from concurrent.futures import ThreadPoolExecutor
+import pickle
+import json
+
+from .hand_parser import ParsedHand
+from .hand_generator import HandGenerator, GenerationSettings
+from .cfr_engine import CFREngine, PokerState
+from ..utils.logger import get_logger
+
+class CFRTrainer:
+    """Entraîneur CFR avec génération massive de mains"""
+    
+    def __init__(self, cfr_engine: CFREngine):
+        self.logger = get_logger(__name__)
+        self.cfr_engine = cfr_engine
+        
+        # Configuration d'entraînement
+        self.target_iterations = 100000
+        self.convergence_threshold = 0.01
+        self.quality_threshold = 0.85
+        
+        # Générateur de mains
+        generation_settings = GenerationSettings(
+            hands_per_batch=5000,
+            max_hands=500000,
+            preflop_ratio=0.3,
+            flop_ratio=0.3,
+            turn_ratio=0.25,
+            river_ratio=0.15
+        )
+        self.hand_generator = HandGenerator(generation_settings)
+        
+        # Métriques de training
+        self.training_hands = []
+        self.convergence_history = deque(maxlen=1000)
+        self.quality_history = deque(maxlen=1000)
+        self.iteration_times = deque(maxlen=100)
+        
+        # État de l'entraînement
+        self.is_training = False
+        self.training_thread = None
+        self.start_time = 0.0
+        self.total_training_time = 0.0
+        
+        # Cache et optimisations
+        self.strategy_cache = {}
+        self.regret_updates = 0
+        self.strategy_updates = 0
+        
+        self.logger.info("CFRTrainer initialisé")
+    
+    def load_historical_hands(self, file_paths: List[str]) -> int:
+        """Charge les mains historiques depuis les fichiers fournis"""
+        self.logger.info("Chargement des mains historiques...")
+        
+        from .hand_parser import HandParser
+        parser = HandParser()
+        
+        total_hands = 0
+        for file_path in file_paths:
+            try:
+                hands = parser.parse_file(file_path)
+                self.training_hands.extend(hands)
+                total_hands += len(hands)
+                self.logger.info(f"Chargé {len(hands)} mains depuis {file_path}")
+            except Exception as e:
+                self.logger.error(f"Erreur chargement {file_path}: {e}")
+        
+        self.logger.info(f"Total mains historiques chargées: {total_hands}")
+        return total_hands
+    
+    def generate_training_dataset(self, target_size: int = 500000) -> int:
+        """Génère un dataset d'entraînement massif"""
+        self.logger.info(f"Génération de {target_size} mains synthétiques...")
+        
+        start_time = time.time()
+        
+        # Génération par batches pour optimiser la mémoire
+        batch_size = 10000
+        generated_hands = 0
+        
+        while generated_hands < target_size:
+            remaining = target_size - generated_hands
+            current_batch_size = min(batch_size, remaining)
+            
+            batch_hands = self.hand_generator.generate_batch(current_batch_size)
+            self.training_hands.extend(batch_hands)
+            generated_hands += len(batch_hands)
+            
+            if generated_hands % 50000 == 0:
+                self.logger.info(f"Généré {generated_hands}/{target_size} mains...")
+        
+        generation_time = time.time() - start_time
+        self.logger.info(f"Génération terminée: {generated_hands} mains en {generation_time:.2f}s")
+        
+        return generated_hands
+    
+    def start_intensive_training(self, target_iterations: int = None, 
+                                target_convergence: float = None) -> bool:
+        """Démarre l'entraînement CFR intensif"""
+        if self.is_training:
+            self.logger.warning("Entraînement déjà en cours")
+            return False
+        
+        if target_iterations:
+            self.target_iterations = target_iterations
+        if target_convergence:
+            self.convergence_threshold = target_convergence
+        
+        self.logger.info(f"Démarrage entraînement CFR intensif:")
+        self.logger.info(f"  - Objectif: {self.target_iterations} itérations")
+        self.logger.info(f"  - Convergence: {self.convergence_threshold}")
+        self.logger.info(f"  - Mains disponibles: {len(self.training_hands)}")
+        
+        # Vérification dataset
+        if len(self.training_hands) < 10000:
+            self.logger.warning("Dataset insuffisant, génération de mains supplémentaires...")
+            self.generate_training_dataset(100000)
+        
+        # Démarrage training en arrière-plan
+        self.is_training = True
+        self.start_time = time.time()
+        self.training_thread = threading.Thread(target=self._training_loop, daemon=True)
+        self.training_thread.start()
+        
+        return True
+    
+    def stop_training(self):
+        """Arrête l'entraînement"""
+        if self.is_training:
+            self.is_training = False
+            self.total_training_time += time.time() - self.start_time
+            self.logger.info("Arrêt de l'entraînement CFR demandé")
+    
+    def _training_loop(self):
+        """Boucle principale d'entraînement CFR"""
+        self.logger.info("Démarrage de la boucle d'entraînement CFR")
+        
+        iteration = 0
+        last_convergence_check = 0
+        
+        while self.is_training and iteration < self.target_iterations:
+            try:
+                iter_start = time.time()
+                
+                # Sélection batch de mains pour cette itération
+                batch_hands = self._select_training_batch()
+                
+                # Entraînement CFR sur le batch
+                convergence = self._train_cfr_batch(batch_hands, iteration)
+                
+                # Mise à jour métriques
+                iter_time = time.time() - iter_start
+                self.iteration_times.append(iter_time)
+                self.convergence_history.append(convergence)
+                
+                iteration += 1
+                
+                # Check convergence périodique
+                if iteration - last_convergence_check >= 100:
+                    quality = self._evaluate_strategy_quality()
+                    self.quality_history.append(quality)
+                    
+                    # Log progression
+                    if iteration % 1000 == 0:
+                        avg_time = np.mean(list(self.iteration_times))
+                        self.logger.info(f"Itération {iteration}: convergence={convergence:.4f}, "
+                                       f"qualité={quality:.4f}, temps={avg_time:.3f}s")
+                    
+                    # Check arrêt anticipé si convergence atteinte
+                    if convergence < self.convergence_threshold and quality > self.quality_threshold:
+                        self.logger.info(f"Convergence atteinte à l'itération {iteration}")
+                        break
+                    
+                    last_convergence_check = iteration
+                
+                # Pause courte pour éviter surcharge CPU
+                time.sleep(0.001)
+                
+            except Exception as e:
+                self.logger.error(f"Erreur itération {iteration}: {e}")
+                time.sleep(0.1)
+        
+        self.is_training = False
+        self.total_training_time += time.time() - self.start_time
+        
+        final_quality = self._evaluate_strategy_quality()
+        self.logger.info(f"Entraînement terminé:")
+        self.logger.info(f"  - Itérations: {iteration}")
+        self.logger.info(f"  - Convergence finale: {convergence:.4f}")
+        self.logger.info(f"  - Qualité finale: {final_quality:.4f}")
+        self.logger.info(f"  - Temps total: {self.total_training_time:.2f}s")
+    
+    def _select_training_batch(self, batch_size: int = 100) -> List[ParsedHand]:
+        """Sélectionne un batch de mains pour l'entraînement"""
+        if len(self.training_hands) < batch_size:
+            return self.training_hands.copy()
+        
+        # Sélection stratifiée pour couvrir différentes situations
+        preflop_hands = [h for h in self.training_hands if h.street == 0]
+        postflop_hands = [h for h in self.training_hands if h.street > 0]
+        
+        batch = []
+        
+        # 40% preflop, 60% postflop
+        if preflop_hands:
+            batch.extend(np.random.choice(preflop_hands, size=min(40, len(preflop_hands)), replace=False))
+        if postflop_hands:
+            batch.extend(np.random.choice(postflop_hands, size=min(60, len(postflop_hands)), replace=False))
+        
+        return batch[:batch_size]
+    
+    def _train_cfr_batch(self, hands: List[ParsedHand], iteration: int) -> float:
+        """Entraîne CFR sur un batch de mains"""
+        total_regret_change = 0.0
+        processed_hands = 0
+        
+        for hand in hands:
+            try:
+                # Conversion en PokerState
+                poker_state = self._convert_hand_to_poker_state(hand)
+                
+                # CFR traversal
+                regret_change = self._cfr_traversal(poker_state, iteration)
+                total_regret_change += abs(regret_change)
+                processed_hands += 1
+                
+            except Exception as e:
+                self.logger.error(f"Erreur processing main {hand.hand_id}: {e}")
+        
+        # Calcul de convergence (changement moyen des regrets)
+        convergence = total_regret_change / max(processed_hands, 1)
+        return convergence
+    
+    def _cfr_traversal(self, poker_state: PokerState, iteration: int) -> float:
+        """Effectue une traversée CFR sur un état de poker"""
+        
+        # Calcul information set
+        info_set = self.cfr_engine._get_information_set(poker_state)
+        
+        # Actions disponibles
+        actions = self.cfr_engine._get_available_actions(poker_state)
+        if not actions:
+            return 0.0
+        
+        # Stratégie actuelle
+        strategy = self.cfr_engine._get_strategy(info_set, poker_state)
+        
+        # Calcul des valeurs d'action (simplifié)
+        action_values = {}
+        for action in actions:
+            # Simulation de la valeur de l'action
+            value = self._simulate_action_value(poker_state, action)
+            action_values[action] = value
+        
+        # Calcul des regrets
+        node_value = sum(strategy.get(action, 0) * action_values.get(action, 0) for action in actions)
+        total_regret_change = 0.0
+        
+        for action in actions:
+            # Regret = valeur action - valeur noeud
+            regret = action_values.get(action, 0) - node_value
+            
+            # Mise à jour regret avec discount
+            old_regret = self.cfr_engine.regret_sum[info_set][action]
+            self.cfr_engine.regret_sum[info_set][action] = max(0, old_regret + regret)
+            
+            total_regret_change += abs(regret)
+            self.regret_updates += 1
+        
+        # Mise à jour stratégie cumulée
+        for action in actions:
+            self.cfr_engine.strategy_sum[info_set][action] += strategy.get(action, 0)
+            self.strategy_updates += 1
+        
+        return total_regret_change
+    
+    def _simulate_action_value(self, poker_state: PokerState, action: str) -> float:
+        """Simule la valeur d'une action (implémentation simplifiée)"""
+        
+        # Évaluation basique selon l'action et l'état
+        base_value = 0.0
+        
+        # Force de main approximative
+        hand_strength = self._estimate_hand_strength(poker_state)
+        
+        if action == 'fold':
+            base_value = -poker_state.current_bet
+        elif action == 'check' or action == 'call':
+            base_value = hand_strength * poker_state.pot_size - poker_state.current_bet
+        elif action.startswith('bet') or action.startswith('raise'):
+            # Extract bet size
+            try:
+                bet_size = float(action.split('_')[1]) if '_' in action else poker_state.pot_size * 0.5
+            except:
+                bet_size = poker_state.pot_size * 0.5
+            
+            # Agressivité récompensée selon force de main
+            aggression_bonus = hand_strength * bet_size * 0.5
+            base_value = hand_strength * (poker_state.pot_size + bet_size) - bet_size + aggression_bonus
+        
+        # Ajustement selon position et SPR
+        spr = poker_state.hero_stack / max(poker_state.pot_size, 1)
+        position_factor = 1.1 if poker_state.position == 1 else 0.9  # Button advantage
+        spr_factor = min(1.2, max(0.8, spr / 10))  # SPR adjustment
+        
+        return base_value * position_factor * spr_factor
+    
+    def _estimate_hand_strength(self, poker_state: PokerState) -> float:
+        """Estime la force de la main (implémentation simplifiée)"""
+        
+        hero_cards = poker_state.hero_cards
+        board_cards = poker_state.board_cards
+        
+        if not hero_cards or hero_cards == ("", ""):
+            return 0.5
+        
+        # Analyse basique des cartes
+        ranks = [card[0] for card in hero_cards if card]
+        suits = [card[1] for card in hero_cards if len(card) == 2]
+        
+        strength = 0.5  # Base
+        
+        # Pocket pairs
+        if len(ranks) == 2 and ranks[0] == ranks[1]:
+            pair_values = {'A': 0.95, 'K': 0.9, 'Q': 0.85, 'J': 0.8, 'T': 0.75}
+            strength = pair_values.get(ranks[0], 0.7)
+        
+        # High cards
+        elif 'A' in ranks:
+            strength = 0.75 if 'K' in ranks or 'Q' in ranks else 0.65
+        elif 'K' in ranks and 'Q' in ranks:
+            strength = 0.7
+        
+        # Suited
+        if len(suits) == 2 and suits[0] == suits[1]:
+            strength += 0.05
+        
+        # Ajustement selon board (très simplifié)
+        if board_cards:
+            hero_ranks_set = set(ranks)
+            board_ranks_set = set([card[0] for card in board_cards if card])
+            
+            # Paire avec board
+            if hero_ranks_set & board_ranks_set:
+                strength += 0.15
+        
+        return min(1.0, max(0.0, strength))
+    
+    def _convert_hand_to_poker_state(self, hand: ParsedHand) -> PokerState:
+        """Convertit une ParsedHand en PokerState"""
+        return PokerState(
+            street=hand.street,
+            hero_cards=hand.hero_cards,
+            board_cards=hand.board_cards,
+            pot_size=hand.pot_size,
+            hero_stack=hand.hero_stack,
+            position=hand.position,
+            num_players=2,  # Heads-up par défaut
+            current_bet=hand.blinds[1],  # Big blind comme bet de base
+            action_history=hand.actions,
+            table_type="cashgame"
+        )
+    
+    def _evaluate_strategy_quality(self) -> float:
+        """Évalue la qualité de la stratégie actuelle"""
+        
+        # Métriques de qualité:
+        # 1. Cohérence des stratégies
+        # 2. Exploitation des situations évidentes
+        # 3. Convergence des regrets
+        
+        if not self.cfr_engine.strategy_sum:
+            return 0.0
+        
+        quality_score = 0.0
+        num_evaluations = 0
+        
+        # Sample information sets pour évaluation
+        info_sets = list(self.cfr_engine.strategy_sum.keys())
+        sample_size = min(100, len(info_sets))
+        
+        if sample_size == 0:
+            return 0.0
+        
+        sample_info_sets = np.random.choice(info_sets, size=sample_size, replace=False)
+        
+        for info_set in sample_info_sets:
+            strategy_sum = self.cfr_engine.strategy_sum[info_set]
+            
+            if not strategy_sum:
+                continue
+            
+            # Normalisation de la stratégie
+            total = sum(strategy_sum.values())
+            if total <= 0:
+                continue
+            
+            normalized_strategy = {action: count/total for action, count in strategy_sum.items()}
+            
+            # Évaluation de cohérence (entropy inverse)
+            entropy = 0.0
+            for prob in normalized_strategy.values():
+                if prob > 0:
+                    entropy -= prob * np.log2(prob)
+            
+            # Score de qualité (préfère stratégies moins aléatoires)
+            max_entropy = np.log2(len(normalized_strategy))
+            coherence_score = 1.0 - (entropy / max_entropy) if max_entropy > 0 else 1.0
+            
+            quality_score += coherence_score
+            num_evaluations += 1
+        
+        average_quality = quality_score / max(num_evaluations, 1)
+        
+        # Ajustement selon nombre d'itérations (stratégies prennent temps à converger)
+        iteration_factor = min(1.0, self.cfr_engine.iterations / 10000)
+        
+        return average_quality * iteration_factor
+    
+    def save_training_progress(self, file_path: str):
+        """Sauvegarde le progrès d'entraînement"""
+        try:
+            progress_data = {
+                'iterations': self.cfr_engine.iterations,
+                'total_training_time': self.total_training_time,
+                'convergence_history': list(self.convergence_history),
+                'quality_history': list(self.quality_history),
+                'regret_updates': self.regret_updates,
+                'strategy_updates': self.strategy_updates,
+                'hands_trained': len(self.training_hands),
+                'final_quality': self._evaluate_strategy_quality()
+            }
+            
+            with open(file_path, 'w') as f:
+                json.dump(progress_data, f, indent=2)
+            
+            self.logger.info(f"Progrès sauvegardé: {file_path}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur sauvegarde progrès: {e}")
+    
+    def get_training_statistics(self) -> Dict[str, Any]:
+        """Retourne les statistiques d'entraînement"""
+        
+        current_quality = self._evaluate_strategy_quality()
+        last_convergence = self.convergence_history[-1] if self.convergence_history else 1.0
+        
+        return {
+            'is_training': self.is_training,
+            'iterations': self.cfr_engine.iterations,
+            'target_iterations': self.target_iterations,
+            'training_hands': len(self.training_hands),
+            'regret_updates': self.regret_updates,
+            'strategy_updates': self.strategy_updates,
+            'total_training_time': self.total_training_time,
+            'current_quality': current_quality,
+            'last_convergence': last_convergence,
+            'convergence_threshold': self.convergence_threshold,
+            'quality_threshold': self.quality_threshold,
+            'avg_iteration_time': np.mean(list(self.iteration_times)) if self.iteration_times else 0.0,
+            'info_sets_learned': len(self.cfr_engine.strategy_sum),
+            'progress_percentage': min(100, (self.cfr_engine.iterations / self.target_iterations) * 100)
+        }
