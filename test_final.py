@@ -49,7 +49,7 @@ def test_all_components():
         from src.core.app_manager import GameState
         test_state = GameState(
             hero_cards=("As", "Kh"),
-            board_cards=["Ah", "Kd", "7c"],
+            board_cards=("Ah", "Kd", "7c"),
             pot_size=150.0,
             hero_stack=2500.0
         )
@@ -147,6 +147,10 @@ def test_all_components():
         import traceback
         traceback.print_exc()
         return False
+
+def main():
+    """Point d'entrée principal pour le workflow"""
+    return test_all_components()
 
 if __name__ == "__main__":
     success = test_all_components()

@@ -397,8 +397,8 @@ class CFRTrainer:
             return self.continuous_generator.is_user_stopped()
         return False
     
-    def configure_generation_resources(self, cpu_percent: float = None, 
-                                     memory_mb: float = None, rate_per_second: float = None):
+    def configure_generation_resources(self, cpu_percent: Optional[float] = None, 
+                                     memory_mb: Optional[float] = None, rate_per_second: Optional[float] = None):
         """Configure les ressources allouées à la génération"""
         try:
             if self.continuous_generator:
@@ -413,8 +413,8 @@ class CFRTrainer:
         except Exception as e:
             self.logger.error(f"Erreur configuration ressources: {e}")
     
-    def configure_storage_settings(self, max_disk_mb: int = None, 
-                                 max_memory_hands: int = None, compression_level: int = None):
+    def configure_storage_settings(self, max_disk_mb: Optional[int] = None, 
+                                 max_memory_hands: Optional[int] = None, compression_level: Optional[int] = None):
         """Configure les paramètres de stockage"""
         try:
             if self.data_manager:
@@ -481,7 +481,7 @@ class CFRTrainer:
                 'training_hands': len(self.training_hands),
                 'regret_sum': dict(self.cfr_engine.regret_sum) if hasattr(self.cfr_engine, 'regret_sum') else {},
                 'strategy_sum': dict(self.cfr_engine.strategy_sum) if hasattr(self.cfr_engine, 'strategy_sum') else {},
-                'iterations': self.iterations_completed,
+                'iterations': getattr(self, 'iterations_completed', 0),
                 'timestamp': time.time()
             }
             
@@ -945,8 +945,8 @@ class CFRTrainer:
             'last_convergence': max(0.001, last_convergence),
             'convergence_threshold': self.convergence_threshold,
             'quality_threshold': self.quality_threshold,
-            'avg_iteration_time': max(0.01, avg_time),
+            'avg_iteration_time': max(0.01, float(avg_time)),
             'info_sets_learned': len(self.cfr_engine.strategy_sum),
             'progress_percentage': self._last_progress,
-            'estimated_time_remaining': max(0, estimated_time_remaining)
+            'estimated_time_remaining': max(0.0, float(estimated_time_remaining))
         }
