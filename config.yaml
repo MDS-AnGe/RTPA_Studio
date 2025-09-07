@@ -1,0 +1,49 @@
+# Configuration RTPA Studio
+# Fichier de configuration principal du système
+
+app:
+  name: "RTPA Studio"
+  version: "2.5.0"
+  author: "MDS_AnGe - AnG(e)™"
+  log_level: "INFO"
+
+cfr:
+  target_iterations: 100000
+  convergence_threshold: 0.01
+  exploration_rate: 0.1
+  discount_factor: 0.95
+  cfr_plus_enabled: true
+  
+training:
+  batch_size: 5000
+  max_hands: 500000
+  auto_training: true
+  quality_threshold: 0.85
+
+ocr:
+  tesseract_path: "/usr/bin/tesseract"
+  capture_interval: 1.0
+  confidence_threshold: 80
+
+database:
+  type: "memory"
+  backup_enabled: true
+  backup_interval: 300
+
+performance:
+  cpu_limit: 80.0
+  memory_limit: 75.0
+  threads: 4
+
+gui:
+  theme: "light"
+  accent_color: "blue"
+  font_family: "Arial"
+  opacity: 1.0
+  window_size: "1100x900"
+
+platforms:
+  pokerstars: true
+  winamax: true
+  pmu: true
+  partypoker: true

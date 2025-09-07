@@ -26,3 +26,7 @@ class CardAbstraction:
         
         self.cache[cache_key] = bucket
         return bucket
+    
+    def get_bucket_preflop(self, hero_cards: Tuple[str, str]) -> int:
+        """Retourne le bucket d'abstraction pour preflop"""
+        return self.get_bucket(hero_cards, [], 0)
