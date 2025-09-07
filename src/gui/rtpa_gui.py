@@ -321,7 +321,7 @@ class RTAPGUIWindow:
         action_container = tk.Frame(rec_content, bg='#dbdbdb')
         action_container.pack(fill='x', pady=(0, 8))
         
-        self.action_display = tk.Label(action_container, text="CHECK", font=('Arial', 24, 'bold'), fg='#28a745', bg='#dbdbdb')
+        self.action_display = tk.Label(action_container, text="---", font=('Arial', 24, 'bold'), fg='#6c757d', bg='#dbdbdb')
         self.action_display.pack()
         
         self.bet_size_label = tk.Label(action_container, text="", font=('Arial', 18, 'bold'), fg='#28a745', bg='#dbdbdb')
@@ -338,20 +338,20 @@ class RTAPGUIWindow:
         victory_frame = tk.Frame(metrics_row1, bg='#dbdbdb')
         victory_frame.pack(side='left', fill='x', expand=True)
         tk.Label(victory_frame, text="🎯 Victoire", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.win_prob_label = tk.Label(victory_frame, text="50%", font=('Arial', 14, 'bold'), fg='#28a745', bg='#dbdbdb')
+        self.win_prob_label = tk.Label(victory_frame, text="--", font=('Arial', 14, 'bold'), fg='#6c757d', bg='#dbdbdb')
         self.win_prob_label.pack()
         
         risk_frame = tk.Frame(metrics_row1, bg='#dbdbdb')
         risk_frame.pack(side='right', fill='x', expand=True)
         tk.Label(risk_frame, text="⚠️ Risque", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.risk_label = tk.Label(risk_frame, text="30%", font=('Arial', 14, 'bold'), fg='#fd7e14', bg='#dbdbdb')
+        self.risk_label = tk.Label(risk_frame, text="--", font=('Arial', 14, 'bold'), fg='#6c757d', bg='#dbdbdb')
         self.risk_label.pack()
         
         # Ligne 2: Confiance seule, centrée
         confidence_frame = tk.Frame(metrics_frame, bg='#dbdbdb')
         confidence_frame.pack(fill='x')
         tk.Label(confidence_frame, text="🔮 Confiance", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.main_confidence_label = tk.Label(confidence_frame, text="85%", font=('Arial', 14, 'bold'), fg='#6f42c1', bg='#dbdbdb')
+        self.main_confidence_label = tk.Label(confidence_frame, text="--", font=('Arial', 14, 'bold'), fg='#6c757d', bg='#dbdbdb')
         self.main_confidence_label.pack()
         
         # Raisonnement optimisé
@@ -406,7 +406,7 @@ class RTAPGUIWindow:
         pro_frame = tk.Frame(perf_row, bg='#dbdbdb')
         pro_frame.pack(side='left', fill='x', expand=True)
         tk.Label(pro_frame, text="👑 Pro", font=('Arial', 8, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.expected_rate_value = tk.Label(pro_frame, text="68.0%", font=('Arial', 9, 'bold'), fg='#6f42c1', bg='#dbdbdb')
+        self.expected_rate_value = tk.Label(pro_frame, text="--", font=('Arial', 9, 'bold'), fg='#6c757d', bg='#dbdbdb')
         self.expected_rate_value.pack()
         
         performance_frame = tk.Frame(perf_row, bg='#dbdbdb')
@@ -428,17 +428,17 @@ class RTAPGUIWindow:
         
         # Pseudo du joueur
         tk.Label(hero_content, text="Pseudo:", font=('Arial', 10, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack(anchor='w')
-        self.hero_name_label = tk.Label(hero_content, text="MonPseudo", font=('Arial', 12, 'bold'), fg='#007bff', bg='#dbdbdb')
+        self.hero_name_label = tk.Label(hero_content, text="---", font=('Arial', 12, 'bold'), fg='#6c757d', bg='#dbdbdb')
         self.hero_name_label.pack(anchor='w', pady=(2, 8))
         
         # Stack personnel
         tk.Label(hero_content, text="Mon Stack:", font=('Arial', 10, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack(anchor='w')
-        self.hero_stack_label = tk.Label(hero_content, text="2500€", font=('Arial', 14, 'bold'), fg='#28a745', bg='#dbdbdb')
+        self.hero_stack_label = tk.Label(hero_content, text="0€", font=('Arial', 14, 'bold'), fg='#6c757d', bg='#dbdbdb')
         self.hero_stack_label.pack(anchor='w', pady=(2, 8))
         
         # Position à la table
         tk.Label(hero_content, text="Position:", font=('Arial', 10, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack(anchor='w')
-        self.hero_position_label = tk.Label(hero_content, text="Button", font=('Arial', 11), fg='#4a4a4a', bg='#dbdbdb')
+        self.hero_position_label = tk.Label(hero_content, text="---", font=('Arial', 11), fg='#6c757d', bg='#dbdbdb')
         self.hero_position_label.pack(anchor='w', pady=(2, 0))
         
         # SECTION 4B: AUTRES JOUEURS ACTIFS
@@ -453,7 +453,7 @@ class RTAPGUIWindow:
         players_info.pack(fill='x', pady=(0, 3))
         
         tk.Label(players_info, text="Actifs:", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack(side='left')
-        self.active_players_count = tk.Label(players_info, text="8/9", font=('Arial', 9, 'bold'), fg='#4a4a4a', bg='#dbdbdb')
+        self.active_players_count = tk.Label(players_info, text="0/9", font=('Arial', 9, 'bold'), fg='#6c757d', bg='#dbdbdb')
         self.active_players_count.pack(side='left', padx=(3, 0))
         
         # Frame simple pour la liste des joueurs (sans scroll)
@@ -473,8 +473,8 @@ class RTAPGUIWindow:
         self.main_risk_label = self.risk_label
         self.reasoning_text = self.main_reasoning_label
         
-        # Initialiser les données OCR (sera connecté plus tard)
-        self.update_hero_info("MonPseudo", "2500€", "Button")
+        # Initialiser avec des données vides (sera connecté plus tard)
+        self.update_hero_info("---", "0€", "---")
         
         # Progress bars (cachées mais présentes pour compatibilité)
         hidden_frame = ttk.Frame(left_column)
@@ -510,18 +510,10 @@ class RTAPGUIWindow:
         for widget in self.players_list_frame.winfo_children():
             widget.destroy()
         
-        # Utiliser les données fournies ou les données par défaut
+        # Utiliser les données fournies ou une liste vide par défaut
         if players_data is None:
-            # Données d'exemple pour table 9-max (sera remplacé par OCR)
-            players_data = [
-                {"name": "AlicePoker", "stack": 1847, "vpip": 15, "pfr": 12, "status": "actif", "position": 0, "position_name": "UTG", "is_button": False, "is_sb": False, "is_bb": False},
-                {"name": "BobBluff", "stack": 2156, "vpip": 28, "pfr": 22, "status": "actif", "position": 2, "position_name": "MP1", "is_button": False, "is_sb": False, "is_bb": False},
-                {"name": "Charlie2024", "stack": 1023, "vpip": 45, "pfr": 8, "status": "fold", "position": 4, "position_name": "MP3", "is_button": False, "is_sb": False, "is_bb": False},
-                {"name": "DianaAce", "stack": 3421, "vpip": 12, "pfr": 10, "status": "actif", "position": 5, "position_name": "CO", "is_button": False, "is_sb": False, "is_bb": False},
-                {"name": "EdRaise", "stack": 956, "vpip": 35, "pfr": 25, "status": "actif", "position": 6, "position_name": "BTN", "is_button": True, "is_sb": False, "is_bb": False},
-                {"name": "FionaCall", "stack": 1540, "vpip": 22, "pfr": 18, "status": "actif", "position": 7, "position_name": "SB", "is_button": False, "is_sb": True, "is_bb": False},
-                {"name": "GaryFold", "stack": 2890, "vpip": 18, "pfr": 14, "status": "actif", "position": 8, "position_name": "BB", "is_button": False, "is_sb": False, "is_bb": True}
-            ]
+            # Aucune donnée par défaut - attendre les vraies données OCR
+            players_data = []
         
         # Trier par position pour affichage dans l'ordre de la table
         sorted_players = sorted(players_data, key=lambda p: p.get('position', 0))
