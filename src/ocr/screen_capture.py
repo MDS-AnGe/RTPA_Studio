@@ -161,12 +161,11 @@ class ScreenCapture:
             processed_img = self.preprocess_image_advanced(img, zone_type)
             
             # Configuration OCR spécialisée selon le type
+            config = self.tesseract_config  # Configuration par défaut
             if zone_type == 'cards':
                 config = r'--oem 3 --psm 8 -c tessedit_char_whitelist=AKQJT98765432shdc'
             elif zone_type == 'numbers':
                 config = r'--oem 3 --psm 8 -c tessedit_char_whitelist=0123456789$.,k'
-            else:
-                config = self.tesseract_config
             
             # OCR
             text = pytesseract.image_to_string(processed_img, config=config)
@@ -174,7 +173,7 @@ class ScreenCapture:
             
         except pytesseract.TesseractError as e:
             self.logger.error(f"Erreur Tesseract OCR: {e}")
-            self.logger.debug(f"Config OCR utilisée: {config}")
+            self.logger.debug(f"Config OCR utilisée: {config if 'config' in locals() else 'non définie'}")
             return ""
         except cv2.error as e:
             self.logger.error(f"Erreur OpenCV: {e}")
