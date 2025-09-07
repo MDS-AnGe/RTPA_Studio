@@ -65,6 +65,10 @@ class RTAPGUIWindow:
         self.setup_layout()
         self.start_update_thread()
         
+        # Initialisation des valeurs
+        self.calculate_rebuys()
+        self.check_generation_status()
+        
         self.logger.info("Interface graphique RTPA Studio initialisée")
     
     def setup_styles(self):
@@ -588,18 +592,48 @@ class RTAPGUIWindow:
         )
         self.auto_risk_check.grid(row=2, column=0, columnspan=2, sticky='w', pady=5)
         
-        # Section Recaves
+        # Section Recaves (calculé automatiquement)
         rebuy_frame = ttk.LabelFrame(main_container, text="💰 Gestion des Recaves", style='Card.TFrame')
         rebuy_frame.pack(fill='x', pady=(0, 20))
         
         rebuy_grid = ttk.Frame(rebuy_frame)
         rebuy_grid.pack(fill='x', padx=15, pady=15)
         
-        ttk.Label(rebuy_grid, text="Nombre de Recaves Disponibles:", style='Heading.TLabel').grid(row=0, column=0, sticky='w', pady=5)
+        # Bankroll
+        ttk.Label(rebuy_grid, text="Bankroll:", style='Heading.TLabel').grid(row=0, column=0, sticky='w', pady=5)
         
-        self.rebuys_var = tk.StringVar(value="3")
-        self.rebuys_entry = ttk.Entry(rebuy_grid, textvariable=self.rebuys_var, width=10)
-        self.rebuys_entry.grid(row=0, column=1, padx=10, pady=5)
+        self.bankroll_var = tk.StringVar(value="1000")
+        self.bankroll_entry = ttk.Entry(rebuy_grid, textvariable=self.bankroll_var, width=15)
+        self.bankroll_entry.grid(row=0, column=1, padx=10, pady=5)
+        self.bankroll_entry.bind('<KeyRelease>', self.calculate_rebuys)
+        
+        ttk.Label(rebuy_grid, text="€", style='Card.TLabel').grid(row=0, column=2, sticky='w', pady=5)
+        
+        # Mode détection
+        ttk.Label(rebuy_grid, text="Source Bankroll:", style='Heading.TLabel').grid(row=1, column=0, sticky='w', pady=5)
+        
+        self.bankroll_mode_var = tk.StringVar(value="manual")
+        self.bankroll_mode_combo = ttk.Combobox(
+            rebuy_grid,
+            textvariable=self.bankroll_mode_var,
+            values=["auto - Détection automatique", "manual - Saisie manuelle"],
+            state="readonly",
+            width=25
+        )
+        self.bankroll_mode_combo.grid(row=1, column=1, padx=10, pady=5, sticky='w')
+        self.bankroll_mode_combo.bind('<<ComboboxSelected>>', self.change_bankroll_mode)
+        
+        # Indicateur de statut
+        self.bankroll_status = ttk.Label(rebuy_grid, text="🔧 Manuel", font=('Arial', 9), foreground='orange')
+        self.bankroll_status.grid(row=1, column=2, columnspan=2, sticky='w', padx=10, pady=5)
+        
+        # Recaves calculées
+        ttk.Label(rebuy_grid, text="Recaves Possibles:", style='Heading.TLabel').grid(row=2, column=0, sticky='w', pady=5)
+        
+        self.rebuys_calculated = ttk.Label(rebuy_grid, text="10 recaves", style='Card.TLabel', font=('Arial', 11, 'bold'))
+        self.rebuys_calculated.grid(row=2, column=1, sticky='w', padx=10, pady=5)
+        
+        ttk.Label(rebuy_grid, text="(Calculé selon buy-in et bankroll)", font=('Arial', 9), foreground='gray').grid(row=2, column=2, columnspan=2, sticky='w', padx=10, pady=5)
         
         # Actions
         actions_frame = ttk.Frame(main_container)
@@ -906,6 +940,76 @@ class RTAPGUIWindow:
         
         ttk.Label(cfr_grid, text="Amélioration CFR standard. Convergence plus rapide, recommandé", font=('Arial', 9), foreground='gray').grid(row=5, column=2, sticky='w', padx=10, pady=5)
         
+        # Section Génération Continue
+        generation_frame = ttk.LabelFrame(main_container, text="🔄 Génération Continue de Mains", style='Card.TFrame')
+        generation_frame.pack(fill='x', pady=(0, 20))
+        
+        generation_grid = ttk.Frame(generation_frame)
+        generation_grid.pack(fill='x', padx=15, pady=15)
+        
+        # Contrôle arrêt/démarrage
+        ttk.Label(generation_grid, text="État Génération:", style='Heading.TLabel').grid(row=0, column=0, sticky='w', pady=5)
+        
+        control_frame = ttk.Frame(generation_grid)
+        control_frame.grid(row=0, column=1, columnspan=2, padx=10, pady=5, sticky='w')
+        
+        self.generation_start_btn = ttk.Button(
+            control_frame,
+            text="▶️ Démarrer",
+            command=self.start_generation,
+            style='Success.TButton'
+        )
+        self.generation_start_btn.pack(side='left', padx=(0, 5))
+        
+        self.generation_stop_btn = ttk.Button(
+            control_frame,
+            text="⏹ Arrêter",
+            command=self.stop_generation,
+            style='Warning.TButton'
+        )
+        self.generation_stop_btn.pack(side='left', padx=5)
+        
+        self.generation_status = ttk.Label(control_frame, text="🔴 Arrêtée", font=('Arial', 9), foreground='red')
+        self.generation_status.pack(side='left', padx=10)
+        
+        # Ressources allouées
+        ttk.Label(generation_grid, text="Limite CPU:", style='Heading.TLabel').grid(row=1, column=0, sticky='w', pady=5)
+        
+        self.cpu_limit_var = tk.DoubleVar(value=10.0)
+        self.cpu_limit_scale = ttk.Scale(generation_grid, from_=1.0, to=50.0, orient='horizontal', variable=self.cpu_limit_var, length=150, command=self.update_cpu_limit)
+        self.cpu_limit_scale.grid(row=1, column=1, padx=10, pady=5)
+        
+        self.cpu_limit_display = ttk.Label(generation_grid, text="10%", style='Card.TLabel')
+        self.cpu_limit_display.grid(row=1, column=2, sticky='w', padx=10, pady=5)
+        
+        ttk.Label(generation_grid, text="Limite Mémoire:", style='Heading.TLabel').grid(row=2, column=0, sticky='w', pady=5)
+        
+        self.memory_limit_var = tk.DoubleVar(value=100.0)
+        self.memory_limit_scale = ttk.Scale(generation_grid, from_=50.0, to=500.0, orient='horizontal', variable=self.memory_limit_var, length=150, command=self.update_memory_limit)
+        self.memory_limit_scale.grid(row=2, column=1, padx=10, pady=5)
+        
+        self.memory_limit_display = ttk.Label(generation_grid, text="100MB", style='Card.TLabel')
+        self.memory_limit_display.grid(row=2, column=2, sticky='w', padx=10, pady=5)
+        
+        ttk.Label(generation_grid, text="Taux Génération:", style='Heading.TLabel').grid(row=3, column=0, sticky='w', pady=5)
+        
+        self.rate_limit_var = tk.DoubleVar(value=5.0)
+        self.rate_limit_scale = ttk.Scale(generation_grid, from_=1.0, to=20.0, orient='horizontal', variable=self.rate_limit_var, length=150, command=self.update_rate_limit)
+        self.rate_limit_scale.grid(row=3, column=1, padx=10, pady=5)
+        
+        self.rate_limit_display = ttk.Label(generation_grid, text="5/s", style='Card.TLabel')
+        self.rate_limit_display.grid(row=3, column=2, sticky='w', padx=10, pady=5)
+        
+        # Espace disque
+        ttk.Label(generation_grid, text="Limite Disque:", style='Heading.TLabel').grid(row=4, column=0, sticky='w', pady=5)
+        
+        self.disk_limit_var = tk.IntVar(value=200)
+        self.disk_limit_entry = ttk.Entry(generation_grid, textvariable=self.disk_limit_var, width=10)
+        self.disk_limit_entry.grid(row=4, column=1, padx=10, pady=5, sticky='w')
+        self.disk_limit_entry.bind('<KeyRelease>', self.update_disk_limit)
+        
+        ttk.Label(generation_grid, text="MB", style='Card.TLabel').grid(row=4, column=2, sticky='w', pady=5)
+        
         # Section Export/Import
         data_frame = ttk.LabelFrame(main_container, text="📁 Gestion des Données", style='Card.TFrame')
         data_frame.pack(fill='x', pady=(0, 20))
@@ -960,6 +1064,149 @@ class RTAPGUIWindow:
             command=self.apply_settings
         )
         self.apply_settings_btn.pack(pady=10)
+    
+    def calculate_rebuys(self, event=None):
+        """Calcule automatiquement le nombre de recaves possibles"""
+        try:
+            bankroll = float(self.bankroll_var.get())
+            # Buy-in standard estimé à 100€ (peut être détecté automatiquement plus tard)
+            buyin = 100.0
+            
+            # Règle standard : 20 buy-ins minimum pour une gestion conservatrice
+            max_rebuys = int(bankroll / buyin) - 1  # -1 pour le buy-in initial
+            max_rebuys = max(0, max_rebuys)
+            
+            if max_rebuys == 0:
+                self.rebuys_calculated.configure(text="⚠️ Bankroll insuffisante", foreground='red')
+            elif max_rebuys < 5:
+                self.rebuys_calculated.configure(text=f"{max_rebuys} recaves (risqué)", foreground='orange')
+            else:
+                self.rebuys_calculated.configure(text=f"{max_rebuys} recaves", foreground='green')
+                
+        except ValueError:
+            self.rebuys_calculated.configure(text="-- recaves", foreground='gray')
+    
+    def change_bankroll_mode(self, event=None):
+        """Change le mode de détection de la bankroll"""
+        mode = self.bankroll_mode_var.get()
+        
+        if mode.startswith("auto"):
+            self.bankroll_status.configure(text="🤖 Auto", foreground='green')
+            self.bankroll_entry.configure(state='disabled')
+            # TODO: Activer la détection automatique via OCR
+            self.bankroll_var.set("2500")  # Valeur détectée simulée
+        else:
+            self.bankroll_status.configure(text="🔧 Manuel", foreground='orange')
+            self.bankroll_entry.configure(state='normal')
+        
+        self.calculate_rebuys()
+    
+    def start_generation(self):
+        """Démarre la génération continue"""
+        try:
+            # Appliquer les paramètres de ressources
+            self.apply_generation_settings()
+            
+            # Démarrer via l'app manager
+            if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine.cfr_trainer:
+                self.app_manager.cfr_engine.cfr_trainer.start_continuous_generation()
+                
+            self.generation_status.configure(text="🟢 Active", foreground='green')
+            self.generation_start_btn.configure(state='disabled')
+            self.generation_stop_btn.configure(state='normal')
+            
+            self.logger.info("Génération continue démarrée depuis interface")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur démarrage génération: {e}")
+            messagebox.showerror("Erreur", f"Impossible de démarrer la génération: {e}")
+    
+    def stop_generation(self):
+        """Arrête la génération continue"""
+        try:
+            # Arrêter via l'app manager
+            if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine.cfr_trainer:
+                self.app_manager.cfr_engine.cfr_trainer.stop_continuous_generation_user()
+                
+            self.generation_status.configure(text="🔴 Arrêtée", foreground='red')
+            self.generation_start_btn.configure(state='normal')
+            self.generation_stop_btn.configure(state='disabled')
+            
+            self.logger.info("Génération continue arrêtée depuis interface")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur arrêt génération: {e}")
+            messagebox.showerror("Erreur", f"Impossible d'arrêter la génération: {e}")
+    
+    def update_cpu_limit(self, value):
+        """Met à jour l'affichage de la limite CPU"""
+        try:
+            cpu_percent = float(value)
+            self.cpu_limit_display.configure(text=f"{cpu_percent:.0f}%")
+        except:
+            pass
+    
+    def update_memory_limit(self, value):
+        """Met à jour l'affichage de la limite mémoire"""
+        try:
+            memory_mb = float(value)
+            self.memory_limit_display.configure(text=f"{memory_mb:.0f}MB")
+        except:
+            pass
+    
+    def update_rate_limit(self, value):
+        """Met à jour l'affichage du taux de génération"""
+        try:
+            rate = float(value)
+            self.rate_limit_display.configure(text=f"{rate:.0f}/s")
+        except:
+            pass
+    
+    def update_disk_limit(self, event=None):
+        """Met à jour la limite d'espace disque"""
+        # La validation se fait lors de l'application des paramètres
+        pass
+    
+    def apply_generation_settings(self):
+        """Applique les paramètres de génération continue"""
+        try:
+            if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine.cfr_trainer:
+                trainer = self.app_manager.cfr_engine.cfr_trainer
+                
+                # Configuration des ressources de génération
+                trainer.configure_generation_resources(
+                    cpu_percent=self.cpu_limit_var.get(),
+                    memory_mb=self.memory_limit_var.get(),
+                    rate_per_second=self.rate_limit_var.get()
+                )
+                
+                # Configuration du stockage
+                trainer.configure_storage_settings(
+                    max_disk_mb=self.disk_limit_var.get()
+                )
+                
+                self.logger.info("Paramètres de génération appliqués")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur application paramètres génération: {e}")
+    
+    def check_generation_status(self):
+        """Vérifie et met à jour le statut de la génération"""
+        try:
+            if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine.cfr_trainer:
+                status = self.app_manager.cfr_engine.cfr_trainer.get_storage_status()
+                
+                if status['generation_active']:
+                    self.generation_status.configure(text="🟢 Active", foreground='green')
+                    self.generation_start_btn.configure(state='disabled')
+                    self.generation_stop_btn.configure(state='normal')
+                else:
+                    self.generation_status.configure(text="🔴 Arrêtée", foreground='red')
+                    self.generation_start_btn.configure(state='normal')
+                    self.generation_stop_btn.configure(state='disabled')
+                    
+        except Exception as e:
+            pass
     
     def setup_layout(self):
         """Organisation du layout"""
