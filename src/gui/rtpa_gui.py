@@ -127,7 +127,12 @@ class RTAPGUIWindow:
         title_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
         title_frame.pack(side='left', fill='both', expand=True)
         
-        ctk.CTkLabel(title_frame, text="Real-Time Poker Assistant (CFR/Nash)", font=ctk.CTkFont(size=24, weight="bold")).pack(anchor='w')
+        # Titre sur une ligne avec partie en gras et partie en normal
+        title_line_frame = ctk.CTkFrame(title_frame, fg_color="transparent")
+        title_line_frame.pack(anchor='w')
+        
+        ctk.CTkLabel(title_line_frame, text="Real-Time Poker Assistant ", font=ctk.CTkFont(size=24, weight="bold")).pack(side='left')
+        ctk.CTkLabel(title_line_frame, text="(CFR/Nash)", font=ctk.CTkFont(size=24, weight="normal")).pack(side='left')
         ctk.CTkLabel(title_frame, text="avec Intelligence Artificielle", 
                     font=ctk.CTkFont(size=14)).pack(anchor='w')
         
