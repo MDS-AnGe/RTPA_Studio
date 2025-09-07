@@ -455,8 +455,14 @@ class RTAPMainWindow:
                     board_text = " ".join(game_state.board_cards[:5])
                     self.board_cards_value.configure(text=board_text or "-- -- -- -- --")
                 
-                self.pot_size_value.configure(text=f"{game_state.pot_size:.2f}€")
-                self.stack_value.configure(text=f"{game_state.hero_stack:.2f}€")
+                # Utiliser le formatage approprié selon le type de table
+                table_type = getattr(game_state, 'table_type', 'cashgame')
+                if table_type == "tournament":
+                    self.pot_size_value.configure(text=f"{game_state.pot_size:.0f}")
+                    self.stack_value.configure(text=f"{game_state.hero_stack:.0f}")
+                else:
+                    self.pot_size_value.configure(text=f"{game_state.pot_size:.2f}€")
+                    self.stack_value.configure(text=f"{game_state.hero_stack:.2f}€")
             
             # Récupération des recommandations
             recommendation = self.app_manager.get_recommendation()

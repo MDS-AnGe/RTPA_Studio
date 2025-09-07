@@ -37,6 +37,9 @@ class RTAPGUIWindow:
         self.font_family = "Arial"
         self.opacity = 1.0
         
+        # Type de table actuel pour gérer l'affichage des devises
+        self.current_table_type = "cashgame"
+        
         # Charger logo si disponible
         self.logo = None
         self.logo_image = None
@@ -288,7 +291,7 @@ class RTAPGUIWindow:
         pot_container.pack(fill='x', pady=(0, 8))
         
         tk.Label(pot_container, text="💰 POT ACTUEL", font=('Arial', 11, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.pot_label = tk.Label(pot_container, text="0.00€", font=('Arial', 20, 'bold'), fg='#28a745', bg='#dbdbdb')
+        self.pot_label = tk.Label(pot_container, text=self.format_amount(0), font=('Arial', 20, 'bold'), fg='#28a745', bg='#dbdbdb')
         self.pot_label.pack()
         
         # Ligne blinds et antes - organisation horizontale équilibrée
@@ -299,14 +302,14 @@ class RTAPGUIWindow:
         blinds_container = tk.Frame(blinds_row, bg='#dbdbdb')
         blinds_container.pack(side='left', fill='x', expand=True)
         tk.Label(blinds_container, text="🎲 Blinds", font=('Arial', 10, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.blinds_label = tk.Label(blinds_container, text="0.00€ / 0.00€", font=('Arial', 12, 'bold'), fg='#fd7e14', bg='#dbdbdb')
+        self.blinds_label = tk.Label(blinds_container, text=f"{self.format_amount(0)} / {self.format_amount(0)}", font=('Arial', 12, 'bold'), fg='#fd7e14', bg='#dbdbdb')
         self.blinds_label.pack()
         
         # Antes section - centrée à droite
         antes_container = tk.Frame(blinds_row, bg='#dbdbdb')
         antes_container.pack(side='right', fill='x', expand=True)
         tk.Label(antes_container, text="⚡ Antes", font=('Arial', 10, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
-        self.antes_label = tk.Label(antes_container, text="0.00€", font=('Arial', 12, 'bold'), fg='#6f42c1', bg='#dbdbdb')
+        self.antes_label = tk.Label(antes_container, text=self.format_amount(0), font=('Arial', 12, 'bold'), fg='#6f42c1', bg='#dbdbdb')
         self.antes_label.pack()
         
         # Type de table - en bas
@@ -436,7 +439,7 @@ class RTAPGUIWindow:
         
         # Stack personnel
         tk.Label(hero_content, text="Mon Stack:", font=('Arial', 10, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack(anchor='w')
-        self.hero_stack_label = tk.Label(hero_content, text="0€", font=('Arial', 14, 'bold'), fg='#6c757d', bg='#dbdbdb')
+        self.hero_stack_label = tk.Label(hero_content, text=self.format_amount(0), font=('Arial', 14, 'bold'), fg='#6c757d', bg='#dbdbdb')
         self.hero_stack_label.pack(anchor='w', pady=(2, 8))
         
         # Position à la table
@@ -477,7 +480,7 @@ class RTAPGUIWindow:
         self.reasoning_text = self.main_reasoning_label
         
         # Initialiser avec des données vides (sera connecté plus tard)
-        self.update_hero_info("---", "0€", "---")
+        self.update_hero_info("---", self.format_amount(0), "---")
         
         # Progress bars (cachées mais présentes pour compatibilité)
         hidden_frame = ttk.Frame(left_column)
@@ -495,7 +498,7 @@ class RTAPGUIWindow:
         # Mettre à jour nos infos si fournies
         if hero_data:
             self.update_hero_info(hero_data.get('name', 'MonPseudo'), 
-                                hero_data.get('stack', '0€'), 
+                                self.format_amount(float(hero_data.get('stack', '0').replace('€', '').replace(',', '.'))), 
                                 hero_data.get('position', 'Unknown'))
         
         # Compter uniquement les joueurs réellement détectés par OCR
@@ -1762,6 +1765,26 @@ class RTAPGUIWindow:
             self.root.title(title)
         except Exception as e:
             print(f"Erreur mise à jour titre: {e}")
+
+    def get_currency_symbol(self, table_type=None):
+        """Retourne le symbole de devise approprié selon le type de table"""
+        if table_type is None:
+            table_type = self.current_table_type
+        
+        if table_type == "tournament":
+            return ""  # Pas de symbole pour les jetons en tournoi
+        else:  # cashgame
+            return "€"
+    
+    def format_amount(self, amount, table_type=None):
+        """Formate un montant avec le bon symbole selon le type de table"""
+        symbol = self.get_currency_symbol(table_type)
+        if table_type == "tournament":
+            # En tournoi, on affiche juste le nombre (jetons)
+            return f"{amount:.0f}"
+        else:
+            # En cash game, on affiche avec euros et décimales
+            return f"{amount:.2f}{symbol}"
 
     def _connect_to_system_events(self):
         """Connecte l'interface aux événements réels du système"""
