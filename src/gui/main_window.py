@@ -665,24 +665,27 @@ class RTAPMainWindow:
         try:
             import psutil
             
-            # CPU usage
-            cpu_percent = psutil.cpu_percent(interval=None)
-            self.cpu_label.configure(text=f"CPU: {cpu_percent:.1f}%")
+            # CPU usage - vérification d'existence du label
+            if hasattr(self, 'cpu_label'):
+                cpu_percent = psutil.cpu_percent(interval=None)
+                self.cpu_label.configure(text=f"CPU: {cpu_percent:.1f}%")
             
-            # Memory usage  
-            memory = psutil.virtual_memory()
-            memory_percent = memory.percent
-            memory_gb = memory.used / (1024**3)
-            self.memory_label.configure(text=f"RAM: {memory_gb:.1f}GB ({memory_percent:.1f}%)")
+            # Memory usage - vérification d'existence du label
+            if hasattr(self, 'memory_label'):
+                memory = psutil.virtual_memory()
+                memory_percent = memory.percent
+                memory_gb = memory.used / (1024**3)
+                self.memory_label.configure(text=f"RAM: {memory_gb:.1f}GB ({memory_percent:.1f}%)")
             
-            # CFR Status
-            if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine:
-                if hasattr(self.app_manager.cfr_engine, 'training_active') and self.app_manager.cfr_engine.training_active:
-                    self.cfr_status_label.configure(text="CFR: Entraînement actif", text_color="green")
+            # CFR Status - vérification d'existence du label
+            if hasattr(self, 'cfr_status_label'):
+                if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine:
+                    if hasattr(self.app_manager.cfr_engine, 'training_active') and self.app_manager.cfr_engine.training_active:
+                        self.cfr_status_label.configure(text="CFR: Entraînement actif", text_color="green")
+                    else:
+                        self.cfr_status_label.configure(text="CFR: Prêt", text_color="cyan")
                 else:
-                    self.cfr_status_label.configure(text="CFR: Prêt", text_color="cyan")
-            else:
-                self.cfr_status_label.configure(text="CFR: Initialisation...", text_color="orange")
+                    self.cfr_status_label.configure(text="CFR: Initialisation...", text_color="orange")
                 
         except Exception as e:
             self.logger.warning(f"Erreur mise à jour infos système: {e}")
@@ -861,15 +864,17 @@ class RTAPMainWindow:
     def start_update_loop(self):
         """Démarre la boucle de mise à jour de l'interface"""
         def update_loop():
-            while True:
+            while self.is_running:
                 try:
-                    if self.is_running:
+                    if self.is_running and hasattr(self, 'root') and self.root:
                         self.root.after(0, self.update_interface)
                     time.sleep(0.5)  # Mise à jour toutes les 500ms
                     
                 except Exception as e:
                     self.logger.error(f"Erreur boucle mise à jour: {e}")
                     time.sleep(1)
+                    
+            # Sortie propre du thread quand is_running devient False
         
         self.update_thread = threading.Thread(target=update_loop, daemon=True)
         self.update_thread.start()
