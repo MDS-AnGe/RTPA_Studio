@@ -1652,17 +1652,9 @@ class RTAPGUIWindow:
                     text_color="#ff8c82"  # Rouge clair
                 )
             
-            # Ligne 2: Activité du système
-            activity_messages = {
-                "idle": "Système en attente",
-                "generating": "Génération de mains...",
-                "training": "Entraînement CFR en cours",
-                "analyzing": "Analyse de la situation",
-                "ocr": "Capture d'écran OCR",
-                "continuous": "Génération continue active"
-            }
+            # Ligne 2: Activité du système avec estimation temps
+            activity_text = self._get_activity_with_time_estimate()
             
-            activity_text = activity_messages.get(self.current_activity, "Système opérationnel")
             self.activity_status_label.configure(text=activity_text)
             
         except Exception as e:
@@ -1751,6 +1743,82 @@ class RTAPGUIWindow:
                 
         except Exception as e:
             print(f"Erreur connexion événements système: {e}")
+
+    def _get_activity_with_time_estimate(self):
+        """Retourne le message d'activité avec estimation du temps restant"""
+        try:
+            base_messages = {
+                "idle": "Système en attente",
+                "generating": "Génération de mains...",
+                "analyzing": "Analyse de la situation",
+                "ocr": "Capture d'écran OCR",
+                "continuous": "Génération continue active"
+            }
+            
+            if self.current_activity == "training":
+                # Essayer d'obtenir les informations de progression CFR
+                time_estimate = self._get_cfr_time_estimate()
+                if time_estimate:
+                    return f"Entraînement CFR en cours ({time_estimate})"
+                else:
+                    return "Entraînement CFR en cours"
+            
+            return base_messages.get(self.current_activity, "Système opérationnel")
+            
+        except Exception as e:
+            print(f"Erreur calcul estimation temps: {e}")
+            return "Entraînement CFR en cours"
+
+    def _get_cfr_time_estimate(self):
+        """Calcule l'estimation du temps restant pour l'entraînement CFR"""
+        try:
+            if not self.app_manager:
+                return None
+                
+            if not hasattr(self.app_manager, 'cfr_engine') or not self.app_manager.cfr_engine:
+                return None
+                
+            cfr_engine = self.app_manager.cfr_engine
+            if not (hasattr(cfr_engine, 'trainer') and cfr_engine.trainer):
+                return None
+                
+            trainer = cfr_engine.trainer
+            
+            # Récupérer les métriques d'entraînement
+            if hasattr(trainer, 'iterations_completed') and hasattr(trainer, 'target_iterations'):
+                completed = getattr(trainer, 'iterations_completed', 0)
+                target = getattr(trainer, 'target_iterations', 100000)
+                
+                if completed > 0 and target > completed:
+                    # Calculer le temps écoulé et la vitesse
+                    if hasattr(trainer, 'training_start_time'):
+                        import time
+                        elapsed_time = time.time() - trainer.training_start_time
+                        if elapsed_time > 0:
+                            iterations_per_second = completed / elapsed_time
+                            if iterations_per_second > 0:
+                                remaining_iterations = target - completed
+                                remaining_seconds = remaining_iterations / iterations_per_second
+                                
+                                # Formater le temps restant
+                                if remaining_seconds < 60:
+                                    return f"{int(remaining_seconds)}s restant"
+                                elif remaining_seconds < 3600:
+                                    minutes = int(remaining_seconds / 60)
+                                    return f"{minutes}min restant"
+                                else:
+                                    hours = int(remaining_seconds / 3600)
+                                    minutes = int((remaining_seconds % 3600) / 60)
+                                    return f"{hours}h{minutes}min restant"
+                
+                # Afficher le progrès sans estimation si pas assez d'infos
+                progress_percent = int((completed / target) * 100) if target > 0 else 0
+                return f"{progress_percent}% terminé"
+                
+        except Exception as e:
+            print(f"Erreur calcul estimation CFR: {e}")
+            
+        return None
 
     def on_closing(self):
         """Gestion de la fermeture de la fenêtre"""
