@@ -1247,17 +1247,33 @@ class RTAPGUIWindow:
                 # Récupérer les données CFR réelles depuis le trainer
                 try:
                     if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
-                        cfr_stats = self.app_manager.cfr_trainer.get_training_statistics()
-                        export_data["cfr_data"] = {
-                            "iterations": cfr_stats.get('iterations', 0),
-                            "convergence": cfr_stats.get('last_convergence', 0.0),
-                            "training_hands_count": cfr_stats.get('training_hands', 0),
-                            "current_quality": cfr_stats.get('current_quality', 0.0),
-                            "progress_percentage": cfr_stats.get('progress_percentage', 0.0),
-                            "info_sets_learned": cfr_stats.get('info_sets_learned', 0),
-                            "target_iterations": cfr_stats.get('target_iterations', 0),
-                            "is_training": cfr_stats.get('is_training', False)
-                        }
+                        try:
+                            cfr_stats = self.app_manager.cfr_trainer.get_training_statistics()
+                            export_data["cfr_data"] = {
+                                "iterations": cfr_stats.get('iterations', 0),
+                                "convergence": cfr_stats.get('last_convergence', 0.0),
+                                "training_hands_count": cfr_stats.get('training_hands', 0),
+                                "current_quality": cfr_stats.get('current_quality', 0.0),
+                                "progress_percentage": cfr_stats.get('progress_percentage', 0.0),
+                                "info_sets_learned": cfr_stats.get('info_sets_learned', 0),
+                                "target_iterations": cfr_stats.get('target_iterations', 100000),
+                                "is_training": cfr_stats.get('is_training', False)
+                            }
+                        except Exception as cfr_error:
+                            print(f"⚠️ Erreur accès statistiques CFR: {cfr_error}")
+                            # Fallback - accès direct aux données de base
+                            trainer_hands = len(self.app_manager.cfr_trainer.training_hands) if hasattr(self.app_manager.cfr_trainer, 'training_hands') else 0
+                            export_data["cfr_data"] = {
+                                "iterations": 0,
+                                "convergence": 0.0,
+                                "training_hands_count": trainer_hands,
+                                "current_quality": 0.0,
+                                "progress_percentage": 0.0,
+                                "info_sets_learned": 0,
+                                "target_iterations": 100000,
+                                "is_training": False,
+                                "note": "Entraînement pas encore démarré - génération de mains en cours"
+                            }
                     
                     # Récupérer les données de la base
                     if hasattr(self.app_manager, 'memory_db') and self.app_manager.memory_db:
@@ -1281,11 +1297,16 @@ class RTAPGUIWindow:
                 
                 except Exception as data_error:
                     print(f"⚠️ Erreur collecte données: {data_error}")
-                    # Valeurs par défaut si erreur
+                    # Valeurs par défaut si erreur globale
                     export_data["cfr_data"] = {
                         "iterations": 0,
                         "convergence": 0.0,
                         "training_hands_count": 0,
+                        "current_quality": 0.0,
+                        "progress_percentage": 0.0,
+                        "info_sets_learned": 0,
+                        "target_iterations": 100000,
+                        "is_training": False,
                         "note": "Erreur de collecte des données"
                     }
                     export_data["database_stats"] = {
@@ -1299,12 +1320,18 @@ class RTAPGUIWindow:
                 
                 print(f"✅ Données exportées vers: {filename}")
                 
-                # Notification utilisateur
+                # Notification utilisateur (sécurisée)
                 from tkinter import messagebox
-                messagebox.showinfo(
-                    "Export réussi", 
-                    f"Données RTPA exportées avec succès!\n\nFichier: RTPA_Export_{timestamp}.rtpa\nEmplacement: Bureau\n\nContient: {export_data['cfr_data']['iterations']} itérations CFR, {export_data['cfr_data']['training_hands_count']} mains d'entraînement"
-                )
+                iterations = export_data.get('cfr_data', {}).get('iterations', 0)
+                training_hands = export_data.get('cfr_data', {}).get('training_hands_count', 0)
+                training_status = export_data.get('cfr_data', {}).get('note', '')
+                
+                message = f"Données RTPA exportées avec succès!\n\nFichier: RTPA_Export_{timestamp}.rtpa\nEmplacement: Bureau\n\nContient: {iterations} itérations CFR, {training_hands} mains d'entraînement"
+                
+                if training_status:
+                    message += f"\n\nNote: {training_status}"
+                
+                messagebox.showinfo("Export réussi", message)
                 
             else:
                 print("⚠️ Aucun gestionnaire disponible pour l'export")
