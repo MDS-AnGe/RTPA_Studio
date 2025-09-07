@@ -119,6 +119,108 @@ class CFRTrainer:
         except Exception as e:
             self.logger.error(f"Erreur intégration mains continues: {e}")
     
+    def _hand_to_cfr_state(self, hand):
+        """Convertit une main parsée en état CFR"""
+        try:
+            from .cfr_engine import PokerState
+            
+            # Extraction des informations de la main
+            hero_cards = (hand.hole_cards[0], hand.hole_cards[1]) if hand.hole_cards and len(hand.hole_cards) >= 2 else ('As', 'Ks')
+            board_cards = hand.board_cards if hand.board_cards else []
+            pot_size = hand.pot_size if hand.pot_size else 100.0
+            hero_stack = hand.stack_sizes.get('Hero', 1000.0) if hand.stack_sizes else 1000.0
+            
+            # Détermination de la street
+            street = 0
+            if len(board_cards) >= 3:
+                street = 1  # flop
+            if len(board_cards) >= 4:
+                street = 2  # turn
+            if len(board_cards) >= 5:
+                street = 3  # river
+            
+            cfr_state = PokerState(
+                street=street,
+                hero_cards=hero_cards,
+                board_cards=board_cards,
+                pot_size=pot_size,
+                hero_stack=hero_stack,
+                position=0,  # Default position
+                num_players=2,  # Default heads-up
+                current_bet=0.0,
+                action_history=[],
+                table_type="cashgame"
+            )
+            
+            return cfr_state
+            
+        except Exception as e:
+            self.logger.error(f"Erreur conversion main->CFR: {e}")
+            return None
+    
+    def _get_information_set(self, cfr_state):
+        """Génère l'ensemble d'informations pour un état CFR"""
+        try:
+            # Génération simplifiée d'information set
+            bucket = self.cfr_engine.card_abstraction.get_bucket(
+                cfr_state.hero_cards, 
+                cfr_state.board_cards, 
+                cfr_state.street
+            )
+            
+            # Combine bucket, position, action history
+            action_history_str = "_".join(cfr_state.action_history[-5:])  # Dernières 5 actions
+            info_set = f"{bucket}_{cfr_state.position}_{cfr_state.street}_{action_history_str}"
+            
+            return info_set
+            
+        except Exception as e:
+            return f"default_{cfr_state.street}_{hash(str(cfr_state.hero_cards)) % 100}"
+    
+    def _get_legal_actions(self, cfr_state):
+        """Retourne les actions légales pour un état CFR"""
+        try:
+            actions = ['fold', 'check_call']
+            
+            # Actions de mise disponibles selon l'état
+            if cfr_state.hero_stack > cfr_state.current_bet:
+                # Tailles de mises basées sur le pot
+                bet_sizes = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
+                for size in bet_sizes:
+                    bet_amount = cfr_state.pot_size * size
+                    if bet_amount <= cfr_state.hero_stack:
+                        actions.append(f'bet_{size}')
+            
+            return actions
+            
+        except Exception:
+            return ['fold', 'check_call', 'bet_0.5']
+    
+    def _get_strategy_from_regrets(self, info_set):
+        """Calcule la stratégie à partir des regrets"""
+        try:
+            regrets = self.cfr_engine.regret_sum[info_set]
+            if not regrets:
+                # Stratégie uniforme par défaut
+                return {'fold': 0.2, 'check_call': 0.4, 'bet_0.5': 0.4}
+            
+            # Conversion regrets -> probabilités
+            positive_regrets = {action: max(0, regret) for action, regret in regrets.items()}
+            total_regret = sum(positive_regrets.values())
+            
+            if total_regret <= 0:
+                # Stratégie uniforme si pas de regrets positifs
+                num_actions = len(regrets)
+                uniform_prob = 1.0 / num_actions
+                return {action: uniform_prob for action in regrets.keys()}
+            
+            # Normalisation
+            strategy = {action: regret / total_regret for action, regret in positive_regrets.items()}
+            return strategy
+            
+        except Exception:
+            return {'fold': 0.2, 'check_call': 0.4, 'bet_0.5': 0.4}
+    
     def _update_cfr_tables_immediate(self, cfr_state):
         """Met à jour les tables CFR immédiatement avec un nouvel état"""
         try:
