@@ -431,15 +431,14 @@ class RTAPGUIWindow:
         
         # Utiliser les données fournies ou les données par défaut
         if players_data is None:
-        
-        # Données d'exemple des autres joueurs (sera remplacé par OCR)
-        players_data = [
-            {"name": "AlicePoker", "stack": "1847€", "vpip": "15%", "pfr": "12%", "status": "actif"},
-            {"name": "BobBluff", "stack": "2156€", "vpip": "28%", "pfr": "22%", "status": "actif"},
-            {"name": "Charlie2024", "stack": "1023€", "vpip": "45%", "pfr": "8%", "status": "fold"},
-            {"name": "DianaAce", "stack": "3421€", "vpip": "12%", "pfr": "10%", "status": "actif"},
-            {"name": "EdRaise", "stack": "956€", "vpip": "35%", "pfr": "25%", "status": "fold"}
-        ]
+            # Données d'exemple des autres joueurs (sera remplacé par OCR)
+            players_data = [
+                {"name": "AlicePoker", "stack": "1847€", "vpip": "15%", "pfr": "12%", "status": "actif"},
+                {"name": "BobBluff", "stack": "2156€", "vpip": "28%", "pfr": "22%", "status": "actif"},
+                {"name": "Charlie2024", "stack": "1023€", "vpip": "45%", "pfr": "8%", "status": "fold"},
+                {"name": "DianaAce", "stack": "3421€", "vpip": "12%", "pfr": "10%", "status": "actif"},
+                {"name": "EdRaise", "stack": "956€", "vpip": "35%", "pfr": "25%", "status": "fold"}
+            ]
         
         # Affichage vertical compact pour les autres joueurs
         for i, player in enumerate(players_data):
