@@ -28,6 +28,9 @@ class RTAPGUIWindow:
         self.root.geometry("1400x900")
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
+        # Configuration couleurs plus claires
+        ctk.set_appearance_mode("light")  # Mode clair pour éviter les zones noires
+        
         # Variables de thème
         self.accent_color = "blue"
         self.font_family = "Arial"
@@ -67,15 +70,20 @@ class RTAPGUIWindow:
         self.style = ttk.Style()
         self.style.theme_use('clam')
         
-        # Couleurs principales
-        bg_color = "#2b2b2b"
-        fg_color = "#ffffff"
+        # Couleurs principales (plus claires pour éviter le noir)
+        bg_color = "#f0f0f0"  # Gris clair au lieu de noir
+        fg_color = "#000000"  # Noir pour le texte
         accent = "#1f538d"
+        card_bg = "#ffffff"   # Blanc pour les cartes
         
         # Styles des frames
         self.style.configure('Card.TFrame', background=bg_color, relief='raised', borderwidth=1)
         self.style.configure('Heading.TLabel', background=bg_color, foreground=fg_color, font=(self.font_family, 11, 'bold'))
         self.style.configure('Card.TLabel', background=bg_color, foreground=fg_color, font=(self.font_family, 10))
+        
+        # Styles pour les onglets
+        self.style.configure('TNotebook', background=bg_color)
+        self.style.configure('TNotebook.Tab', background=bg_color, foreground=fg_color)
     
     def create_widgets(self):
         """Création de l'interface utilisateur"""
