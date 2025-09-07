@@ -133,7 +133,7 @@ class RTAPStudioManager:
                 if game_data:
                     self._update_game_state(game_data)
                 
-                time.sleep(0.1)  # 100ms entre les captures
+                time.sleep(0.05)  # 50ms entre les captures pour réactivité maximale
                 
             except Exception as e:
                 self.logger.error(f"Erreur dans la boucle OCR: {e}")
@@ -148,7 +148,7 @@ class RTAPStudioManager:
                     recommendation = self.cfr_engine.get_recommendation(self.game_state)
                     self._update_recommendation(recommendation)
                 
-                time.sleep(0.05)  # 50ms entre les calculs
+                time.sleep(0.025)  # 25ms entre les calculs pour temps réel
                 
             except Exception as e:
                 self.logger.error(f"Erreur dans la boucle d'analyse: {e}")
