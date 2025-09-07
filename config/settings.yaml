@@ -1,0 +1,28 @@
+abstraction_buckets: 64
+auto_hand_target: true
+auto_resource_management: true
+cfr_iterations: 1000
+cfr_sampling_enabled: true
+cpu_usage_limit: 80.0
+default_table_type: cashgame
+gpu_enabled: true
+gpu_memory_limit: 80.0
+language: fr
+manual_risk_override: false
+max_players: 9
+nash_calculation_interval_ms: 50
+ocr_confidence_threshold: 0.8
+ocr_enabled: true
+ocr_interval_ms: 100
+ram_usage_limit: 70.0
+risk_percentage: 50.0
+screen_region:
+  height: 1080
+  width: 1920
+  x: 0
+  y: 0
+show_probabilities: true
+show_recommendations: true
+show_statistics: true
+target_hands_per_100: 65
+theme: dark

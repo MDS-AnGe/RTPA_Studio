@@ -9,7 +9,10 @@ from dataclasses import dataclass
 import yaml
 
 from ..database.memory_db import MemoryDatabase
-from ..ocr.screen_capture import ScreenCapture
+try:
+    from ..ocr.screen_capture import ScreenCapture
+except Exception:
+    from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
 from ..algorithms.cfr_engine import CFREngine
 from ..utils.logger import get_logger
 from ..config.settings import Settings
