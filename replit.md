@@ -23,6 +23,9 @@ The UI is built with `CustomTkinter` for a modern, themed look with dark/light m
 ### Performance Optimization
 The system includes robust resource management, monitoring CPU, RAM, and GPU usage with automatic throttling. It leverages concurrent processing for OCR, CFR, and UI updates, and optimizes memory with efficient data structures. A headless mode is available for non-GUI environments. The system dynamically switches between CPU and GPU based on workload, utilizing CUDA for GPU acceleration.
 
+### Automatic Dependency Management
+RTPA Studio features an intelligent auto-installation system that automatically detects and installs missing dependencies at first launch. The system checks 14 critical packages (yaml, opencv, numpy, etc.), installs only what's missing, and handles installation errors with fallback mechanisms. This ensures a seamless first-time user experience with zero manual configuration required.
+
 ### Feature Specifications
 - **Hybrid AI**: Combines CFR and Deep CFR Neural Networks (PyTorch) for strategic analysis.
 - **Automatic Detection**: Monitors and automatically launches/pauses with poker platforms (PokerStars, Winamax, PMU).
