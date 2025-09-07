@@ -463,7 +463,7 @@ class RTAPGUIWindow:
         self.players_list_frame = tk.Frame(players_content, bg='#dbdbdb')
         self.players_list_frame.pack(fill='x')
         
-        # Créer la liste des joueurs
+        # Créer la liste des joueurs (vide par défaut)
         self.create_players_display()
         
         # Compatibilité avec anciens widgets (alias)
@@ -517,6 +517,22 @@ class RTAPGUIWindow:
         if players_data is None:
             # Aucune donnée par défaut - attendre les vraies données OCR
             players_data = []
+        
+        # Si aucune donnée, afficher un message informatif
+        if not players_data:
+            info_frame = tk.Frame(self.players_list_frame, bg='#dbdbdb')
+            info_frame.pack(fill='x', pady=10)
+            
+            tk.Label(info_frame, 
+                    text="Aucune donnée de joueurs disponible",
+                    font=('Arial', 10, 'italic'),
+                    fg='#6c757d', bg='#dbdbdb').pack()
+            
+            tk.Label(info_frame, 
+                    text="Les informations apparaîtront après une première partie",
+                    font=('Arial', 9),
+                    fg='#6c757d', bg='#dbdbdb').pack()
+            return
         
         # Trier par position pour affichage dans l'ordre de la table
         sorted_players = sorted(players_data, key=lambda p: p.get('position', 0))
