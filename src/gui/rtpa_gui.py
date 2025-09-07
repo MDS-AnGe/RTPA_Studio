@@ -621,6 +621,47 @@ class RTAPGUIWindow:
         
         ttk.Label(interface_grid, text="Mode sombre recommandé pour sessions longues", font=('Arial', 9), foreground='gray').grid(row=1, column=2, sticky='w', padx=10, pady=5)
         
+        # Couleurs personnalisées
+        ttk.Label(interface_grid, text="Couleur d'accent:", style='Heading.TLabel').grid(row=2, column=0, sticky='w', pady=5)
+        
+        self.accent_color_var = tk.StringVar(value="blue")
+        self.accent_combo = ttk.Combobox(
+            interface_grid,
+            textvariable=self.accent_color_var,
+            values=["blue - Bleu", "green - Vert", "red - Rouge", "purple - Violet", "orange - Orange"],
+            state="readonly",
+            width=20
+        )
+        self.accent_combo.grid(row=2, column=1, padx=10, pady=5, sticky='w')
+        self.accent_combo.bind('<<ComboboxSelected>>', self.change_accent_color)
+        
+        ttk.Label(interface_grid, text="Couleur des boutons et éléments d'interface", font=('Arial', 9), foreground='gray').grid(row=2, column=2, sticky='w', padx=10, pady=5)
+        
+        # Opacité interface
+        ttk.Label(interface_grid, text="Opacité Interface:", style='Heading.TLabel').grid(row=3, column=0, sticky='w', pady=5)
+        
+        self.opacity_var = tk.DoubleVar(value=1.0)
+        self.opacity_scale = ttk.Scale(interface_grid, from_=0.7, to=1.0, orient='horizontal', variable=self.opacity_var, length=150, command=self.update_opacity_display)
+        self.opacity_scale.grid(row=3, column=1, padx=10, pady=5)
+        
+        self.opacity_display = ttk.Label(interface_grid, text="100%", style='Card.TLabel')
+        self.opacity_display.grid(row=3, column=2, sticky='w', padx=10, pady=5)
+        
+        # Police interface
+        ttk.Label(interface_grid, text="Police Interface:", style='Heading.TLabel').grid(row=4, column=0, sticky='w', pady=5)
+        
+        self.font_var = tk.StringVar(value="arial")
+        self.font_combo = ttk.Combobox(
+            interface_grid,
+            textvariable=self.font_var,
+            values=["arial - Arial", "helvetica - Helvetica", "times - Times", "courier - Courier"],
+            state="readonly",
+            width=20
+        )
+        self.font_combo.grid(row=4, column=1, padx=10, pady=5, sticky='w')
+        
+        ttk.Label(interface_grid, text="Arial recommandé pour lisibilité", font=('Arial', 9), foreground='gray').grid(row=4, column=2, sticky='w', padx=10, pady=5)
+        
         # Section OCR
         ocr_frame = ttk.LabelFrame(main_container, text="👁️ OCR & Capture", style='Card.TFrame')
         ocr_frame.pack(fill='x', pady=(0, 20))
@@ -711,17 +752,34 @@ class RTAPGUIWindow:
         
         ttk.Label(res_grid, text="Mémoire max pour base de données (60-80% optimal)", font=('Arial', 9), foreground='gray').grid(row=1, column=3, sticky='w', padx=10, pady=5)
         
-        # GPU
+        # GPU avec gestion PyTorch
+        gpu_frame = ttk.Frame(res_grid)
+        gpu_frame.grid(row=2, column=0, columnspan=4, sticky='ew', pady=5)
+        
         self.gpu_enabled_var = tk.BooleanVar(value=True)
         self.gpu_check = ttk.Checkbutton(
-            res_grid, 
+            gpu_frame, 
             text="🎮 GPU Activé",
             variable=self.gpu_enabled_var,
             command=self.toggle_gpu
         )
-        self.gpu_check.grid(row=2, column=0, columnspan=2, sticky='w', pady=5)
+        self.gpu_check.pack(side='left')
         
-        ttk.Label(res_grid, text="Accélération GPU pour Deep CFR (si PyTorch installé)", font=('Arial', 9), foreground='gray').grid(row=2, column=2, columnspan=2, sticky='w', padx=10, pady=5)
+        # Status PyTorch
+        self.pytorch_status_label = ttk.Label(gpu_frame, text="Vérification PyTorch...", font=('Arial', 9))
+        self.pytorch_status_label.pack(side='left', padx=(10, 5))
+        
+        # Bouton installation PyTorch
+        self.pytorch_install_button = ttk.Button(
+            gpu_frame,
+            text="Installer PyTorch",
+            command=self.install_pytorch,
+            style='Accent.TButton'
+        )
+        self.pytorch_install_button.pack(side='left', padx=5)
+        
+        # Vérification initiale PyTorch
+        self.check_pytorch_status()
         
         # Auto Resource Management
         self.auto_resource_var = tk.BooleanVar(value=True)
@@ -749,7 +807,7 @@ class RTAPGUIWindow:
         self.cfr_iterations_entry = ttk.Entry(cfr_grid, textvariable=self.cfr_iterations_var, width=10)
         self.cfr_iterations_entry.grid(row=0, column=1, padx=10, pady=5)
         
-        ttk.Label(cfr_grid, text="Nombre de simulations par calcul (500-2000 optimal)", font=('Arial', 9), foreground='gray').grid(row=0, column=2, sticky='w', padx=10, pady=5)
+        ttk.Label(cfr_grid, text="Monte Carlo simulations par décision. Plus élevé = précision ↑, vitesse ↓", font=('Arial', 9), foreground='gray').grid(row=0, column=2, sticky='w', padx=10, pady=5)
         
         # Buckets d'abstraction
         ttk.Label(cfr_grid, text="Buckets d'Abstraction:", style='Heading.TLabel').grid(row=1, column=0, sticky='w', pady=5)
@@ -758,19 +816,50 @@ class RTAPGUIWindow:
         self.buckets_entry = ttk.Entry(cfr_grid, textvariable=self.buckets_var, width=10)
         self.buckets_entry.grid(row=1, column=1, padx=10, pady=5)
         
-        ttk.Label(cfr_grid, text="Groupes de mains similaires (32-128, 64 optimal)", font=('Arial', 9), foreground='gray').grid(row=1, column=2, sticky='w', padx=10, pady=5)
+        ttk.Label(cfr_grid, text="Regroupement mains similaires. 64 = équilibre optimal performance/précision", font=('Arial', 9), foreground='gray').grid(row=1, column=2, sticky='w', padx=10, pady=5)
+        
+        # Profondeur CFR
+        ttk.Label(cfr_grid, text="Profondeur CFR:", style='Heading.TLabel').grid(row=2, column=0, sticky='w', pady=5)
+        
+        self.cfr_depth_var = tk.StringVar(value="3")
+        self.cfr_depth_combo = ttk.Combobox(cfr_grid, textvariable=self.cfr_depth_var, values=["1", "2", "3", "4", "5"], width=8, state="readonly")
+        self.cfr_depth_combo.grid(row=2, column=1, padx=10, pady=5)
+        
+        ttk.Label(cfr_grid, text="Streets à analyser (1=Flop, 3=jusqu'à River). Plus = précis mais lent", font=('Arial', 9), foreground='gray').grid(row=2, column=2, sticky='w', padx=10, pady=5)
+        
+        # Epsilon exploration
+        ttk.Label(cfr_grid, text="Epsilon Exploration:", style='Heading.TLabel').grid(row=3, column=0, sticky='w', pady=5)
+        
+        self.epsilon_var = tk.DoubleVar(value=0.1)
+        self.epsilon_scale = ttk.Scale(cfr_grid, from_=0.01, to=0.5, orient='horizontal', variable=self.epsilon_var, length=150, command=self.update_epsilon_display)
+        self.epsilon_scale.grid(row=3, column=1, padx=10, pady=5)
+        
+        self.epsilon_display = ttk.Label(cfr_grid, text="0.10", style='Card.TLabel')
+        self.epsilon_display.grid(row=3, column=2, sticky='w', padx=10, pady=5)
         
         # Deep CFR
         self.deep_cfr_var = tk.BooleanVar(value=False)
         self.deep_cfr_check = ttk.Checkbutton(
             cfr_grid, 
-            text="🤖 Deep CFR (PyTorch)",
+            text="🤖 Deep CFR (Neural Networks)",
             variable=self.deep_cfr_var,
             command=self.toggle_deep_cfr
         )
-        self.deep_cfr_check.grid(row=2, column=0, columnspan=2, sticky='w', pady=5)
+        self.deep_cfr_check.grid(row=4, column=0, columnspan=2, sticky='w', pady=5)
         
-        ttk.Label(cfr_grid, text="IA neuronale avancée (plus lent mais précis)", font=('Arial', 9), foreground='gray').grid(row=2, column=2, sticky='w', padx=10, pady=5)
+        ttk.Label(cfr_grid, text="Réseaux neuronaux pour approximation. Nécessite PyTorch + beaucoup RAM", font=('Arial', 9), foreground='gray').grid(row=4, column=2, sticky='w', padx=10, pady=5)
+        
+        # CFR+
+        self.cfr_plus_var = tk.BooleanVar(value=True)
+        self.cfr_plus_check = ttk.Checkbutton(
+            cfr_grid, 
+            text="⚡ CFR+ (Linear CFR)",
+            variable=self.cfr_plus_var,
+            command=self.toggle_cfr_plus
+        )
+        self.cfr_plus_check.grid(row=5, column=0, columnspan=2, sticky='w', pady=5)
+        
+        ttk.Label(cfr_grid, text="Amélioration CFR standard. Convergence plus rapide, recommandé", font=('Arial', 9), foreground='gray').grid(row=5, column=2, sticky='w', padx=10, pady=5)
         
         # Bouton Appliquer
         apply_frame = ttk.Frame(main_container)
@@ -1055,6 +1144,98 @@ class RTAPGUIWindow:
             self.app_manager.update_settings({'deep_cfr_enabled': deep_cfr})
         except Exception as e:
             self.logger.error(f"Erreur toggle Deep CFR: {e}")
+    
+    def check_pytorch_status(self):
+        """Vérifie si PyTorch est installé"""
+        try:
+            import torch
+            version = torch.__version__
+            cuda_available = torch.cuda.is_available()
+            
+            if cuda_available:
+                self.pytorch_status_label.configure(text=f"✅ PyTorch {version} (CUDA)", foreground='green')
+                self.pytorch_install_button.configure(text="Mettre à jour", state='normal')
+            else:
+                self.pytorch_status_label.configure(text=f"✅ PyTorch {version} (CPU)", foreground='orange')
+                self.pytorch_install_button.configure(text="Installer CUDA", state='normal')
+        except ImportError:
+            self.pytorch_status_label.configure(text="❌ PyTorch non installé", foreground='red')
+            self.pytorch_install_button.configure(text="Installer PyTorch", state='normal')
+        except Exception as e:
+            self.pytorch_status_label.configure(text="⚠️ Erreur vérification", foreground='gray')
+            self.pytorch_install_button.configure(text="Réessayer", state='normal')
+    
+    def install_pytorch(self):
+        """Installe PyTorch"""
+        def install_thread():
+            try:
+                self.pytorch_install_button.configure(text="Installation...", state='disabled')
+                self.pytorch_status_label.configure(text="Installation en cours...", foreground='blue')
+                
+                import subprocess
+                import sys
+                
+                # Installation PyTorch CPU par défaut
+                result = subprocess.run([
+                    sys.executable, "-m", "pip", "install", "torch", "torchvision", "torchaudio"
+                ], capture_output=True, text=True, timeout=300)
+                
+                if result.returncode == 0:
+                    self.root.after(0, self._pytorch_install_success)
+                else:
+                    error_msg = result.stderr or "Erreur inconnue"
+                    self.root.after(0, lambda: self._pytorch_install_error(error_msg))
+                    
+            except subprocess.TimeoutExpired:
+                self.root.after(0, lambda: self._pytorch_install_error("Timeout lors de l'installation"))
+            except Exception as e:
+                self.root.after(0, lambda: self._pytorch_install_error(str(e)))
+        
+        import threading
+        install_th = threading.Thread(target=install_thread, daemon=True)
+        install_th.start()
+    
+    def _pytorch_install_success(self):
+        """Callback succès installation PyTorch"""
+        self.pytorch_status_label.configure(text="✅ Installation réussie", foreground='green')
+        self.pytorch_install_button.configure(text="Installé", state='disabled')
+        messagebox.showinfo("Succès", "PyTorch installé avec succès! Redémarrez l'application pour activer Deep CFR.")
+        
+        # Re-vérification
+        self.root.after(2000, self.check_pytorch_status)
+    
+    def _pytorch_install_error(self, error_msg):
+        """Callback erreur installation PyTorch"""
+        self.pytorch_status_label.configure(text="❌ Échec installation", foreground='red')
+        self.pytorch_install_button.configure(text="Réessayer", state='normal')
+        messagebox.showerror("Erreur", f"Échec installation PyTorch:\n{error_msg}")
+    
+    def toggle_cfr_plus(self):
+        try:
+            cfr_plus = self.cfr_plus_var.get()
+            self.app_manager.update_settings({'cfr_plus_enabled': cfr_plus})
+        except Exception as e:
+            self.logger.error(f"Erreur activation CFR+: {e}")
+    
+    def change_accent_color(self, event=None):
+        try:
+            color = self.accent_color_var.get().split(' - ')[0]
+            # Implémentation changement couleur d'accent
+            self.app_manager.update_settings({'accent_color': color})
+        except Exception as e:
+            self.logger.error(f"Erreur changement couleur: {e}")
+    
+    def update_epsilon_display(self, value):
+        self.epsilon_display.configure(text=f"{float(value):.2f}")
+    
+    def update_opacity_display(self, value):
+        opacity_percent = int(float(value) * 100)
+        self.opacity_display.configure(text=f"{opacity_percent}%")
+        # Appliquer l'opacité à la fenêtre
+        try:
+            self.root.attributes('-alpha', float(value))
+        except Exception:
+            pass  # Certains systèmes ne supportent pas l'opacité
     
     def apply_settings(self):
         try:
