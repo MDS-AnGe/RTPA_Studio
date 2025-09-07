@@ -1,20 +1,20 @@
 abstraction_buckets: 64
 auto_hand_target: true
 auto_resource_management: true
-cfr_iterations: 1000
+cfr_iterations: 2000
 cfr_sampling_enabled: true
-cpu_usage_limit: 80.0
+cpu_usage_limit: 95.0
 default_table_type: cashgame
 gpu_enabled: 1
 gpu_memory_limit: 92.0
 language: en
 manual_risk_override: false
 max_players: 9
-nash_calculation_interval_ms: 50
+nash_calculation_interval_ms: 25
 ocr_confidence_threshold: 0.8
 ocr_enabled: true
-ocr_interval_ms: 50
-ram_usage_limit: 70.0
+ocr_interval_ms: 25
+ram_usage_limit: 85.0
 risk_percentage: 75.0
 screen_region:
   height: 1080

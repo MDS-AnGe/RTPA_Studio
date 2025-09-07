@@ -25,8 +25,8 @@ class CFRTrainer:
         self.cfr_engine = cfr_engine
         
         # Configuration d'entraînement
-        self.target_iterations = 100000
-        self.convergence_threshold = 0.01
+        self.target_iterations = 200000
+        self.convergence_threshold = 0.005
         self.quality_threshold = 0.85
         
         # Générateur de mains
@@ -74,12 +74,12 @@ class CFRTrainer:
         try:
             from .continuous_generator import ContinuousHandGenerator, ContinuousSettings
             
-            # Configuration optimisée pour performance
+            # Configuration optimisée pour performance maximale
             settings = ContinuousSettings(
-                batch_size=25,  # Petits batches pour réactivité
-                generation_interval=0.2,  # 200ms entre générations
-                max_queue_size=500,  # Queue modérée
-                cpu_usage_limit=0.1  # Max 10% CPU
+                batch_size=50,  # Batches plus gros pour efficacité
+                generation_interval=0.1,  # 100ms entre générations
+                max_queue_size=1000,  # Queue plus importante
+                cpu_usage_limit=0.2  # Max 20% CPU pour plus de puissance
             )
             
             self.continuous_generator = ContinuousHandGenerator(settings)
