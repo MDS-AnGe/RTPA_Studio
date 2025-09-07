@@ -33,11 +33,17 @@ Date completed: September 7, 2025
 - **Installation directe**: Bouton pour installer PyTorch depuis l'interface
 - **Support CUDA**: Détection et indication du support GPU
 
+### Export/Import Base CFR (NOUVEAU)
+- **Export complet**: Sauvegarde base CFR + données + statistiques + apprentissage Nash
+- **Import sécurisé**: Restauration complète avec confirmation utilisateur
+- **Préservation apprentissage**: Evite de repartir à zéro après mises à jour
+- **Format JSON**: Fichiers lisibles et compatibles entre versions
+
 ### Personnalisation interface
-- **Couleurs d'accent**: Choix entre 5 couleurs (bleu, vert, rouge, violet, orange)
-- **Opacité réglable**: Transparence fenêtre ajustable 70-100%
-- **Polices personnalisées**: Sélection police interface (Arial, Helvetica, Times, Courier)
-- **Thèmes avancés**: Options étendues dark/light mode
+- **Couleurs d'accent**: Choix entre 5 couleurs (bleu, vert, rouge, violet, orange) - FONCTIONNEL
+- **Opacité réglable**: Transparence fenêtre ajustable 70-100% - FONCTIONNEL  
+- **Polices personnalisées**: Sélection police interface (Arial, Helvetica, Times, Courier) - FONCTIONNEL
+- **Thèmes avancés**: Options étendues dark/light mode - FONCTIONNEL
 
 # User Preferences
 
