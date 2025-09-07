@@ -60,10 +60,13 @@ class CFREngine:
     def __init__(self):
         self.logger = get_logger(__name__)
         
+        # Configuration des paramètres
+        self.config = self._load_configuration()
+        
         # Configuration d'accélération GPU/CPU
         self.device = self._setup_compute_device()
         self.use_acceleration = TORCH_AVAILABLE
-        self.gpu_enabled = self.config.gpu_enabled  # Dynamique selon réglages utilisateur
+        self.gpu_enabled = self.config.gpu_enabled if hasattr(self.config, 'gpu_enabled') else False
         self.gpu_memory_limit = 0.8  # 80% max mémoire GPU
         self.cpu_threads = mp.cpu_count()
         
