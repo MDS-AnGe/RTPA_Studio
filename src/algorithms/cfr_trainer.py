@@ -57,7 +57,174 @@ class CFRTrainer:
         self.regret_updates = 0
         self.strategy_updates = 0
         
-        self.logger.info("CFRTrainer initialisé")
+        # Générateur continu
+        self.continuous_generator = None
+        self._init_continuous_generator()
+        
+        self.logger.info("CFRTrainer initialisé avec génération continue")
+    
+    def _init_continuous_generator(self):
+        """Initialise le générateur continu de mains"""
+        try:
+            from .continuous_generator import ContinuousHandGenerator, ContinuousSettings
+            
+            # Configuration optimisée pour performance
+            settings = ContinuousSettings(
+                batch_size=25,  # Petits batches pour réactivité
+                generation_interval=0.2,  # 200ms entre générations
+                max_queue_size=500,  # Queue modérée
+                cpu_usage_limit=0.1  # Max 10% CPU
+            )
+            
+            self.continuous_generator = ContinuousHandGenerator(settings)
+            
+            # Configuration des callbacks
+            self.continuous_generator.set_integration_callback(self._integrate_continuous_hands)
+            self.continuous_generator.set_stats_callback(self._update_generation_stats)
+            
+        except Exception as e:
+            self.logger.error(f"Erreur init générateur continu: {e}")
+    
+    def _integrate_continuous_hands(self, hands):
+        """Intègre les mains générées en continu dans l'entraînement CFR"""
+        try:
+            if not hands:
+                return
+            
+            # Ajout immédiat aux mains d'entraînement
+            self.training_hands.extend(hands)
+            
+            # Si entraînement en cours, intégration directe dans CFR
+            if self.is_training:
+                for hand in hands:
+                    try:
+                        # Conversion en état CFR
+                        cfr_state = self._hand_to_cfr_state(hand)
+                        if cfr_state:
+                            # Mise à jour immédiate des tables CFR
+                            self._update_cfr_tables_immediate(cfr_state)
+                    except Exception as e:
+                        continue
+            
+            # Mise à jour statistiques
+            if len(hands) > 0:
+                self.logger.debug(f"Intégré {len(hands)} mains continues -> Total: {len(self.training_hands)}")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur intégration mains continues: {e}")
+    
+    def _update_cfr_tables_immediate(self, cfr_state):
+        """Met à jour les tables CFR immédiatement avec un nouvel état"""
+        try:
+            # Calcul rapide CFR pour cet état
+            info_set = self._get_information_set(cfr_state)
+            actions = self._get_legal_actions(cfr_state)
+            
+            if info_set and actions:
+                # Calcul des regrets pour cet état
+                regrets = self._calculate_immediate_regrets(cfr_state, actions)
+                
+                # Mise à jour des tables de regret
+                for action, regret in regrets.items():
+                    self.cfr_engine.regret_sum[info_set][action] += regret
+                
+                # Mise à jour de la stratégie courante
+                strategy = self._get_strategy_from_regrets(info_set)
+                for action, prob in strategy.items():
+                    self.cfr_engine.strategy_sum[info_set][action] += prob
+                
+        except Exception as e:
+            pass  # Ignore les erreurs pour ne pas ralentir
+    
+    def _calculate_immediate_regrets(self, cfr_state, actions):
+        """Calcul rapide des regrets pour un état donné"""
+        regrets = {}
+        
+        try:
+            # Simulation Monte Carlo rapide
+            for action in actions:
+                # Valeur de l'action
+                action_value = self._quick_action_evaluation(cfr_state, action)
+                
+                # Valeur moyenne des autres actions
+                other_values = []
+                for other_action in actions:
+                    if other_action != action:
+                        other_values.append(self._quick_action_evaluation(cfr_state, other_action))
+                
+                avg_other_value = np.mean(other_values) if other_values else 0.0
+                
+                # Regret = différence
+                regrets[action] = max(0, avg_other_value - action_value)
+                
+        except Exception:
+            # Fallback: regrets uniformes
+            for action in actions:
+                regrets[action] = 0.1
+                
+        return regrets
+    
+    def _quick_action_evaluation(self, cfr_state, action):
+        """Évaluation rapide d'une action"""
+        try:
+            # Évaluation simplifiée basée sur les heuristiques
+            hand_strength = self._evaluate_hand_strength(cfr_state.hero_cards, cfr_state.board_cards)
+            
+            if action == 'fold':
+                return 0.0
+            elif action == 'check_call':
+                return hand_strength * cfr_state.pot_size * 0.5
+            elif action.startswith('bet') or action.startswith('raise'):
+                # Valeur agressive basée sur force de main
+                aggression_value = hand_strength * cfr_state.pot_size * 1.2
+                return aggression_value - (cfr_state.current_bet * 0.8)
+            else:
+                return hand_strength * cfr_state.pot_size * 0.3
+                
+        except Exception:
+            return 0.5  # Valeur neutre
+    
+    def _update_generation_stats(self, stats):
+        """Met à jour les statistiques de génération continue"""
+        try:
+            # Log périodique des statistiques
+            if stats['hands_generated'] % 1000 == 0:
+                self.logger.info(f"Génération continue: {stats['hands_generated']} mains, "
+                               f"rate: {stats['generation_rate']:.1f}/s, "
+                               f"CPU: {stats['cpu_usage']*100:.1f}%")
+                
+        except Exception as e:
+            pass
+    
+    def start_continuous_generation(self):
+        """Démarre la génération continue de mains"""
+        try:
+            if self.continuous_generator and not self.continuous_generator.running:
+                self.continuous_generator.start()
+                self.logger.info("Génération continue de mains démarrée")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur démarrage génération continue: {e}")
+    
+    def stop_continuous_generation(self):
+        """Arrête la génération continue"""
+        try:
+            if self.continuous_generator and self.continuous_generator.running:
+                self.continuous_generator.stop()
+                self.logger.info("Génération continue arrêtée")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur arrêt génération continue: {e}")
+    
+    def boost_generation_for_scenario(self, scenario: str):
+        """Booste la génération pour un scénario spécifique"""
+        try:
+            if self.continuous_generator:
+                self.continuous_generator.boost_generation(scenario, multiplier=3.0)
+                self.logger.info(f"Boost génération activé pour: {scenario}")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur boost génération: {e}")
     
     def load_historical_hands(self, file_paths: List[str]) -> int:
         """Charge les mains historiques depuis les fichiers fournis"""

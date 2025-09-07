@@ -101,6 +101,9 @@ class CFREngine:
             if self.auto_training_enabled and not self.training_target_reached:
                 self._start_auto_training()
                 
+            # Démarrage de la génération continue
+            self._start_continuous_generation()
+                
         except Exception as e:
             self.logger.error(f"Erreur initialisation trainer: {e}")
     
@@ -148,6 +151,15 @@ class CFREngine:
             
         except Exception as e:
             self.logger.error(f"Erreur démarrage auto-training: {e}")
+    
+    def _start_continuous_generation(self):
+        """Démarre la génération continue de mains en arrière-plan"""
+        try:
+            if self.cfr_trainer and self.cfr_trainer.continuous_generator:
+                self.cfr_trainer.start_continuous_generation()
+                self.logger.info("Génération continue de mains activée")
+        except Exception as e:
+            self.logger.error(f"Erreur génération continue: {e}")
     
     def get_training_progress(self) -> Dict[str, Any]:
         """Retourne les informations de progression de l'entraînement"""
