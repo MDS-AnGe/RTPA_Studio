@@ -61,4 +61,4 @@ outputType = "vnc"
 
 [deployment]
 deploymentTarget = "vm"
-run = ["python", "main_gui.py"]
+run = ["python", "main_headless.py"]
