@@ -161,25 +161,25 @@ class RTAPGUIWindow:
             font=ctk.CTkFont(size=16, weight="bold"),
             text_color="#ff6b6b"  # Rouge par défaut
         )
-        self.connection_status_label.pack(pady=(5, 1))
+        self.connection_status_label.pack(pady=(3, 0))
         
-        # Ligne 2: Activité du système - Plus gros aussi, espacement réduit
+        # Ligne 2: Activité du système - Espacement ultra-réduit
         self.activity_status_label = ctk.CTkLabel(
             self.controls_frame,
             text="Surveillance active",
             font=ctk.CTkFont(size=13),
             text_color="#666666"  # Gris plus foncé pour meilleure lisibilité
         )
-        self.activity_status_label.pack(pady=(0, 0))
+        self.activity_status_label.pack(pady=(1, 0))
         
-        # Ligne 3: Temps restant CFR (nouvelle ligne dédiée, rapprochée)
+        # Ligne 3: Temps restant CFR - Collé à la ligne précédente
         self.cfr_time_label = ctk.CTkLabel(
             self.controls_frame,
             text="",
             font=ctk.CTkFont(size=11, weight="bold"),
             text_color="black"  # Noir pour meilleure lisibilité
         )
-        self.cfr_time_label.pack(pady=(1, 2))
+        self.cfr_time_label.pack(pady=(1, 3))
         
         # Notebook avec onglets
         self.notebook = ttk.Notebook(self.main_frame)
