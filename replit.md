@@ -67,24 +67,29 @@ The system includes robust resource management, monitoring CPU, RAM, and GPU usa
 
 ## 🚀 Guide de Démarrage Rapide
 
-### Installation
+### Installation Ultra-Simple
 ```bash
 # 1. Cloner le projet
 git clone <repository-url>
 cd rtpa-studio
 
-# 2. Installer les dépendances
-pip install -r requirements.txt
-
-# 3. Lancer l'interface
+# 2. Lancement direct (installation automatique)
 python main_gui.py
 ```
 
+### 🎯 **Installation Automatique Intégrée**
+✅ **Aucune installation manuelle requise !**
+- **Premier lancement** : Les dépendances s'installent automatiquement
+- **Détection intelligente** : Vérification et installation des packages manquants
+- **Zéro configuration** : Prêt à l'emploi en une commande
+
 ### ⚡ Utilisation Immédiate
-1. **Ouvrez votre plateforme poker** (PokerStars, Winamax, PMU)
-2. **Détection automatique** : RTPA se lance automatiquement
-3. **Recommandations instantanées** : Les conseils Nash apparaissent en temps réel
-4. **Amélioration continue** : Le système s'améliore pendant que vous jouez
+1. **Lancez simplement** : `python main_gui.py` ou `python test_rtpa.py`
+2. **Installation auto** : Les dépendances se téléchargent automatiquement au premier lancement
+3. **Ouvrez votre plateforme poker** (PokerStars, Winamax, PMU)
+4. **Détection automatique** : RTPA se lance automatiquement
+5. **Recommandations instantanées** : Les conseils Nash apparaissent en temps réel
+6. **Amélioration continue** : Le système s'améliore pendant que vous jouez
 
 ---
 
@@ -105,6 +110,20 @@ python main_gui.py
 🔥 Détection automatique avec bouton d'installation directe dans l'interface. Support CUDA avec gestion mémoire intelligente.
 
 ### Troubleshooting
+**🔴 Erreur 'No module named'** : Relancez le programme, l'auto-installation se déclenchera
+**🔴 Installation échoue** : Vérifiez connexion internet et permissions Python
 **🔴 Performance lente** : Activez GPU dans Configuration, augmentez limite mémoire
 **🔴 Erreurs mémoire GPU** : Réduisez `gpu_memory_limit` à 0.6 et `batch_size` à 1000
 **🔴 Détection échoue** : Vérifiez plateforme ouverte, redémarrez RTPA
+
+### 🛠️ Commandes de Test et Lancement
+```bash
+# Test automatique avec installation des dépendances
+python test_rtpa.py
+
+# Interface graphique complète
+python main_gui.py
+
+# Version console/headless
+python main_headless.py
+```
