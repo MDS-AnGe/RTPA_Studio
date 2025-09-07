@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "release_date": "2025-09-07",
+  "last_update": "2025-09-07",
+  "build": "1000",
+  "status": "stable",
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2025-09-07", 
+      "changes": [
+        "Version initiale de RTPA Studio",
+        "Moteur CFR/Nash optimisé pour temps réel",
+        "Interface GUI moderne avec CustomTkinter",
+        "Détection automatique plateformes poker",
+        "Performance exceptionnelle: 0.25ms, 4000+ calc/sec"
+      ]
+    }
+  ]
+}

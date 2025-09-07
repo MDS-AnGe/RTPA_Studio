@@ -10,6 +10,7 @@ import threading
 import time
 from typing import Dict, Any, Optional
 import json
+import os
 
 from ..utils.logger import get_logger
 
@@ -24,9 +25,13 @@ class RTAPMainWindow:
         self.logger = get_logger(__name__)
         self.app_manager = app_manager
         
+        # Chargement des informations de version
+        self.version_info = self._load_version_info()
+        
         # Configuration de la fenêtre principale
         self.root = ctk.CTk()
-        self.root.title("RTPA Studio - Real-Time Poker Analysis")
+        title = f"RTPA Studio v{self.version_info['version']} - Real-Time Poker Analysis"
+        self.root.title(title)
         self.root.geometry("1400x900")
         self.root.minsize(1200, 800)
         
@@ -139,6 +144,21 @@ class RTAPMainWindow:
                 font=ctk.CTkFont(size=20, weight="bold")
             )
         
+        # Informations de version (centre haut)
+        self.version_frame = ctk.CTkFrame(self.header_frame)
+        self.version_label = ctk.CTkLabel(
+            self.version_frame,
+            text=f"Version {self.version_info['version']}",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color="cyan"
+        )
+        self.update_date_label = ctk.CTkLabel(
+            self.version_frame,
+            text=f"Mise à jour: {self.version_info['last_update']}",
+            font=ctk.CTkFont(size=10),
+            text_color="gray"
+        )
+
         # Indicateur d'état automatique (haut droite)
         self.status_indicator = ctk.CTkFrame(self.header_frame)
         self.status_icon = ctk.CTkLabel(
@@ -292,6 +312,9 @@ class RTAPMainWindow:
         # En-tête avec logo et status
         self.header_frame.pack(fill="x", pady=(0, 10))
         self.logo_label.pack(side="left", padx=(10, 0))
+        self.version_frame.pack(side="left", padx=(30, 0))
+        self.version_label.pack(pady=1)
+        self.update_date_label.pack(pady=0)
         
         # Indicateur d'état à droite
         self.status_indicator.pack(side="right", padx=(0, 10))
@@ -407,6 +430,25 @@ class RTAPMainWindow:
         # Les boutons ont été remplacés par l'indicateur automatique
         pass
     
+    def _load_version_info(self):
+        """Charge les informations de version depuis le fichier version.json"""
+        try:
+            version_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'version.json')
+            if os.path.exists(version_file):
+                with open(version_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+        except Exception as e:
+            self.logger.warning(f"Impossible de charger version.json: {e}")
+        
+        # Valeurs par défaut si le fichier n'est pas trouvé
+        return {
+            "version": "1.0.0",
+            "release_date": "2025-09-07",
+            "last_update": "2025-09-07",
+            "build": "1000",
+            "status": "stable"
+        }
+
     def _on_system_status_change(self, status, details):
         """Callback appelé lors des changements d'état du système"""
         try:
