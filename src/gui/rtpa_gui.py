@@ -71,10 +71,10 @@ class RTAPGUIWindow:
         self.style.theme_use('clam')
         
         # Couleurs harmonisées - tons gris doux
-        bg_color = "#e9ecef"  # Gris très clair harmonieux
+        bg_color = "#2d3748"  # Gris sombre harmonieux
         fg_color = "#212529"  # Noir doux pour le texte
         accent = "#1f538d"
-        card_bg = "#f8f9fa"   # Gris très clair pour les cartes
+        card_bg = "#2d3748"   # Gris sombre pour les cartes
         
         # Styles des frames
         self.style.configure('Card.TFrame', background=bg_color, relief='raised', borderwidth=1)
@@ -166,26 +166,26 @@ class RTAPGUIWindow:
         # Cartes visuelles Main
         self.hero_card1_frame = tk.Frame(
             self.hero_cards_frame, 
-            bg='#f8f9fa', relief='raised', bd=2, width=90, height=120
+            bg='#2d3748', relief='raised', bd=2, width=90, height=120
         )
         self.hero_card1_frame.pack(side='left', padx=5)
         self.hero_card1_frame.pack_propagate(False)
         
         self.hero_card1 = tk.Label(
             self.hero_card1_frame, text="🂠", font=('Arial', 28, 'bold'),
-            fg='gray', bg='#f8f9fa', anchor='center'
+            fg='#cbd5e0', bg='#2d3748', anchor='center'
         )
         self.hero_card1.pack(expand=True, fill='both')
         
         self.hero_card2_frame = tk.Frame(
-            self.hero_cards_frame, bg='#f8f9fa', relief='raised', bd=2, width=90, height=120
+            self.hero_cards_frame, bg='#2d3748', relief='raised', bd=2, width=90, height=120
         )
         self.hero_card2_frame.pack(side='left', padx=5)
         self.hero_card2_frame.pack_propagate(False)
         
         self.hero_card2 = tk.Label(
             self.hero_card2_frame, text="🂠", font=('Arial', 28, 'bold'),
-            fg='gray', bg='#f8f9fa', anchor='center'
+            fg='#cbd5e0', bg='#2d3748', anchor='center'
         )
         self.hero_card2.pack(expand=True, fill='both')
         
@@ -203,14 +203,14 @@ class RTAPGUIWindow:
         self.board_card_frames = []
         for i in range(5):
             card_frame = tk.Frame(
-                self.board_cards_frame, bg='#f8f9fa', relief='raised', bd=2, width=90, height=120
+                self.board_cards_frame, bg='#2d3748', relief='raised', bd=2, width=90, height=120
             )
             card_frame.pack(side='left', padx=5)
             card_frame.pack_propagate(False)
             
             card_label = tk.Label(
                 card_frame, text="🂠", font=('Arial', 28, 'bold'),
-                fg='gray', bg='#f8f9fa', anchor='center'
+                fg='#cbd5e0', bg='#2d3748', anchor='center'
             )
             card_label.pack(expand=True, fill='both')
             
