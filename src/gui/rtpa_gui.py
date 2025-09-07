@@ -226,9 +226,9 @@ class RTAPGUIWindow:
             self.system_optimizer = SystemOptimizer()
             # Charger la configuration sauvegardée
             self.system_optimizer.load_configuration()
-            self.logger.info("Optimiseur système initialisé")
+            print("✅ Optimiseur système initialisé")
         except Exception as e:
-            self.logger.error(f"Erreur initialisation optimiseur: {e}")
+            print(f"⚠️ Erreur initialisation optimiseur: {e}")
             self.system_optimizer = None
         
         # Charger les paramètres sauvegardés après création des éléments
