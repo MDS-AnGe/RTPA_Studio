@@ -66,6 +66,9 @@ class RTAPStudioManager:
         self.platform_detector.set_status_callback(self._on_platform_status_change)
         self.ocr_thread = None
         
+        # Référence à la GUI pour les callbacks de statut
+        self.gui_window = None
+        
         # Statistiques
         self.hands_played = 0
         self.hands_won = 0
@@ -73,6 +76,10 @@ class RTAPStudioManager:
         self.expected_win_rate = 0.65  # Taux normal d'un joueur pro
         
         self.logger.info("RTPA Studio Manager initialisé avec entraînement CFR automatique")
+    
+    def set_gui_window(self, gui_window):
+        """Définit la référence à la fenêtre GUI pour les callbacks de statut"""
+        self.gui_window = gui_window
     
     def _init_cfr_training(self):
         """Initialise l'entraînement CFR automatique"""
@@ -230,20 +237,30 @@ class RTAPStudioManager:
             
             if event_type == 'platform_detected':
                 self.logger.info(f"Plateforme détectée: {data}")
+                # Notifier la GUI
+                if self.gui_window:
+                    self.gui_window.on_platform_detected(data)
                 if not self.running and hasattr(self, '_auto_start'):
                     self._auto_start()
             
             elif event_type == 'platform_closed':
                 self.logger.info(f"Plateforme fermée: {data}")
+                # Notifier la GUI si aucune plateforme n'est active
                 if (hasattr(self, 'platform_detector') and 
                     hasattr(self.platform_detector, 'is_any_platform_active') and
                     not self.platform_detector.is_any_platform_active()):
+                    if self.gui_window:
+                        self.gui_window.on_platform_closed()
                     self._auto_stop()
             
             elif event_type == 'status':
                 if data == 'active' and not self.running:
+                    if self.gui_window:
+                        self.gui_window.update_connection_status("active")
                     self._auto_start()
                 elif data == 'waiting' and self.running:
+                    if self.gui_window:
+                        self.gui_window.update_connection_status("waiting")
                     self._auto_stop()
                     
         except Exception as e:

@@ -48,6 +48,13 @@ class RTAPGUIWindow:
         # Interface utilisateur
         self.create_widgets()
         
+        # Variables de statut
+        self.current_connection_status = "waiting"  # waiting, active, error
+        self.current_activity = "idle"  # idle, generating, training, analyzing
+        
+        # Démarrer la mise à jour du statut
+        self._update_status_display()
+        
         # Démarrage auto-détection (si disponible)
         if self.app_manager and hasattr(self.app_manager, 'start_platform_detection'):
             self.app_manager.start_platform_detection()
@@ -137,17 +144,26 @@ class RTAPGUIWindow:
                     font=ctk.CTkFont(size=14)).pack(anchor='w')
         
         # Contrôles et statut (en-tête droite)
-        self.controls_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+        self.controls_frame = ctk.CTkFrame(header_frame, fg_color="#2d3748", corner_radius=8)
         self.controls_frame.pack(side='right', padx=(20, 10))
         
-        self.status_label = ctk.CTkLabel(
+        # Ligne 1: État de connexion (rouge/vert)
+        self.connection_status_label = ctk.CTkLabel(
             self.controls_frame,
-            text="⏳ En attente...",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            fg_color="#2d3748",  # Bleu foncé pour la barre de performances
-            text_color="white"
+            text="En attente de plateforme",
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color="#ff6b6b"  # Rouge par défaut
         )
-        self.status_label.pack(pady=5)
+        self.connection_status_label.pack(pady=(8, 2))
+        
+        # Ligne 2: Activité du système (plus petite)
+        self.activity_status_label = ctk.CTkLabel(
+            self.controls_frame,
+            text="Surveillance active",
+            font=ctk.CTkFont(size=10),
+            text_color="#a0a0a0"  # Gris clair
+        )
+        self.activity_status_label.pack(pady=(0, 8))
         
         # Notebook avec onglets
         self.notebook = ttk.Notebook(self.main_frame)
@@ -1586,6 +1602,72 @@ class RTAPGUIWindow:
     # FONCTIONS HELPER SUPPRIMÉES
     # ========================================
     # Les fonctions de personnalisation ont été supprimées pour simplifier l'interface
+
+    def _update_status_display(self):
+        """Met à jour l'affichage du statut en temps réel"""
+        try:
+            # Ligne 1: État de connexion
+            if self.current_connection_status == "waiting":
+                self.connection_status_label.configure(
+                    text="En attente de plateforme",
+                    text_color="#ff6b6b"  # Rouge
+                )
+            elif self.current_connection_status == "active":
+                self.connection_status_label.configure(
+                    text="Plateforme détectée - Actif",
+                    text_color="#51cf66"  # Vert
+                )
+            elif self.current_connection_status == "error":
+                self.connection_status_label.configure(
+                    text="Erreur de connexion",
+                    text_color="#ff8c82"  # Rouge clair
+                )
+            
+            # Ligne 2: Activité du système
+            activity_messages = {
+                "idle": "Surveillance active",
+                "generating": "Génération de mains...",
+                "training": "Entraînement CFR en cours",
+                "analyzing": "Analyse de la situation",
+                "ocr": "Capture d'écran OCR"
+            }
+            
+            activity_text = activity_messages.get(self.current_activity, "Système opérationnel")
+            self.activity_status_label.configure(text=activity_text)
+            
+        except Exception as e:
+            print(f"Erreur mise à jour statut: {e}")
+        
+        # Programmer la prochaine mise à jour
+        self.root.after(1000, self._update_status_display)
+    
+    def update_connection_status(self, status):
+        """Met à jour l'état de connexion (waiting/active/error)"""
+        self.current_connection_status = status
+    
+    def update_activity_status(self, activity):
+        """Met à jour l'activité actuelle (idle/generating/training/analyzing/ocr)"""
+        self.current_activity = activity
+    
+    def on_platform_detected(self, platform_name):
+        """Appelé quand une plateforme est détectée"""
+        self.update_connection_status("active")
+        self.update_activity_status("analyzing")
+    
+    def on_platform_closed(self):
+        """Appelé quand aucune plateforme n'est active"""
+        self.update_connection_status("waiting")
+        self.update_activity_status("idle")
+    
+    def on_cfr_training_update(self, iteration_count):
+        """Appelé pendant l'entraînement CFR"""
+        if iteration_count > 0:
+            self.update_activity_status("training")
+    
+    def on_hand_generation_update(self, hands_generated):
+        """Appelé pendant la génération de mains"""
+        if hands_generated > 0:
+            self.update_activity_status("generating")
 
     def on_closing(self):
         """Gestion de la fermeture de la fenêtre"""

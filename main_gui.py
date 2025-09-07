@@ -25,6 +25,10 @@ def main():
         
         # Lancement de l'interface
         gui = RTAPGUIWindow(app_manager)
+        
+        # Connecter la GUI au gestionnaire pour les callbacks de statut
+        app_manager.set_gui_window(gui)
+        
         gui.run()
         
     except Exception as e:
