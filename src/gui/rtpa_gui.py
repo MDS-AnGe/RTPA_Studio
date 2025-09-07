@@ -327,13 +327,12 @@ class RTAPGUIWindow:
         self.performance_ratio_value.pack(side='left', padx=(5, 0))
         
         # Colonne droite: Informations joueurs (proche de la gauche)
-        right_column = ttk.Frame(main_layout, width=300)  # Largeur fixe réduite
-        right_column.pack(side='left', fill='y', padx=(5, 10))  # Fill seulement en Y, pas d'expand
+        right_column = ttk.Frame(main_layout)
+        right_column.pack(side='left', fill='both', padx=(5, 10))  # Retour au fill both pour assurer l'affichage
         
         # SECTION 4A: NOS INFOS PERSONNELLES
-        hero_frame = ttk.LabelFrame(right_column, text="👤 MOI", style='Card.TFrame', width=280)
-        hero_frame.pack(fill='x', pady=(0, 10))
-        hero_frame.pack_propagate(False)  # Maintient la largeur fixe
+        hero_frame = ttk.LabelFrame(right_column, text="👤 MOI", style='Card.TFrame')
+        hero_frame.pack(fill='x', pady=(0, 10))  # Suppression des contraintes de largeur
         
         hero_content = ttk.Frame(hero_frame)
         hero_content.pack(fill='x', padx=8, pady=6)
@@ -354,9 +353,8 @@ class RTAPGUIWindow:
         self.hero_position_label.pack(anchor='w', pady=(2, 0))
         
         # SECTION 4B: AUTRES JOUEURS ACTIFS
-        players_frame = ttk.LabelFrame(right_column, text="👥 AUTRES JOUEURS", style='Card.TFrame', width=280)
-        players_frame.pack(fill='both', expand=True, pady=(10, 0))
-        players_frame.pack_propagate(False)  # Maintient la largeur fixe
+        players_frame = ttk.LabelFrame(right_column, text="👥 AUTRES JOUEURS", style='Card.TFrame')
+        players_frame.pack(fill='both', expand=True, pady=(10, 0))  # Suppression des contraintes de largeur
         
         players_content = ttk.Frame(players_frame)
         players_content.pack(fill='both', expand=True, padx=8, pady=6)
