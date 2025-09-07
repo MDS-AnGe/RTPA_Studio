@@ -1154,23 +1154,42 @@ class RTAPGUIWindow:
     # ========================================
     
     def update_cpu_value(self, value):
-        """Met à jour l'affichage de la valeur CPU"""
+        """Met à jour l'affichage de la valeur CPU et applique la limite"""
         try:
             cpu_value = int(float(value))
             self.cpu_value_label.configure(text=f"{cpu_value}%")
+            
+            # Appliquer la limite CPU réelle
+            if hasattr(self, 'app_manager') and self.app_manager:
+                if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
+                    # Convertir en limite réelle (CPU disponible pour CFR)
+                    self.app_manager.cfr_trainer.configure_generation_resources(
+                        cpu_percent=cpu_value
+                    )
+                    print(f"Limite CPU CFR appliquée: {cpu_value}%")
         except Exception as e:
             print(f"Erreur mise à jour CPU: {e}")
     
     def update_ram_value(self, value):
-        """Met à jour l'affichage de la valeur RAM"""
+        """Met à jour l'affichage de la valeur RAM et applique la limite"""
         try:
             ram_value = float(value)
             self.ram_value_label.configure(text=f"{ram_value:.1f} GB")
+            
+            # Appliquer la limite RAM réelle
+            if hasattr(self, 'app_manager') and self.app_manager:
+                if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
+                    # Convertir GB en MB pour l'API
+                    ram_mb = ram_value * 1024
+                    self.app_manager.cfr_trainer.configure_generation_resources(
+                        memory_mb=ram_mb
+                    )
+                    print(f"Limite RAM CFR appliquée: {ram_value:.1f} GB")
         except Exception as e:
             print(f"Erreur mise à jour RAM: {e}")
     
     def update_generation_rate(self, value):
-        """Met à jour l'affichage de la vitesse de génération"""
+        """Met à jour l'affichage de la vitesse de génération et applique le changement"""
         try:
             rate_value = int(float(value))
             rate_labels = {
@@ -1180,14 +1199,32 @@ class RTAPGUIWindow:
             }
             display_text = rate_labels.get(rate_value, f"{rate_value}")
             self.gen_rate_label.configure(text=display_text)
+            
+            # Appliquer la vitesse de génération réelle
+            if hasattr(self, 'app_manager') and self.app_manager:
+                if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
+                    # Convertir la valeur 1-10 en mains par seconde (1=1 main/s, 10=10 mains/s)
+                    rate_per_second = float(rate_value)
+                    self.app_manager.cfr_trainer.configure_generation_resources(
+                        rate_per_second=rate_per_second
+                    )
+                    print(f"Vitesse génération appliquée: {rate_per_second} mains/s")
         except Exception as e:
             print(f"Erreur mise à jour vitesse génération: {e}")
     
     def update_gen_cpu_value(self, value):
-        """Met à jour l'affichage de la limite CPU pour génération"""
+        """Met à jour l'affichage de la limite CPU pour génération et applique"""
         try:
             cpu_value = int(float(value))
             self.gen_cpu_label.configure(text=f"{cpu_value}% CPU")
+            
+            # Appliquer la limite CPU spécifique pour la génération
+            if hasattr(self, 'app_manager') and self.app_manager:
+                if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
+                    self.app_manager.cfr_trainer.configure_generation_resources(
+                        cpu_percent=cpu_value
+                    )
+                    print(f"Limite CPU génération appliquée: {cpu_value}%")
         except Exception as e:
             print(f"Erreur mise à jour CPU génération: {e}")
     
@@ -1198,10 +1235,15 @@ class RTAPGUIWindow:
             status = "Activé" if is_enabled else "Désactivé"
             print(f"Génération continue: {status}")
             
-            # Ici vous pouvez ajouter la logique pour contrôler le générateur
+            # Contrôler réellement la génération
             if hasattr(self, 'app_manager') and self.app_manager:
-                if hasattr(self.app_manager, 'toggle_continuous_generation'):
-                    self.app_manager.toggle_continuous_generation(is_enabled)
+                if hasattr(self.app_manager, 'cfr_trainer') and self.app_manager.cfr_trainer:
+                    if is_enabled:
+                        self.app_manager.cfr_trainer.start_continuous_generation()
+                        print("✅ Génération continue démarrée")
+                    else:
+                        self.app_manager.cfr_trainer.stop_continuous_generation_user()
+                        print("❌ Génération continue arrêtée")
                     
         except Exception as e:
             print(f"Erreur toggle génération: {e}")
