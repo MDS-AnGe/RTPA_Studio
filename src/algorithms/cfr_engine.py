@@ -730,6 +730,22 @@ class CFREngine:
             'timestamp': time.time()
         }
     
+    def _get_default_poker_state(self) -> 'PokerState':
+        """Retourne un état poker par défaut en cas d'erreur"""
+        from ..utils.data_structures import PokerState
+        return PokerState(
+            street=0,  # preflop
+            hero_cards=("Ah", "Kh"),  # Cartes par défaut
+            board_cards=[],
+            pot_size=100.0,
+            hero_stack=1000.0,
+            position=0,
+            num_players=9,
+            current_bet=0.0,
+            action_history=[],
+            table_type='cashgame'
+        )
+    
     def update_settings(self, settings: Dict[str, Any]):
         """Met à jour les paramètres CFR"""
         try:
