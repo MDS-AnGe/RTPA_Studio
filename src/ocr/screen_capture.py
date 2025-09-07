@@ -22,19 +22,44 @@ class ScreenCapture:
         self.logger = get_logger(__name__)
         self.sct = mss.mss()
         
-        # Configuration OCR
-        self.tesseract_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789AKQJ$.,/'
-        
-        # Zones d'intérêt prédéfinies (à ajuster selon les clients poker)
-        self.roi_zones = {
-            'hero_cards': {'top': 580, 'left': 440, 'width': 140, 'height': 50},
-            'board_cards': {'top': 280, 'left': 350, 'width': 320, 'height': 60},
-            'pot_size': {'top': 220, 'left': 450, 'width': 120, 'height': 30},
-            'hero_stack': {'top': 650, 'left': 420, 'width': 100, 'height': 25},
-            'blinds': {'top': 180, 'left': 400, 'width': 150, 'height': 30},
-            'action_buttons': {'top': 600, 'left': 600, 'width': 300, 'height': 80},
-            'opponents_info': {'top': 100, 'left': 100, 'width': 800, 'height': 500}
+        # Configuration OCR avancée
+        self.tesseract_configs = {
+            'cards': r'--oem 3 --psm 8 -c tessedit_char_whitelist=AKQJT98765432shdc',
+            'numbers': r'--oem 3 --psm 8 -c tessedit_char_whitelist=0123456789$.,k',
+            'pot': r'--oem 3 --psm 7 -c tessedit_char_whitelist=0123456789$.,k ',
+            'default': r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789AKQJ$.,/'
         }
+        self.tesseract_config = self.tesseract_configs['default']
+        
+        # Zones d'intérêt adaptatives pour différents clients poker
+        self.roi_presets = {
+            'pokerstars': {
+                'hero_cards': {'top': 580, 'left': 440, 'width': 140, 'height': 50},
+                'board_cards': {'top': 280, 'left': 350, 'width': 320, 'height': 60},
+                'pot_size': {'top': 220, 'left': 450, 'width': 120, 'height': 30},
+                'hero_stack': {'top': 650, 'left': 420, 'width': 100, 'height': 25},
+                'blinds': {'top': 180, 'left': 400, 'width': 150, 'height': 30},
+                'action_buttons': {'top': 600, 'left': 600, 'width': 300, 'height': 80}
+            },
+            'winamax': {
+                'hero_cards': {'top': 590, 'left': 460, 'width': 130, 'height': 45},
+                'board_cards': {'top': 290, 'left': 370, 'width': 300, 'height': 55},
+                'pot_size': {'top': 230, 'left': 470, 'width': 110, 'height': 28},
+                'hero_stack': {'top': 660, 'left': 440, 'width': 90, 'height': 23},
+                'blinds': {'top': 190, 'left': 420, 'width': 140, 'height': 28},
+                'action_buttons': {'top': 610, 'left': 620, 'width': 280, 'height': 75}
+            },
+            'pmu': {
+                'hero_cards': {'top': 575, 'left': 450, 'width': 135, 'height': 48},
+                'board_cards': {'top': 275, 'left': 360, 'width': 310, 'height': 58},
+                'pot_size': {'top': 215, 'left': 460, 'width': 115, 'height': 32},
+                'hero_stack': {'top': 645, 'left': 430, 'width': 95, 'height': 26},
+                'blinds': {'top': 175, 'left': 410, 'width': 145, 'height': 32},
+                'action_buttons': {'top': 595, 'left': 610, 'width': 290, 'height': 78}
+            }
+        }
+        self.current_client = 'pokerstars'  # Client par défaut
+        self.roi_zones = self.roi_presets[self.current_client]
         
         # Cache des dernières captures
         self.last_capture = None
@@ -62,7 +87,41 @@ class ScreenCapture:
             self.logger.error(f"Erreur capture écran: {e}")
             return None
     
-    def preprocess_image(self, img: np.ndarray, zone_type: str = 'default') -> np.ndarray:
+    def auto_detect_poker_client(self, img: np.ndarray) -> str:
+        """Détecte automatiquement le client poker utilisé"""
+        try:
+            # Recherche de patterns spécifiques aux clients
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            
+            # PokerStars - recherche du logo ou pattern spécifique
+            if self._detect_pattern(gray, "PokerStars") or self._detect_pattern(gray, "Stars"):
+                return 'pokerstars'
+            
+            # Winamax - recherche du logo ou couleurs spécifiques
+            elif self._detect_pattern(gray, "Winamax") or self._detect_pattern(gray, "Max"):
+                return 'winamax'
+            
+            # PMU - recherche du logo
+            elif self._detect_pattern(gray, "PMU") or self._detect_pattern(gray, "pmu"):
+                return 'pmu'
+            
+            # Par défaut, utiliser PokerStars
+            return 'pokerstars'
+            
+        except Exception as e:
+            self.logger.warning(f"Erreur détection client: {e}")
+            return 'pokerstars'
+    
+    def set_poker_client(self, client: str):
+        """Configure les zones ROI pour un client poker spécifique"""
+        if client in self.roi_presets:
+            self.current_client = client
+            self.roi_zones = self.roi_presets[client]
+            self.logger.info(f"Client poker configuré: {client}")
+        else:
+            self.logger.warning(f"Client poker non supporté: {client}")
+    
+    def preprocess_image_advanced(self, img: np.ndarray, zone_type: str = 'default') -> np.ndarray:
         """Préprocessing de l'image pour améliorer l'OCR"""
         try:
             # Conversion en niveaux de gris

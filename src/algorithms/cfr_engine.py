@@ -570,6 +570,7 @@ class CFREngine:
             # Ici on devrait faire une traversée CFR complète
             # Pour l'instant, on fait une mise à jour légère
             self.iterations += 1
+            self.iterations_count = self.iterations  # Synchronisation
             
             # Décroissance des regrets anciens
             if self.iterations % 100 == 0:

@@ -103,6 +103,12 @@ class MemoryDatabase:
         with self.lock:
             timestamp = time.time()
             
+            # Protection contre données corrompues
+            if game_state.hero_cards is None:
+                game_state.hero_cards = ("", "")
+            if game_state.board_cards is None:
+                game_state.board_cards = []
+            
             # Stockage en mémoire
             state_data = {
                 'timestamp': timestamp,
@@ -154,7 +160,7 @@ class MemoryDatabase:
             
             return cursor.lastrowid
     
-    def store_recommendation(self, recommendation: Dict[str, Any]):
+    def store_recommendation(self, recommendation: Dict[str, Any], game_state=None):
         """Stocke une recommandation"""
         with self.lock:
             timestamp = time.time()
