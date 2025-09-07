@@ -186,12 +186,15 @@ class RTAPGUIWindow:
         )
         self.hero_card2.pack(expand=True, fill='both')
         
-        # Section Board (à droite)
+        # Section Board (à droite) - largeur contrôlée pour alignement
         board_frame = ttk.LabelFrame(cards_container, text="🃏 Board", style='Card.TFrame')
-        board_frame.pack(side='left', fill='both', expand=True)
+        board_frame.pack(side='left', fill='x', padx=(10, 0))  # Pas d'expand, juste fill-x
         
         self.board_cards_frame = ttk.Frame(board_frame)
         self.board_cards_frame.pack(anchor='w', padx=8, pady=10)
+        
+        # Calculer la largeur optimale pour 5 cartes (70px + padding)
+        optimal_board_width = (5 * 70) + (4 * 6) + 16  # 5 cartes + 4 espacements + padding
         
         self.board_cards = []
         self.board_card_frames = []
@@ -211,9 +214,9 @@ class RTAPGUIWindow:
             self.board_cards.append(card_label)
             self.board_card_frames.append(card_frame)
         
-        # SECTION 2: LAYOUT PRINCIPAL AVEC COLONNES
+        # SECTION 2: LAYOUT PRINCIPAL AVEC COLONNES - largeur contrôlée
         main_layout = ttk.Frame(main_container)
-        main_layout.pack(fill='both', expand=True, pady=(0, 10))
+        main_layout.pack(fill='x', pady=(0, 10))  # Fill en X seulement, pas d'expand
         
         # Colonne gauche: Informations table et recommandations (largeur limitée)
         left_column = ttk.Frame(main_layout)
