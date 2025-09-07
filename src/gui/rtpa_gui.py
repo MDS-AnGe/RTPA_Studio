@@ -626,25 +626,37 @@ class RTAPGUIWindow:
         iter_frame = ctk.CTkFrame(cfr_frame)
         iter_frame.pack(fill='x', padx=20, pady=(0, 10))
         
-        ctk.CTkLabel(iter_frame, text="Itérations CFR:").pack(side='left', padx=(10, 20))
+        ctk.CTkLabel(iter_frame, text="Itérations CFR:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
         self.cfr_iterations = ctk.CTkEntry(iter_frame, placeholder_text="100000")
         self.cfr_iterations.pack(side='left', padx=10)
+        
+        # Description détaillée
+        ctk.CTkLabel(iter_frame, text="Nombre d'itérations d'entraînement CFR (plus = meilleure qualité)", 
+                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
         
         # Profondeur CFR
         depth_frame = ctk.CTkFrame(cfr_frame)
         depth_frame.pack(fill='x', padx=20, pady=(0, 10))
         
-        ctk.CTkLabel(depth_frame, text="Profondeur CFR:").pack(side='left', padx=(10, 20))
+        ctk.CTkLabel(depth_frame, text="Profondeur CFR:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
         self.cfr_depth = ctk.CTkEntry(depth_frame, placeholder_text="3")
         self.cfr_depth.pack(side='left', padx=10)
+        
+        # Description détaillée
+        ctk.CTkLabel(depth_frame, text="Profondeur d'analyse des actions (3-5 recommandé)", 
+                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
         
         # Epsilon Exploration
         eps_frame = ctk.CTkFrame(cfr_frame)
         eps_frame.pack(fill='x', padx=20, pady=(0, 15))
         
-        ctk.CTkLabel(eps_frame, text="Epsilon Exploration:").pack(side='left', padx=(10, 20))
+        ctk.CTkLabel(eps_frame, text="Epsilon Exploration:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
         self.cfr_epsilon = ctk.CTkEntry(eps_frame, placeholder_text="0.3")
         self.cfr_epsilon.pack(side='left', padx=10)
+        
+        # Description détaillée
+        ctk.CTkLabel(eps_frame, text="Taux d'exploration vs exploitation (0.1-0.5)", 
+                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
         
         # Section: Gestion des Ressources
         resource_frame = ctk.CTkFrame(main_frame)
@@ -657,19 +669,35 @@ class RTAPGUIWindow:
         cpu_frame = ctk.CTkFrame(resource_frame)
         cpu_frame.pack(fill='x', padx=20, pady=(0, 10))
         
-        ctk.CTkLabel(cpu_frame, text="Limite CPU (%):").pack(side='left', padx=(10, 20))
-        self.cpu_limit = ctk.CTkSlider(cpu_frame, from_=10, to=100)
+        ctk.CTkLabel(cpu_frame, text="Limite CPU:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.cpu_limit = ctk.CTkSlider(cpu_frame, from_=10, to=100, command=self.update_cpu_value)
         self.cpu_limit.pack(side='left', padx=10, fill='x', expand=True)
         self.cpu_limit.set(80)
+        
+        # Affichage valeur
+        self.cpu_value_label = ctk.CTkLabel(cpu_frame, text="80%", font=ctk.CTkFont(weight="bold"))
+        self.cpu_value_label.pack(side='left', padx=10)
+        
+        # Description
+        ctk.CTkLabel(cpu_frame, text="Limite d'usage CPU pour préserver les performances", 
+                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
         
         # Limite RAM
         ram_frame = ctk.CTkFrame(resource_frame)
         ram_frame.pack(fill='x', padx=20, pady=(0, 15))
         
-        ctk.CTkLabel(ram_frame, text="Limite RAM (GB):").pack(side='left', padx=(10, 20))
-        self.ram_limit = ctk.CTkSlider(ram_frame, from_=1, to=16)
+        ctk.CTkLabel(ram_frame, text="Limite RAM:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.ram_limit = ctk.CTkSlider(ram_frame, from_=1, to=16, command=self.update_ram_value)
         self.ram_limit.pack(side='left', padx=10, fill='x', expand=True)
         self.ram_limit.set(8)
+        
+        # Affichage valeur
+        self.ram_value_label = ctk.CTkLabel(ram_frame, text="8.0 GB", font=ctk.CTkFont(weight="bold"))
+        self.ram_value_label.pack(side='left', padx=10)
+        
+        # Description
+        ctk.CTkLabel(ram_frame, text="Limite mémoire pour les calculs CFR et données", 
+                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
     
     def create_performance_tab(self):
         """Création de l'onglet Performance"""
