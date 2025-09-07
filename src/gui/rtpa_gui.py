@@ -985,19 +985,16 @@ class RTAPGUIWindow:
         self.update_thread.start()
     
     def _update_loop(self):
-        """Boucle de mise à jour de l'interface"""
+        """Boucle de mise à jour de l'interface avec stabilisation"""
+        last_data = None
+        update_pending = False
+        
         while self.running:
             try:
-                if self.app_manager:
+                if self.app_manager and not update_pending:
                     # Récupérer les données du gestionnaire (si la méthode existe)
                     if hasattr(self.app_manager, 'get_display_data'):
                         data = self.app_manager.get_display_data()
-                        # Mettre à jour dans le thread principal
-                        self.root.after(0, lambda: self.update_display(data))
-                        
-                        # Mettre à jour les joueurs si les données sont disponibles
-                        if data.get('players_info'):
-                            self.root.after(0, lambda: self.update_players_from_ocr(data['players_info']))
                     else:
                         # Utiliser des données simulées avec joueurs pour le test
                         data = {
@@ -1021,13 +1018,45 @@ class RTAPGUIWindow:
                                 {"name": "GaryFold", "stack": 2890, "vpip": 18, "pfr": 14, "status": "actif", "position": 8, "position_name": "BB", "is_button": False, "is_sb": False, "is_bb": True}
                             ]
                         }
-                        self.root.after(0, lambda: self.update_display(data))
+                    
+                    # Ne mettre à jour que si les données ont changé
+                    if data != last_data:
+                        update_pending = True
+                        last_data = data.copy() if isinstance(data, dict) else data
+                        
+                        # Mettre à jour dans le thread principal avec callback de fin
+                        def update_complete():
+                            nonlocal update_pending
+                            update_pending = False
+                        
+                        self.root.after(0, lambda: self._perform_stable_update(data, update_complete))
                 
-                time.sleep(1)  # Mise à jour chaque seconde
+                time.sleep(1.5)  # Mise à jour moins fréquente pour stabilité
                 
             except Exception as e:
                 print(f"Erreur dans la boucle de mise à jour: {e}")
+                update_pending = False
                 time.sleep(1)
+    
+    def _perform_stable_update(self, data, callback):
+        """Effectue une mise à jour stable et complète des données"""
+        try:
+            # Mise à jour complète en une seule fois
+            self.update_display(data)
+            
+            # Mettre à jour les joueurs si disponibles
+            if data.get('players_info'):
+                self.update_players_from_ocr(data['players_info'])
+            
+            # Forcer la mise à jour graphique
+            self.root.update_idletasks()
+            
+        except Exception as e:
+            print(f"Erreur mise à jour stable: {e}")
+        finally:
+            # Signaler que la mise à jour est terminée
+            if callback:
+                callback()
     
     def on_closing(self):
         """Gestion de la fermeture de la fenêtre"""
