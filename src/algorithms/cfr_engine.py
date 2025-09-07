@@ -134,7 +134,7 @@ class CFREngine:
             return device
         else:
             device = torch.device("cpu")
-            self.logger.info(f"Utilisation CPU optimisé: {self.cpu_threads} threads")
+            self.logger.info(f"Utilisation CPU optimisé: {mp.cpu_count()} threads")
             return device
     
     def set_gpu_enabled(self, enabled: bool, memory_limit: float = 0.8):
