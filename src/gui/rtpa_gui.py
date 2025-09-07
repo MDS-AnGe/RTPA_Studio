@@ -227,9 +227,10 @@ class RTAPGUIWindow:
         left_column = ttk.Frame(main_layout)
         left_column.pack(side='left', fill='y', padx=(0, 5))
         
-        # Encadré dédié: Informations de table (largeur compacte)
-        table_info_frame = ttk.LabelFrame(left_column, text="📊 INFORMATIONS TABLE", style='Card.TFrame')
+        # Encadré dédié: Informations de table (largeur uniformée)
+        table_info_frame = ttk.LabelFrame(left_column, text="📊 INFORMATIONS TABLE", style='Card.TFrame', width=300)
         table_info_frame.pack(pady=(0, 10))
+        table_info_frame.pack_propagate(False)
         
         table_content = ttk.Frame(table_info_frame)
         table_content.pack(padx=10, pady=8)
@@ -264,9 +265,10 @@ class RTAPGUIWindow:
         right_column = ttk.Frame(main_layout)
         right_column.pack(side='left', fill='both', expand=True, padx=(15, 0))
         
-        # SECTION 3: RECOMMANDATION PRINCIPALE (dans colonne gauche, largeur compacte)
-        rec_frame = ttk.LabelFrame(left_column, text="🎯 RECOMMANDATION", style='Card.TFrame')
+        # SECTION 3: RECOMMANDATION PRINCIPALE (dans colonne gauche, largeur uniformée)
+        rec_frame = ttk.LabelFrame(left_column, text="🎯 RECOMMANDATION", style='Card.TFrame', width=300)
         rec_frame.pack(pady=(0, 10))
+        rec_frame.pack_propagate(False)
         
         rec_content = ttk.Frame(rec_frame)
         rec_content.pack(padx=10, pady=8)
@@ -350,9 +352,10 @@ class RTAPGUIWindow:
         # Créer la liste des joueurs (sera mis à jour via OCR)
         self.create_players_display()
         
-        # SECTION 5: STATISTIQUES COMPACTES (dans colonne gauche, largeur compacte)
-        stats_frame = ttk.LabelFrame(left_column, text="📈 STATISTIQUES", style='Card.TFrame')
+        # SECTION 5: STATISTIQUES COMPACTES (dans colonne gauche, largeur uniformée)
+        stats_frame = ttk.LabelFrame(left_column, text="📈 STATISTIQUES", style='Card.TFrame', width=300)
         stats_frame.pack()
+        stats_frame.pack_propagate(False)
         
         stats_content = ttk.Frame(stats_frame)
         stats_content.pack(padx=10, pady=6)
