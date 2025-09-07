@@ -63,7 +63,7 @@ class CFREngine:
         # Configuration d'accélération GPU/CPU
         self.device = self._setup_compute_device()
         self.use_acceleration = TORCH_AVAILABLE
-        self.gpu_enabled = False  # Désactivé - environnement CPU uniquement
+        self.gpu_enabled = self.config.gpu_enabled  # Dynamique selon réglages utilisateur
         self.gpu_memory_limit = 0.8  # 80% max mémoire GPU
         self.cpu_threads = mp.cpu_count()
         
@@ -126,8 +126,16 @@ class CFREngine:
         self.logger.info("CFREngine initialisé avec entraînement automatique")
         if self.use_acceleration:
             self.logger.info(f"Accélération disponible: {self.device}")
-        else:
-            self.logger.warning("PyTorch non disponible - utilisation CPU uniquement")
+    
+    def update_gpu_settings(self, gpu_enabled: bool, memory_limit: float):
+        """Met à jour spécifiquement les paramètres GPU"""
+        self.gpu_enabled = gpu_enabled
+        self.config.gpu_enabled = gpu_enabled
+        
+        if hasattr(self, 'accelerator') and self.accelerator:
+            self.accelerator.update_config(gpu_enabled, memory_limit)
+            
+        self.logger.info(f"Paramètres GPU mis à jour: enabled={gpu_enabled}, memory={memory_limit*100:.0f}%")
     
     def _setup_compute_device(self):
         """Configure le device optimal pour les calculs"""
@@ -937,6 +945,21 @@ class CFREngine:
             
             if 'deep_cfr_enabled' in settings:
                 self.deep_cfr_enabled = settings['deep_cfr_enabled']
+            
+            # Support GPU dynamique
+            if 'gpu_enabled' in settings:
+                self.gpu_enabled = settings['gpu_enabled']
+                self.config.gpu_enabled = settings['gpu_enabled']
+                
+                # Mettre à jour l'accélérateur GPU
+                if hasattr(self, 'accelerator') and self.accelerator:
+                    gpu_memory = settings.get('gpu_memory_limit', 80) / 100.0
+                    self.accelerator.update_config(self.gpu_enabled, gpu_memory)
+                
+                if not self.gpu_enabled:
+                    self.logger.info("Utilisation CPU forcée")
+                else:
+                    self.logger.info("GPU activé pour accélération")
             
             self.logger.info("Paramètres CFR mis à jour")
             
