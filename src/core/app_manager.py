@@ -258,3 +258,36 @@ class RTAPStudioManager:
             'platforms': platforms,
             'primary_platform': self.platform_detector.get_primary_platform()
         }
+
+    def get_display_data(self) -> Dict[str, Any]:
+        """Retourne les données pour l'affichage GUI avec joueurs complets"""
+        try:
+            # Récupération de l'état actuel du jeu
+            current_state = self.get_current_state()
+            recommendation = self.get_recommendation()
+            statistics = self.get_statistics()
+            
+            # Récupération des données joueurs depuis l'OCR  
+            ocr_data = self.screen_capture.capture_and_analyze() if hasattr(self.screen_capture, 'capture_and_analyze') else {}
+            players_at_table = ocr_data.get('players_at_table', []) if ocr_data else []
+            
+            return {
+                'hero_cards': list(current_state.hero_cards) if current_state.hero_cards else [],
+                'board_cards': current_state.board_cards,
+                'pot': current_state.pot_size,
+                'hero_stack': current_state.hero_stack,
+                'small_blind': current_state.small_blind,
+                'big_blind': current_state.big_blind,
+                'antes': getattr(current_state, 'ante', 0.0),
+                'table_type': current_state.table_type,
+                'hero_position': current_state.hero_position,
+                'recommendation': recommendation,
+                'statistics': statistics,
+                'active_players': getattr(current_state, 'active_players', 8),
+                'total_players': getattr(current_state, 'total_players', 9),
+                'players_info': players_at_table  # Liste complète des joueurs avec positions
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Erreur récupération données affichage: {e}")
+            return {}

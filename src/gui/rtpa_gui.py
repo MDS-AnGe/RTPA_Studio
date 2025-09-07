@@ -421,7 +421,7 @@ class RTAPGUIWindow:
         self.create_players_display(players_data)
     
     def create_players_display(self, players_data=None):
-        """Création de l'affichage des joueurs actifs"""
+        """Création de l'affichage des joueurs actifs avec positions 9-max"""
         
         # Effacer l'affichage existant
         for widget in self.players_list_frame.winfo_children():
@@ -429,47 +429,74 @@ class RTAPGUIWindow:
         
         # Utiliser les données fournies ou les données par défaut
         if players_data is None:
-            # Données d'exemple des autres joueurs (sera remplacé par OCR)
+            # Données d'exemple pour table 9-max (sera remplacé par OCR)
             players_data = [
-                {"name": "AlicePoker", "stack": "1847€", "vpip": "15%", "pfr": "12%", "status": "actif"},
-                {"name": "BobBluff", "stack": "2156€", "vpip": "28%", "pfr": "22%", "status": "actif"},
-                {"name": "Charlie2024", "stack": "1023€", "vpip": "45%", "pfr": "8%", "status": "fold"},
-                {"name": "DianaAce", "stack": "3421€", "vpip": "12%", "pfr": "10%", "status": "actif"},
-                {"name": "EdRaise", "stack": "956€", "vpip": "35%", "pfr": "25%", "status": "fold"}
+                {"name": "AlicePoker", "stack": 1847, "vpip": 15, "pfr": 12, "status": "actif", "position": 0, "position_name": "UTG", "is_button": False, "is_sb": False, "is_bb": False},
+                {"name": "BobBluff", "stack": 2156, "vpip": 28, "pfr": 22, "status": "actif", "position": 2, "position_name": "MP1", "is_button": False, "is_sb": False, "is_bb": False},
+                {"name": "Charlie2024", "stack": 1023, "vpip": 45, "pfr": 8, "status": "fold", "position": 4, "position_name": "MP3", "is_button": False, "is_sb": False, "is_bb": False},
+                {"name": "DianaAce", "stack": 3421, "vpip": 12, "pfr": 10, "status": "actif", "position": 5, "position_name": "CO", "is_button": False, "is_sb": False, "is_bb": False},
+                {"name": "EdRaise", "stack": 956, "vpip": 35, "pfr": 25, "status": "actif", "position": 6, "position_name": "BTN", "is_button": True, "is_sb": False, "is_bb": False},
+                {"name": "FionaCall", "stack": 1540, "vpip": 22, "pfr": 18, "status": "actif", "position": 7, "position_name": "SB", "is_button": False, "is_sb": True, "is_bb": False},
+                {"name": "GaryFold", "stack": 2890, "vpip": 18, "pfr": 14, "status": "actif", "position": 8, "position_name": "BB", "is_button": False, "is_sb": False, "is_bb": True}
             ]
         
-        # Affichage vertical compact pour les autres joueurs
-        for i, player in enumerate(players_data):
+        # Trier par position pour affichage dans l'ordre de la table
+        sorted_players = sorted(players_data, key=lambda p: p.get('position', 0))
+        
+        # Affichage vertical compact pour les autres joueurs avec positions
+        for i, player in enumerate(sorted_players):
             player_frame = ttk.Frame(self.players_list_frame)
             player_frame.pack(fill='x', pady=2, padx=5)
             
             # Couleur de statut
-            status_color = 'green' if player['status'] == 'actif' else 'gray'
-            status_text = "✅" if player['status'] == 'actif' else "⏸️"
+            status_color = '#28a745' if player['status'] == 'actif' else '#6c757d'
+            status_icon = "✅" if player['status'] == 'actif' else "⏸️"
             
-            # Ligne principale: Nom + Stack
+            # Déterminer icône de position
+            position_icon = ""
+            position_color = '#495057'
+            if player.get('is_button'):
+                position_icon = " 🔴"  # Button
+                position_color = '#dc3545'
+            elif player.get('is_sb'):
+                position_icon = " 🟡"  # Small Blind
+                position_color = '#ffc107'
+            elif player.get('is_bb'):
+                position_icon = " 🔵"  # Big Blind
+                position_color = '#007bff'
+            
+            # Ligne principale: Position + Nom + Stack
             main_line = ttk.Frame(player_frame)
             main_line.pack(fill='x')
             
-            # Nom du joueur
-            name_label = ttk.Label(main_line, text=f"{status_text} {player['name']}", 
-                                 font=('Arial', 11, 'bold'), foreground=status_color)
-            name_label.pack(side='left')
+            # Position et statut
+            position_text = f"{player.get('position_name', 'POS')}{position_icon}"
+            ttk.Label(main_line, text=position_text, font=('Arial', 9, 'bold'), foreground=position_color).pack(side='left')
             
-            # Stack du joueur
-            stack_label = ttk.Label(main_line, text=player['stack'], 
-                                  font=('Arial', 11, 'bold'), foreground='green')
+            ttk.Label(main_line, text=status_icon, font=('Arial', 10)).pack(side='left', padx=(5, 8))
+            
+            # Nom du joueur
+            name_label = ttk.Label(main_line, text=player['name'], 
+                                 font=('Arial', 11, 'bold'), foreground=status_color)
+            name_label.pack(side='left', padx=(5, 0))
+            
+            # Stack
+            stack_text = f"{player.get('stack', 0):.0f}€" if isinstance(player.get('stack'), (int, float)) else str(player.get('stack', '0€'))
+            stack_label = ttk.Label(main_line, text=stack_text, 
+                                  font=('Arial', 10, 'bold'), foreground='#28a745')
             stack_label.pack(side='right')
             
-            # Ligne stats: VPIP + PFR
-            if player.get('vpip') and player.get('pfr'):
-                stats_line = ttk.Frame(player_frame)
-                stats_line.pack(fill='x')
-                
-                stats_text = f"VPIP: {player['vpip']} | PFR: {player['pfr']}"
-                stats_label = ttk.Label(stats_line, text=stats_text, 
-                                      font=('Arial', 9), foreground='gray')
-                stats_label.pack(side='left')
+            # Ligne secondaire: VPIP/PFR (stats poker)
+            stats_line = ttk.Frame(player_frame)
+            stats_line.pack(fill='x', pady=(2, 0))
+            
+            vpip = player.get('vpip', 0)
+            pfr = player.get('pfr', 0)
+            vpip_text = f"{vpip}%" if isinstance(vpip, (int, float)) else str(vpip)
+            pfr_text = f"{pfr}%" if isinstance(pfr, (int, float)) else str(pfr)
+            
+            ttk.Label(stats_line, text=f"VPIP: {vpip_text}", font=('Arial', 8), foreground='#6c757d').pack(side='left')
+            ttk.Label(stats_line, text=f"PFR: {pfr_text}", font=('Arial', 8), foreground='#6c757d').pack(side='left', padx=(10, 0))
     
     def create_options_tab(self):
         """Création de l'onglet Options"""
@@ -934,8 +961,12 @@ class RTAPGUIWindow:
                         data = self.app_manager.get_display_data()
                         # Mettre à jour dans le thread principal
                         self.root.after(0, lambda: self.update_display(data))
+                        
+                        # Mettre à jour les joueurs si les données sont disponibles
+                        if data.get('players_info'):
+                            self.root.after(0, lambda: self.update_players_from_ocr(data['players_info']))
                     else:
-                        # Utiliser des données simulées pour le test
+                        # Utiliser des données simulées avec joueurs pour le test
                         data = {
                             'hero_cards': ['Ac', '7d'],
                             'board_cards': ['Ah', '7h', '2c', '9s', 'Kh'],
@@ -946,7 +977,16 @@ class RTAPGUIWindow:
                             'win_probability': '1.0%',
                             'risk_level': '53%',
                             'confidence': '15%',
-                            'reasoning': 'Recommandation bet_small basée sur: Main forte, position milieu'
+                            'reasoning': 'Recommandation bet_small basée sur: Main forte, position milieu',
+                            'players_info': [
+                                {"name": "PokerPro", "stack": 1847, "vpip": 15, "pfr": 12, "status": "actif", "position": 0, "position_name": "UTG", "is_button": False, "is_sb": False, "is_bb": False},
+                                {"name": "AliceBluff", "stack": 2156, "vpip": 28, "pfr": 22, "status": "actif", "position": 2, "position_name": "MP1", "is_button": False, "is_sb": False, "is_bb": False},
+                                {"name": "BobNuts", "stack": 1023, "vpip": 35, "pfr": 8, "status": "fold", "position": 4, "position_name": "MP3", "is_button": False, "is_sb": False, "is_bb": False},
+                                {"name": "DianaAce", "stack": 3421, "vpip": 12, "pfr": 10, "status": "actif", "position": 5, "position_name": "CO", "is_button": False, "is_sb": False, "is_bb": False},
+                                {"name": "EdRaise", "stack": 956, "vpip": 35, "pfr": 25, "status": "actif", "position": 6, "position_name": "BTN", "is_button": True, "is_sb": False, "is_bb": False},
+                                {"name": "FionaCall", "stack": 1540, "vpip": 22, "pfr": 18, "status": "actif", "position": 7, "position_name": "SB", "is_button": False, "is_sb": True, "is_bb": False},
+                                {"name": "GaryFold", "stack": 2890, "vpip": 18, "pfr": 14, "status": "actif", "position": 8, "position_name": "BB", "is_button": False, "is_sb": False, "is_bb": True}
+                            ]
                         }
                         self.root.after(0, lambda: self.update_display(data))
                 
