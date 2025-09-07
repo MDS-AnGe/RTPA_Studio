@@ -186,12 +186,7 @@ class RTAPGUIWindow:
         self.notebook.add(self.options_tab, text="⚙️ Options")
         self.create_options_tab()
         
-        # Onglet 3: Version
-        self.version_tab = ttk.Frame(self.notebook)
-        self.notebook.add(self.version_tab, text="📋 Version")
-        self.create_version_tab()
-        
-        # Onglet 4: Paramètres
+        # Onglet 3: Paramètres
         self.settings_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.settings_tab, text="🔧 Paramètres")
         self.create_settings_tab()
@@ -200,6 +195,11 @@ class RTAPGUIWindow:
         self.performance_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.performance_tab, text="⚡ Performance")
         self.create_performance_tab()
+        
+        # Onglet 5: Version (dernier à droite)
+        self.version_tab = ttk.Frame(self.notebook)
+        self.notebook.add(self.version_tab, text="📋 Version")
+        self.create_version_tab()
     
     def create_dashboard_tab(self):
         """Création de l'onglet Tableau de Bord complet (état du jeu + recommandations + statistiques)"""
