@@ -16,6 +16,29 @@ The application features:
 
 Date completed: September 7, 2025
 
+## Recent Updates (September 7, 2025)
+
+### Visual Interface Improvements
+- **Cartes réalistes**: Système d'affichage de cartes avec couleurs rouge/noir et symboles réels (♠ ♥ ♦ ♣)
+- **Renommage**: "Cartes du Héros" renommé en "Main" pour meilleure ergonomie
+- **Format visuel**: Cartes affichées dans des cadres blancs avec bordures, format "K♠" "A♥" etc.
+
+### Configuration avancée CFR
+- **Descriptions détaillées**: Explications précises de chaque paramètre CFR
+- **Nouveaux paramètres**: Profondeur CFR, Epsilon Exploration, CFR+
+- **Options étendues**: Plus de contrôles fins pour optimisation algorithmes
+
+### Gestion PyTorch
+- **Vérification automatique**: Status PyTorch affiché dans onglet Performance
+- **Installation directe**: Bouton pour installer PyTorch depuis l'interface
+- **Support CUDA**: Détection et indication du support GPU
+
+### Personnalisation interface
+- **Couleurs d'accent**: Choix entre 5 couleurs (bleu, vert, rouge, violet, orange)
+- **Opacité réglable**: Transparence fenêtre ajustable 70-100%
+- **Polices personnalisées**: Sélection police interface (Arial, Helvetica, Times, Courier)
+- **Thèmes avancés**: Options étendues dark/light mode
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
