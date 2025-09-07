@@ -2086,7 +2086,7 @@ class RTAPGUIWindow:
             info_frame,
             text="Auteur: MDS_AnGe - AnG(e)™",
             font=ctk.CTkFont(size=12, weight="bold"),
-            text_color="cyan"
+            text_color="black"
         )
         author_label.pack(pady=2)
         
