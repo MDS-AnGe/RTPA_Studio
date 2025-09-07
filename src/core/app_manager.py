@@ -52,6 +52,9 @@ class RTAPStudioManager:
         self.cfr_engine = CFREngine()
         self.platform_detector = PlatformDetector()
         
+        # Initialisation de l'entraînement CFR automatique
+        self._init_cfr_training()
+        
         self.game_state = GameState()
         self.running = False
         self.analysis_thread = None
@@ -69,7 +72,27 @@ class RTAPStudioManager:
         self.win_rate = 0.0
         self.expected_win_rate = 0.65  # Taux normal d'un joueur pro
         
-        self.logger.info("RTAPStudioManager initialisé")
+        self.logger.info("RTPA Studio Manager initialisé avec entraînement CFR automatique")
+    
+    def _init_cfr_training(self):
+        """Initialise l'entraînement CFR automatique"""
+        try:
+            # Initialisation du trainer CFR avec délai pour éviter problèmes import
+            import threading
+            init_thread = threading.Thread(target=self._delayed_cfr_init, daemon=True)
+            init_thread.start()
+            
+        except Exception as e:
+            self.logger.error(f"Erreur initialisation CFR training: {e}")
+    
+    def _delayed_cfr_init(self):
+        """Initialisation différée du CFR pour éviter conflits"""
+        try:
+            time.sleep(2)  # Petit délai pour s'assurer que tout est chargé
+            self.cfr_engine.init_trainer()
+            self.logger.info("Entraînement CFR automatique initialisé")
+        except Exception as e:
+            self.logger.error(f"Erreur initialisation différée CFR: {e}")
         
         # Démarrer la surveillance automatique des plateformes
         self.platform_detector.start_monitoring()

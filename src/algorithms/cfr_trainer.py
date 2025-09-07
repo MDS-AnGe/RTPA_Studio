@@ -105,8 +105,8 @@ class CFRTrainer:
         
         return generated_hands
     
-    def start_intensive_training(self, target_iterations: int = None, 
-                                target_convergence: float = None) -> bool:
+    def start_intensive_training(self, target_iterations: Optional[int] = None, 
+                                target_convergence: Optional[float] = None) -> bool:
         """Démarre l'entraînement CFR intensif"""
         if self.is_training:
             self.logger.warning("Entraînement déjà en cours")
@@ -148,6 +148,7 @@ class CFRTrainer:
         
         iteration = 0
         last_convergence_check = 0
+        convergence = 1.0  # Initialize convergence
         
         while self.is_training and iteration < self.target_iterations:
             try:

@@ -95,7 +95,7 @@ class HandParser:
                     fmt = self.detect_format(line)
                     format_counts[fmt] += 1
             
-            main_format = max(format_counts, key=format_counts.get)
+            main_format = max(format_counts.items(), key=lambda x: x[1])[0]
             
             if main_format == HandFormat.ACPC:
                 hands = self._parse_acpc_file(content)
@@ -451,7 +451,7 @@ class HandParser:
         else:
             return 0
     
-    def get_statistics(self) -> Dict[str, int]:
+    def get_statistics(self) -> Dict[str, Any]:
         """Retourne les statistiques de parsing"""
         return {
             'hands_parsed': self.hands_parsed,

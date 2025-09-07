@@ -60,6 +60,11 @@ class CFREngine:
         self.discount_factor = 0.95
         self.exploration_rate = 0.1
         
+        # Nouveaux composants pour entraînement massif
+        self.cfr_trainer = None
+        self.auto_training_enabled = True
+        self.training_target_reached = False
+        
         # Abstractions
         self.card_abstraction = CardAbstraction()
         self.action_abstraction = ActionAbstraction()
@@ -78,7 +83,99 @@ class CFREngine:
         self.advantage_net = None
         self.strategy_net = None
         
-        self.logger.info("CFREngine initialisé")
+        # Initialisation de l'entraîneur CFR (sera fait plus tard pour éviter import circulaire)
+        self.cfr_trainer = None
+        
+        self.logger.info("CFREngine initialisé avec entraînement automatique")
+    
+    def init_trainer(self):
+        """Initialise l'entraîneur CFR (séparé pour éviter import circulaire)"""
+        try:
+            from .cfr_trainer import CFRTrainer
+            self.cfr_trainer = CFRTrainer(self)
+            
+            # Chargement automatique des mains historiques
+            self._load_historical_hands()
+            
+            # Démarrage de l'entraînement automatique
+            if self.auto_training_enabled and not self.training_target_reached:
+                self._start_auto_training()
+                
+        except Exception as e:
+            self.logger.error(f"Erreur initialisation trainer: {e}")
+    
+    def _load_historical_hands(self):
+        """Charge automatiquement les mains historiques disponibles"""
+        try:
+            import os
+            hand_files = []
+            
+            # Recherche des fichiers de mains dans attached_assets
+            assets_dir = "attached_assets"
+            if os.path.exists(assets_dir):
+                for file in os.listdir(assets_dir):
+                    if file.startswith("All_Hands_part") and file.endswith(".txt"):
+                        hand_files.append(os.path.join(assets_dir, file))
+            
+            if hand_files and self.cfr_trainer:
+                self.logger.info(f"Chargement de {len(hand_files)} fichiers de mains...")
+                total_loaded = self.cfr_trainer.load_historical_hands(hand_files)
+                self.logger.info(f"Chargé {total_loaded} mains historiques")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur chargement mains historiques: {e}")
+    
+    def _start_auto_training(self):
+        """Démarre l'entraînement automatique en arrière-plan"""
+        try:
+            if self.cfr_trainer:
+                # Génération de dataset supplémentaire si nécessaire
+                if len(self.cfr_trainer.training_hands) < 50000:
+                    self.logger.info("Génération de mains supplémentaires pour entraînement...")
+                    self.cfr_trainer.generate_training_dataset(200000)
+                
+                # Démarrage entraînement intensif
+                self.logger.info("Démarrage entraînement CFR automatique...")
+                success = self.cfr_trainer.start_intensive_training(
+                    target_iterations=100000,
+                    target_convergence=0.01
+                )
+                
+                if success:
+                    self.logger.info("Entraînement CFR démarré avec succès")
+                else:
+                    self.logger.warning("Impossible de démarrer l'entraînement CFR")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur démarrage auto-training: {e}")
+    
+    def get_training_progress(self) -> Dict[str, Any]:
+        """Retourne les informations de progression de l'entraînement"""
+        if self.cfr_trainer:
+            stats = self.cfr_trainer.get_training_statistics()
+            return {
+                'training_active': stats['is_training'],
+                'iterations': stats['iterations'],
+                'target_iterations': stats['target_iterations'],
+                'progress_percent': stats['progress_percentage'],
+                'quality': stats['current_quality'],
+                'confidence': min(100, stats['current_quality'] * 100),
+                'convergence': stats['last_convergence'],
+                'training_hands': stats['training_hands'],
+                'info_sets': stats['info_sets_learned']
+            }
+        else:
+            return {
+                'training_active': False,
+                'iterations': self.iterations,
+                'target_iterations': 0,
+                'progress_percent': 0,
+                'quality': 0.0,
+                'confidence': 0,
+                'convergence': 1.0,
+                'training_hands': 0,
+                'info_sets': 0
+            }
     
     def get_recommendation(self, game_state) -> Dict[str, Any]:
         """Retourne une recommandation basée sur CFR/Nash"""
@@ -105,6 +202,9 @@ class CFREngine:
                 # Calcul du niveau de risque
                 risk_level = self._calculate_risk_level(poker_state, best_action[0])
                 
+                # Calcul de confiance basé sur les métriques CFR réelles
+                confidence = self._calculate_cfr_confidence(info_set, strategy)
+                
                 # Construction de la recommandation
                 recommendation = {
                     'action_type': best_action[0],
@@ -112,7 +212,7 @@ class CFREngine:
                     'win_probability': win_probability,
                     'expected_value': best_action[1],
                     'risk_level': risk_level,
-                    'confidence': self._calculate_confidence(strategy),
+                    'confidence': confidence,
                     'reasoning': self._generate_reasoning(poker_state, best_action[0], strategy),
                     'alternative_actions': self._get_alternative_actions(action_values),
                     'timestamp': time.time()
@@ -427,7 +527,69 @@ class CFREngine:
             self.logger.error(f"Erreur niveau risque: {e}")
             return 50.0
     
-    def _calculate_confidence(self, strategy: Dict[str, float]) -> float:
+    def _calculate_cfr_confidence(self, info_set: str, strategy: Dict[str, float]) -> float:
+        """Calcule la confiance basée sur les métriques CFR réelles"""
+        try:
+            # Progression de l'entraînement depuis les métriques CFR trainer
+            training_progress = self.get_training_progress()
+            
+            # Facteurs de confiance
+            iteration_factor = min(1.0, training_progress['iterations'] / 10000)  # Converge vers 1 à 10k itérations
+            quality_factor = training_progress['quality']  # Qualité des stratégies
+            convergence_factor = max(0.0, 1.0 - training_progress['convergence'])  # Inverse de convergence
+            
+            # Facteur spécifique à cet information set
+            info_set_factor = 1.0
+            if info_set in self.strategy_sum and self.strategy_sum[info_set]:
+                # Plus l'info set a été vu, plus on a confiance
+                total_visits = sum(self.strategy_sum[info_set].values())
+                info_set_factor = min(1.0, total_visits / 100)  # Converge à 100 visites
+            
+            # Facteur de cohérence de la stratégie
+            strategy_coherence = self._calculate_strategy_coherence(strategy)
+            
+            # Calcul de confiance combiné (0-100%)
+            base_confidence = (
+                iteration_factor * 0.3 +      # 30% basé sur nombre d'itérations
+                quality_factor * 0.25 +       # 25% basé sur qualité générale
+                convergence_factor * 0.25 +   # 25% basé sur convergence
+                info_set_factor * 0.15 +      # 15% basé sur expérience de cette situation
+                strategy_coherence * 0.05     # 5% basé sur cohérence de stratégie
+            )
+            
+            confidence_percent = min(100, max(0, base_confidence * 100))
+            
+            # Bonus pour entraînement intensif actif
+            if training_progress['training_active']:
+                confidence_percent = min(100, confidence_percent + 5)
+            
+            return confidence_percent
+            
+        except Exception as e:
+            self.logger.error(f"Erreur calcul confiance CFR: {e}")
+            # Fallback sur ancien calcul de confiance
+            return self._calculate_confidence_fallback(strategy)
+    
+    def _calculate_strategy_coherence(self, strategy: Dict[str, float]) -> float:
+        """Calcule la cohérence d'une stratégie (moins aléatoire = plus cohérent)"""
+        if not strategy or len(strategy) <= 1:
+            return 1.0
+        
+        # Calcul de l'entropie normalisée
+        entropy = 0.0
+        for prob in strategy.values():
+            if prob > 0:
+                entropy -= prob * np.log2(prob)
+        
+        max_entropy = np.log2(len(strategy))
+        if max_entropy == 0:
+            return 1.0
+        
+        # Cohérence = inverse de l'entropie normalisée
+        coherence = 1.0 - (entropy / max_entropy)
+        return max(0.0, min(1.0, coherence))
+    
+    def _calculate_confidence_fallback(self, strategy: Dict[str, float]) -> float:
         """Calcule la confiance dans la stratégie"""
         try:
             # Entropie comme mesure de confiance (inversée)

@@ -24,8 +24,8 @@ class GenerationSettings:
     turn_ratio: float = 0.2
     river_ratio: float = 0.1
     aggressive_ratio: float = 0.3  # Proportion d'actions agressives
-    stack_sizes: List[float] = None
-    blind_levels: List[Tuple[float, float]] = None
+    stack_sizes: Optional[List[float]] = None
+    blind_levels: Optional[List[Tuple[float, float]]] = None
     
     def __post_init__(self):
         if self.stack_sizes is None:
@@ -36,7 +36,7 @@ class GenerationSettings:
 class HandGenerator:
     """Générateur de mains poker synthétiques"""
     
-    def __init__(self, settings: GenerationSettings = None):
+    def __init__(self, settings: Optional[GenerationSettings] = None):
         self.logger = get_logger(__name__)
         self.settings = settings or GenerationSettings()
         
@@ -89,7 +89,7 @@ class HandGenerator:
                     if hand + "o" not in self.preflop_weights:
                         self.preflop_weights[hand + "o"] = 1.2
     
-    def generate_batch(self, batch_size: int = None) -> List[ParsedHand]:
+    def generate_batch(self, batch_size: Optional[int] = None) -> List[ParsedHand]:
         """Génère un batch de mains synthétiques"""
         if batch_size is None:
             batch_size = self.settings.hands_per_batch
@@ -110,7 +110,7 @@ class HandGenerator:
         self.logger.info(f"Généré {len(hands)} mains en {time.time() - start_time:.2f}s")
         return hands
     
-    def generate_massive_dataset(self, target_hands: int = None) -> List[ParsedHand]:
+    def generate_massive_dataset(self, target_hands: Optional[int] = None) -> List[ParsedHand]:
         """Génère un dataset massif de mains avec multiprocessing"""
         if target_hands is None:
             target_hands = self.settings.max_hands
