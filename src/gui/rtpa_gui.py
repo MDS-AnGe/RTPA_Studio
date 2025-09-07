@@ -659,6 +659,7 @@ class RTAPGUIWindow:
             width=20
         )
         self.font_combo.grid(row=4, column=1, padx=10, pady=5, sticky='w')
+        self.font_combo.bind('<<ComboboxSelected>>', self.change_font)
         
         ttk.Label(interface_grid, text="Arial recommandé pour lisibilité", font=('Arial', 9), foreground='gray').grid(row=4, column=2, sticky='w', padx=10, pady=5)
         
@@ -1226,6 +1227,26 @@ class RTAPGUIWindow:
             
         except Exception as e:
             self.logger.error(f"Erreur changement couleur d'accent: {e}")
+    
+    def change_font(self, event=None):
+        """Change la police de l'interface"""
+        try:
+            font_name = self.font_var.get().split(' - ')[0]
+            
+            # Application de la nouvelle police
+            self.style.configure('TLabel', font=(font_name, 9))
+            self.style.configure('TButton', font=(font_name, 9))
+            self.style.configure('TEntry', font=(font_name, 9))
+            self.style.configure('TCombobox', font=(font_name, 9))
+            self.style.configure('Heading.TLabel', font=(font_name, 10, 'bold'))
+            
+            # Sauvegarde de la préférence
+            self.app_manager.update_settings({'interface_font': font_name})
+            
+            self.logger.info(f"Police changée vers: {font_name}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur changement police: {e}")
     
     def change_table_type(self):
         try:
