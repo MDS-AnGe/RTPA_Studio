@@ -19,6 +19,9 @@ ctk.set_default_color_theme("blue")
 
 class RTAPMainWindow:
     """Fenêtre principale de RTPA Studio"""
+
+# Alias pour compatibilité
+MainWindow = RTAPMainWindow
     
     def __init__(self, app_manager):
         self.logger = get_logger(__name__)
