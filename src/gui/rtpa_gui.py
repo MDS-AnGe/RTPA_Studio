@@ -498,13 +498,33 @@ class RTAPGUIWindow:
                                 hero_data.get('stack', '0€'), 
                                 hero_data.get('position', 'Unknown'))
         
-        # Mettre à jour le compteur de joueurs actifs
+        # Mettre à jour le compteur de joueurs actifs (incluant le héros)
         active_count = sum(1 for p in players_data if p.get('status') == 'actif')
-        total_count = len(players_data) + 1  # +1 pour nous
-        self.active_players_count.config(text=f"{active_count}/{total_count}")
+        if hero_data and hero_data.get('status') == 'actif':
+            active_count += 1
+        total_count = len(players_data) + (1 if hero_data else 0)
+        self.active_players_count.config(text=f"{active_count}/9")
         
-        # Recréer l'affichage des joueurs
-        self.create_players_display(players_data)
+        # Recréer l'affichage des joueurs (incluant le héros)
+        all_players = list(players_data) if players_data else []
+        if hero_data:
+            # Ajouter le héros à la liste avec sa position
+            hero_player = {
+                'name': hero_data.get('name', 'Moi'),
+                'stack': hero_data.get('stack_numeric', 0),
+                'position': hero_data.get('position_index', 6),  # Button par défaut
+                'position_name': hero_data.get('position', 'BTN'),
+                'status': hero_data.get('status', 'actif'),
+                'vpip': hero_data.get('vpip', 0),
+                'pfr': hero_data.get('pfr', 0),
+                'is_button': hero_data.get('position_index', 6) == 6,
+                'is_sb': hero_data.get('position_index', 6) == 7,
+                'is_bb': hero_data.get('position_index', 6) == 8,
+                'is_hero': True  # Marquer comme héros
+            }
+            all_players.append(hero_player)
+        
+        self.create_players_display(all_players)
     
     def create_players_display(self, players_data=None):
         """Création de l'affichage des joueurs actifs avec positions 9-max"""
@@ -568,9 +588,12 @@ class RTAPGUIWindow:
             # Statut
             ttk.Label(main_line, text=status_icon, font=('Arial', 8), foreground=status_color).pack(side='left', padx=(2, 3))
             
-            # Nom (tronqué si nécessaire)
+            # Nom (tronqué si nécessaire) - en gras si c'est le héros
             name = player['name'][:8] + "." if len(player['name']) > 8 else player['name']
-            ttk.Label(main_line, text=name, font=('Arial', 8, 'bold'), foreground=status_color).pack(side='left')
+            is_hero = player.get('is_hero', False)
+            font_weight = 'bold' if is_hero else 'normal'
+            name_color = '#007bff' if is_hero else status_color  # Bleu pour le héros
+            ttk.Label(main_line, text=name, font=('Arial', 8, font_weight), foreground=name_color).pack(side='left')
             
             # Stats compactes au centre
             vpip = player.get('vpip', 0)
