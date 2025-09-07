@@ -25,7 +25,7 @@ class RTAPGUIWindow:
         
         # Configuration de la fenêtre principale
         self.root = ctk.CTk()
-        self.root.title("Real-Time Poker Assistant (CFR/Nash) avec Intelligence Artificielle")
+        self.root.title("RTPA Studio")
         self.root.geometry("1100x900")  # Réduit de 1400 à 1100
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
@@ -51,6 +51,7 @@ class RTAPGUIWindow:
         # Variables de statut
         self.current_connection_status = "waiting"  # waiting, active, error
         self.current_activity = "idle"  # idle, generating, training, analyzing
+        self.current_platform = None  # Plateforme actuellement connectée
         
         # Démarrer la mise à jour du statut
         self._update_status_display()
@@ -1654,13 +1655,17 @@ class RTAPGUIWindow:
     
     def on_platform_detected(self, platform_name):
         """Appelé quand une plateforme est détectée"""
+        self.current_platform = platform_name
         self.update_connection_status("active")
         self.update_activity_status("analyzing")
+        self._update_window_title()
     
     def on_platform_closed(self):
         """Appelé quand aucune plateforme n'est active"""
+        self.current_platform = None
         self.update_connection_status("waiting")
         self.update_activity_status("idle")
+        self._update_window_title()
     
     def on_cfr_training_update(self, iteration_count):
         """Appelé pendant l'entraînement CFR"""
@@ -1671,6 +1676,26 @@ class RTAPGUIWindow:
         """Appelé pendant la génération de mains"""
         if hands_generated > 0:
             self.update_activity_status("generating")
+    
+    def _update_window_title(self):
+        """Met à jour le titre de la fenêtre avec la plateforme connectée"""
+        try:
+            if self.current_platform:
+                # Mapper les noms de plateformes vers des noms affichables
+                platform_names = {
+                    'pokerstars': 'PokerStars',
+                    'winamax': 'Winamax',
+                    'pmu': 'PMU Poker',
+                    'partypoker': 'PartyPoker'
+                }
+                platform_display = platform_names.get(self.current_platform, self.current_platform.title())
+                title = f"RTPA Studio :: {platform_display}"
+            else:
+                title = "RTPA Studio"
+            
+            self.root.title(title)
+        except Exception as e:
+            print(f"Erreur mise à jour titre: {e}")
 
     def on_closing(self):
         """Gestion de la fermeture de la fenêtre"""
