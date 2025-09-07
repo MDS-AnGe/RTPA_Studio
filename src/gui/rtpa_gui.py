@@ -15,7 +15,7 @@ from pathlib import Path
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-class RTPAStudioGUI:
+class RTAPGUIWindow:
     def __init__(self, app_manager=None):
         """Initialisation de l'interface graphique RTPA Studio"""
         self.app_manager = app_manager
@@ -945,7 +945,7 @@ if __name__ == "__main__":
     print("🎯 Démarrage de RTPA Studio...")
     
     try:
-        app = RTPAStudioGUI()
+        app = RTAPGUIWindow()
         app.run()
     except Exception as e:
         print(f"Erreur fatale: {e}")
