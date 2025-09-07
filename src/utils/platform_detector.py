@@ -7,7 +7,12 @@ import psutil
 import time
 import threading
 from typing import List, Dict, Optional, Callable
-from ..utils.logger import get_logger
+try:
+    from ..utils.logger import get_logger
+except ImportError:
+    import logging
+    def get_logger(name):
+        return logging.getLogger(name)
 
 class PlatformDetector:
     """Détecteur automatique des plateformes poker"""
@@ -23,8 +28,8 @@ class PlatformDetector:
                 'name': 'PokerStars'
             },
             'winamax': {
-                'processes': ['Winamax.exe', 'winamax', 'WinamaxPoker.exe'],
-                'window_titles': ['Winamax', 'Winamax Poker'],
+                'processes': ['Winamax.exe', 'winamax', 'WinamaxPoker.exe', 'firefox', 'chrome', 'chromium'],
+                'window_titles': ['Winamax', 'Winamax Poker', 'Mozilla Firefox', 'Google Chrome'],
                 'name': 'Winamax'
             },
             'pmu': {
