@@ -1254,12 +1254,15 @@ class RTAPGUIWindow:
             ctk.set_appearance_mode(mode)
             print(f"Mode d'apparence changé: {mode}")
             
+            # Forcer la mise à jour visuelle immédiate
+            self._apply_appearance_mode_immediately(mode)
+            
             # Informer l'utilisateur que le changement est effectif
             try:
                 from tkinter import messagebox
                 messagebox.showinfo(
                     "Thème changé", 
-                    f"Thème changé vers '{mode}'.\n\nLe changement est maintenant actif pour tous les nouveaux éléments créés."
+                    f"Mode d'apparence changé vers '{mode}'.\n\nLe changement est maintenant visible!"
                 )
             except:
                 pass
@@ -1270,16 +1273,35 @@ class RTAPGUIWindow:
     def change_accent_color(self, color):
         """Change la couleur d'accent"""
         try:
-            ctk.set_default_color_theme(color)
-            self.accent_color = color
-            print(f"Couleur d'accent changée: {color}")
+            # Mapping des couleurs vers les thèmes CustomTkinter valides
+            color_mapping = {
+                "orange": "dark-blue",  # Orange -> dark-blue (le plus proche)
+                "rouge": "green",       # Rouge -> green
+                "red": "green",
+                "violet": "blue",       # Violet -> blue
+                "purple": "blue",
+                "bleu": "blue",         # Bleu -> blue
+                "blue": "blue",
+                "vert": "green",        # Vert -> green
+                "green": "green"
+            }
             
-            # Informer l'utilisateur
+            # Utiliser le mapping ou la couleur par défaut
+            actual_color = color_mapping.get(color.lower(), "blue")
+            
+            ctk.set_default_color_theme(actual_color)
+            self.accent_color = actual_color
+            print(f"Couleur d'accent changée: {color} -> {actual_color}")
+            
+            # Recréer les éléments pour appliquer le nouveau thème
+            self._apply_color_theme_immediately(actual_color)
+            
+            # Informer l'utilisateur du changement
             try:
                 from tkinter import messagebox
                 messagebox.showinfo(
                     "Couleur changée", 
-                    f"Couleur d'accent changée vers '{color}'.\n\nRedémarrez l'application pour voir le changement complet."
+                    f"Couleur changée de '{color}' vers '{actual_color}'.\n\nLe changement est maintenant actif!"
                 )
             except:
                 pass
@@ -1293,23 +1315,20 @@ class RTAPGUIWindow:
             self.font_family = font
             print(f"Police changée: {font}")
             
-            # Appliquer la nouvelle police aux labels et textes existants
+            # Appliquer la nouvelle police à TOUS les éléments
+            self._apply_font_to_all_widgets(font)
+            
+            # Informer du succès
             try:
-                # Mettre à jour les polices des éléments principaux
-                font_tuple = (font, 12)
-                small_font = (font, 10)
+                from tkinter import messagebox
+                messagebox.showinfo(
+                    "Police changée", 
+                    f"Police changée vers '{font}'.\n\nLe changement est maintenant visible sur toute l'interface!"
+                )
+            except:
+                pass
                 
-                # Labels principaux
-                for widget_name in ['hero_cards_display', 'board_display', 'pot_display', 'stack_display']:
-                    if hasattr(self, widget_name):
-                        widget = getattr(self, widget_name)
-                        if hasattr(widget, 'configure'):
-                            widget.configure(font=font_tuple)
-                
-                print(f"✅ Police '{font}' appliquée à l'interface")
-                
-            except Exception as font_error:
-                print(f"Erreur application police: {font_error}")
+            print(f"✅ Police '{font}' appliquée à l'interface complète")
                 
         except Exception as e:
             print(f"Erreur changement police: {e}")
@@ -1460,6 +1479,133 @@ class RTAPGUIWindow:
         except ImportError:
             self.torch_status.configure(text="Non installé", text_color="red")
             self.install_torch_btn.configure(state="normal")
+    
+    # ========================================
+    # FONCTIONS HELPER POUR CHANGEMENTS VISUELS
+    # ========================================
+    
+    def _apply_color_theme_immediately(self, color_theme):
+        """Applique immédiatement le nouveau thème de couleur à l'interface"""
+        try:
+            print(f"🎨 Application du thème de couleur: {color_theme}")
+            
+            # Forcer la mise à jour de la fenêtre principale
+            self.root.update()
+            
+            # Reconfigurer les couleurs des boutons et éléments interactifs
+            for widget_name in ['export_btn', 'import_btn', 'install_torch_btn']:
+                if hasattr(self, widget_name):
+                    widget = getattr(self, widget_name)
+                    if hasattr(widget, 'configure'):
+                        try:
+                            # Appliquer la nouvelle couleur d'accent
+                            if color_theme == "green":
+                                widget.configure(fg_color=("#1F6AA5", "#144870"))  # Vert
+                            elif color_theme == "dark-blue":
+                                widget.configure(fg_color=("#1F6AA5", "#144870"))  # Bleu foncé
+                            else:  # blue par défaut
+                                widget.configure(fg_color=("#1F6AA5", "#144870"))  # Bleu
+                        except:
+                            pass
+            
+            print(f"✅ Thème de couleur '{color_theme}' appliqué")
+            
+        except Exception as e:
+            print(f"Erreur application thème couleur: {e}")
+    
+    def _apply_appearance_mode_immediately(self, mode):
+        """Applique immédiatement le changement de mode dark/light"""
+        try:
+            print(f"🌓 Application du mode d'apparence: {mode}")
+            
+            # Définir les couleurs selon le mode
+            if mode == "light":
+                bg_color = "#FFFFFF"
+                text_color = "#000000"
+                frame_color = "#F0F0F0"
+            else:  # dark
+                bg_color = "#212121"
+                text_color = "#FFFFFF"
+                frame_color = "#2E2E2E"
+            
+            # Appliquer aux frames principaux
+            for frame_name in ['left_frame', 'center_frame', 'right_frame']:
+                if hasattr(self, frame_name):
+                    frame = getattr(self, frame_name)
+                    if hasattr(frame, 'configure'):
+                        try:
+                            frame.configure(fg_color=frame_color)
+                        except:
+                            pass
+            
+            # Appliquer aux onglets
+            if hasattr(self, 'tabview'):
+                try:
+                    self.tabview.configure(fg_color=frame_color, text_color=text_color)
+                except:
+                    pass
+            
+            # Forcer la mise à jour
+            self.root.update()
+            
+            print(f"✅ Mode d'apparence '{mode}' appliqué")
+            
+        except Exception as e:
+            print(f"Erreur application mode apparence: {e}")
+    
+    def _apply_font_to_all_widgets(self, font_family):
+        """Applique la nouvelle police à tous les widgets de l'interface"""
+        try:
+            print(f"🔤 Application de la police: {font_family}")
+            
+            # Définir différentes tailles de police
+            font_large = (font_family, 14, "bold")
+            font_medium = (font_family, 12)
+            font_small = (font_family, 10)
+            
+            # Labels principaux avec leurs nouvelles polices
+            font_mapping = {
+                'hero_cards_display': font_large,
+                'board_display': font_large,
+                'pot_display': font_medium,
+                'stack_display': font_medium,
+                'recommendation_display': font_medium,
+                'cpu_value_label': font_small,
+                'ram_value_label': font_small,
+                'gen_rate_label': font_small,
+                'gen_cpu_label': font_small,
+                'opacity_label': font_small,
+                'torch_status': font_small
+            }
+            
+            # Appliquer les polices
+            for widget_name, font_config in font_mapping.items():
+                if hasattr(self, widget_name):
+                    widget = getattr(self, widget_name)
+                    if hasattr(widget, 'configure'):
+                        try:
+                            widget.configure(font=font_config)
+                        except:
+                            pass
+            
+            # Appliquer aux boutons
+            button_font = (font_family, 11)
+            for widget_name in ['export_btn', 'import_btn', 'install_torch_btn']:
+                if hasattr(self, widget_name):
+                    widget = getattr(self, widget_name)
+                    if hasattr(widget, 'configure'):
+                        try:
+                            widget.configure(font=button_font)
+                        except:
+                            pass
+            
+            # Forcer la mise à jour
+            self.root.update()
+            
+            print(f"✅ Police '{font_family}' appliquée à {len(font_mapping)} éléments")
+            
+        except Exception as e:
+            print(f"Erreur application police: {e}")
 
     def on_closing(self):
         """Gestion de la fermeture de la fenêtre"""
