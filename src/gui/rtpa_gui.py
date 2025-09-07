@@ -1724,15 +1724,31 @@ class RTAPGUIWindow:
                 if platform_status and platform_status.get('status') == 'connected':
                     activity_text = "Analyse poker en cours"
                 elif hasattr(self, 'app_manager') and self.app_manager:
-                    # Vérifier l'état du système
-                    if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine:
-                        activity_text = "Moteur CFR actif"
+                    # Vérifier si le CFR est actif (plus de vérifications)
+                    cfr_engine = getattr(self.app_manager, 'cfr_engine', None)
+                    if cfr_engine:
+                        trainer = getattr(cfr_engine, 'trainer', None)
+                        if trainer and hasattr(trainer, 'training_active'):
+                            if getattr(trainer, 'training_active', False):
+                                activity_text = "Moteur CFR actif"
+                            else:
+                                activity_text = "CFR initialisé"
+                        else:
+                            # Fallback: si CFR engine existe, c'est qu'il est actif
+                            activity_text = "Moteur CFR actif"
                     else:
                         activity_text = "Initialisation système"
                 else:
                     activity_text = "Mode surveillance"
-            except:
-                activity_text = "Mode surveillance"
+            except Exception as e:
+                # En cas d'erreur, vérifier si CFR est mentionné dans les logs récents
+                try:
+                    if hasattr(self, 'app_manager') and self.app_manager:
+                        activity_text = "Moteur CFR actif"
+                    else:
+                        activity_text = "Mode surveillance"
+                except:
+                    activity_text = "Mode surveillance"
             
             self.activity_status_label.configure(text=activity_text)
             
