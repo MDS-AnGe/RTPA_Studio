@@ -324,35 +324,77 @@ class RTAPMainWindow:
         )
         self.info_panel_title.pack(pady=(10, 5))
         
-        # Section version
-        self.version_info_frame = ctk.CTkFrame(self.info_panel)
-        self.version_info_frame.pack(fill="x", padx=10, pady=5)
         
-        self.version_label = ctk.CTkLabel(
-            self.version_info_frame,
-            text=f"Version: {self.version_info['version']}",
-            font=ctk.CTkFont(size=12, weight="bold"),
+        # Onglet Version (dédié à droite)
+        self.version_tabview = ctk.CTkTabview(self.info_panel)
+        self.version_tabview.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        self.version_tab = self.version_tabview.add("Version")
+        
+        # Contenu de l'onglet Version
+        self.version_current_label = ctk.CTkLabel(
+            self.version_tab,
+            text=f"Version Actuelle: {self.version_info['version']}",
+            font=ctk.CTkFont(size=14, weight="bold"),
             text_color="cyan"
         )
-        self.version_label.pack(pady=2)
+        self.version_current_label.pack(pady=(10, 5))
         
-        self.update_date_label = ctk.CTkLabel(
-            self.version_info_frame,
-            text=f"Mise à jour: {self.version_info['last_update']}",
-            font=ctk.CTkFont(size=10),
+        self.version_date_label = ctk.CTkLabel(
+            self.version_tab,
+            text=f"Dernière MAJ: {self.version_info['last_update']}",
+            font=ctk.CTkFont(size=12),
             text_color="gray"
         )
-        self.update_date_label.pack(pady=1)
+        self.version_date_label.pack(pady=2)
         
-        self.build_label = ctk.CTkLabel(
-            self.version_info_frame,
+        self.version_build_label = ctk.CTkLabel(
+            self.version_tab,
             text=f"Build: {self.version_info['build']}",
+            font=ctk.CTkFont(size=12),
+            text_color="gray"
+        )
+        self.version_build_label.pack(pady=2)
+        
+        self.version_status_label = ctk.CTkLabel(
+            self.version_tab,
+            text="Status: " + self.version_info['status'].title(),
+            font=ctk.CTkFont(size=12),
+            text_color="green"
+        )
+        self.version_status_label.pack(pady=2)
+        
+        # Boutons de mise à jour
+        self.check_update_button = ctk.CTkButton(
+            self.version_tab,
+            text="🔄 Vérifier les mises à jour",
+            command=self.check_for_updates,
+            font=ctk.CTkFont(size=12)
+        )
+        self.check_update_button.pack(pady=(15, 5))
+        
+        self.update_button = ctk.CTkButton(
+            self.version_tab,
+            text="⬇️ Mettre à jour",
+            command=self.perform_update,
+            font=ctk.CTkFont(size=12),
+            state="disabled"
+        )
+        self.update_button.pack(pady=5)
+        
+        # Zone de statut des mises à jour
+        self.update_status_frame = ctk.CTkFrame(self.version_tab)
+        self.update_status_frame.pack(fill="x", pady=(10, 5))
+        
+        self.update_status_label = ctk.CTkLabel(
+            self.update_status_frame,
+            text="Prêt pour vérification",
             font=ctk.CTkFont(size=10),
             text_color="gray"
         )
-        self.build_label.pack(pady=1)
+        self.update_status_label.pack(pady=5)
         
-        # Section système
+        # Section système (déplacée sous version)
         self.system_info_frame = ctk.CTkFrame(self.info_panel)
         self.system_info_frame.pack(fill="x", padx=10, pady=5)
         
@@ -494,6 +536,185 @@ class RTAPMainWindow:
         # Les boutons ont été remplacés par l'indicateur automatique
         pass
     
+    def check_for_updates(self):
+        """Vérifie les mises à jour disponibles sur GitHub"""
+        try:
+            self.update_status_label.configure(text="Vérification en cours...", text_color="orange")
+            self.check_update_button.configure(state="disabled")
+            
+            # Utilisation d'un thread pour éviter de bloquer l'interface
+            import threading
+            thread = threading.Thread(target=self._check_github_updates, daemon=True)
+            thread.start()
+            
+        except Exception as e:
+            self.logger.error(f"Erreur vérification mises à jour: {e}")
+            self.update_status_label.configure(text="Erreur lors de la vérification", text_color="red")
+            self.check_update_button.configure(state="normal")
+
+    def _check_github_updates(self):
+        """Vérifie les mises à jour sur GitHub (thread séparé)"""
+        try:
+            import requests
+            import json
+            from packaging import version
+            
+            # Récupération des releases GitHub
+            url = "https://api.github.com/repos/MDS-AnGe/RTPA_Studio/releases/latest"
+            response = requests.get(url, timeout=10)
+            
+            if response.status_code == 200:
+                release_data = response.json()
+                latest_version = release_data['tag_name'].lstrip('v')
+                current_version = self.version_info['version']
+                
+                # Comparaison des versions
+                if version.parse(latest_version) > version.parse(current_version):
+                    # Mise à jour disponible
+                    self.root.after(0, lambda: self._update_ui_new_version_available(latest_version, release_data))
+                else:
+                    # Déjà à jour
+                    self.root.after(0, lambda: self.update_status_label.configure(
+                        text="Vous avez la dernière version", text_color="green"
+                    ))
+                    self.root.after(0, lambda: self.check_update_button.configure(state="normal"))
+            else:
+                self.root.after(0, lambda: self.update_status_label.configure(
+                    text="Impossible de vérifier les mises à jour", text_color="red"
+                ))
+                self.root.after(0, lambda: self.check_update_button.configure(state="normal"))
+                
+        except Exception as e:
+            self.logger.error(f"Erreur GitHub API: {e}")
+            self.root.after(0, lambda: self.update_status_label.configure(
+                text="Erreur de connexion", text_color="red"
+            ))
+            self.root.after(0, lambda: self.check_update_button.configure(state="normal"))
+
+    def _update_ui_new_version_available(self, latest_version, release_data):
+        """Met à jour l'interface quand une nouvelle version est disponible"""
+        self.update_status_label.configure(
+            text=f"Nouvelle version disponible: v{latest_version}", 
+            text_color="cyan"
+        )
+        self.update_button.configure(state="normal")
+        self.check_update_button.configure(state="normal")
+        
+        # Stocker les données de release pour la mise à jour
+        self.latest_release_data = release_data
+
+    def perform_update(self):
+        """Lance la mise à jour du logiciel"""
+        try:
+            from tkinter import messagebox
+            
+            # Confirmation avec l'utilisateur
+            result = messagebox.askyesno(
+                "Confirmation de mise à jour",
+                "La mise à jour va redémarrer l'application.\n\n"
+                "Vos données (base de données et entraînements CFR) seront préservées.\n\n"
+                "Continuer ?",
+                icon='question'
+            )
+            
+            if result:
+                self.update_status_label.configure(text="Préparation de la mise à jour...", text_color="orange")
+                self.update_button.configure(state="disabled")
+                
+                # Lance la mise à jour en arrière-plan
+                import threading
+                thread = threading.Thread(target=self._perform_git_update, daemon=True)
+                thread.start()
+                
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la mise à jour: {e}")
+            self.update_status_label.configure(text="Erreur de mise à jour", text_color="red")
+
+    def _perform_git_update(self):
+        """Effectue la mise à jour Git (thread séparé)"""
+        try:
+            import subprocess
+            import os
+            import shutil
+            import time
+            
+            self.root.after(0, lambda: self.update_status_label.configure(
+                text="Sauvegarde en cours...", text_color="orange"
+            ))
+            
+            # Sauvegarde des données importantes
+            backup_files = []
+            important_dirs = ['database/', 'config/', 'attached_assets/']
+            
+            for dir_name in important_dirs:
+                if os.path.exists(dir_name):
+                    backup_name = f"{dir_name.rstrip('/')}_backup_{int(time.time())}"
+                    shutil.copytree(dir_name, backup_name)
+                    backup_files.append(backup_name)
+                    self.logger.info(f"Sauvegarde créée: {backup_name}")
+            
+            # Sauvegarde du fichier version.json
+            if os.path.exists('version.json'):
+                shutil.copy2('version.json', 'version_backup.json')
+                backup_files.append('version_backup.json')
+            
+            self.root.after(0, lambda: self.update_status_label.configure(
+                text="Téléchargement des mises à jour...", text_color="orange"
+            ))
+            
+            # Mise à jour Git
+            result = subprocess.run(['git', 'pull', 'origin', 'main'], 
+                                  capture_output=True, text=True, cwd='.')
+            
+            if result.returncode == 0:
+                self.root.after(0, lambda: self.update_status_label.configure(
+                    text="Mise à jour réussie! Redémarrage...", text_color="green"
+                ))
+                
+                # Restauration des données utilisateur
+                for backup in backup_files:
+                    if backup.endswith('_backup.json'):
+                        continue  # Garde la nouvelle version
+                    original = backup.replace(f'_backup_{int(time.time())}', '').replace('_backup', '')
+                    if os.path.exists(backup) and not backup.endswith('.json'):
+                        if os.path.exists(original):
+                            shutil.rmtree(original)
+                        shutil.move(backup, original)
+                        self.logger.info(f"Données restaurées: {original}")
+                
+                # Attendre un peu puis redémarrer
+                time.sleep(2)
+                self.root.after(0, self._restart_application)
+                
+            else:
+                self.root.after(0, lambda: self.update_status_label.configure(
+                    text="Erreur lors de la mise à jour", text_color="red"
+                ))
+                self.logger.error(f"Erreur Git: {result.stderr}")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur mise à jour Git: {e}")
+            self.root.after(0, lambda: self.update_status_label.configure(
+                text="Erreur de mise à jour", text_color="red"
+            ))
+
+    def _restart_application(self):
+        """Redémarre l'application après mise à jour"""
+        try:
+            import sys
+            import subprocess
+            
+            # Fermeture propre
+            if hasattr(self.app_manager, 'cleanup'):
+                self.app_manager.cleanup()
+            
+            # Redémarrage
+            subprocess.Popen([sys.executable] + sys.argv)
+            self.root.quit()
+            
+        except Exception as e:
+            self.logger.error(f"Erreur redémarrage: {e}")
+
     def _update_system_info(self):
         """Met à jour les informations système dans le panel"""
         try:
