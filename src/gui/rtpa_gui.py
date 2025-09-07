@@ -291,20 +291,20 @@ class RTAPGUIWindow:
         self.pot_label = tk.Label(pot_container, text="0.00€", font=('Arial', 20, 'bold'), fg='#28a745', bg='#dbdbdb')
         self.pot_label.pack()
         
-        # Ligne blinds et antes - organisation horizontale optimisée
+        # Ligne blinds et antes - organisation horizontale équilibrée
         blinds_row = tk.Frame(table_content, bg='#dbdbdb')
         blinds_row.pack(fill='x', pady=(0, 4))
         
-        # Blinds section
+        # Blinds section - centrée à gauche
         blinds_container = tk.Frame(blinds_row, bg='#dbdbdb')
         blinds_container.pack(side='left', fill='x', expand=True)
         tk.Label(blinds_container, text="🎲 Blinds", font=('Arial', 10, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
         self.blinds_label = tk.Label(blinds_container, text="0.00€ / 0.00€", font=('Arial', 12, 'bold'), fg='#fd7e14', bg='#dbdbdb')
         self.blinds_label.pack()
         
-        # Antes section
+        # Antes section - centrée à droite
         antes_container = tk.Frame(blinds_row, bg='#dbdbdb')
-        antes_container.pack(side='right')
+        antes_container.pack(side='right', fill='x', expand=True)
         tk.Label(antes_container, text="⚡ Antes", font=('Arial', 10, 'bold'), fg='#4a4a4a', bg='#dbdbdb').pack()
         self.antes_label = tk.Label(antes_container, text="0.00€", font=('Arial', 12, 'bold'), fg='#6f42c1', bg='#dbdbdb')
         self.antes_label.pack()
