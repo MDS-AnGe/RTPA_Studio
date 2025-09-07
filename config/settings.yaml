@@ -21,8 +21,8 @@ screen_region:
   width: 1920
   x: 0
   y: 0
-show_probabilities: true
-show_recommendations: true
-show_statistics: true
+show_probabilities: 1
+show_recommendations: 1
+show_statistics: 1
 target_hands_per_100: 65
 theme: dark

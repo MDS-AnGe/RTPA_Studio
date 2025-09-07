@@ -109,7 +109,7 @@ class RTAPGUIWindow:
         # Ligne 1: Statut principal - Plus compact
         self.status_label = ctk.CTkLabel(
             self.controls_frame,
-            text="🎯 Real-Time Poker Assistant (CFR/Nash)",
+            text="Real-Time Poker Assistant (CFR/Nash)",
             font=ctk.CTkFont(size=20, weight="bold")
         )
         self.status_label.pack(pady=(10, 2))
@@ -378,7 +378,7 @@ class RTAPGUIWindow:
         self.create_players_display()
         
         # SECTION 4C: STATISTIQUES
-        stats_frame = ttk.LabelFrame(right_column, text="📊 STATISTIQUES", style='Card.TFrame')
+        stats_frame = ttk.LabelFrame(self.right_column, text="📊 STATISTIQUES", style='Card.TFrame')
         stats_frame.pack(fill='x')
         
         # Ligne 1: Taux de victoire
