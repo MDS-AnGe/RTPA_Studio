@@ -105,6 +105,39 @@ class PlatformDetector:
             
             time.sleep(self.detection_interval)
     
+    def force_detection(self) -> dict:
+        """Force une détection immédiate pour tests"""
+        platforms = self._detect_active_platforms()
+        result = {
+            'detected_platforms': list(platforms),
+            'all_processes': [],
+            'matching_processes': []
+        }
+        
+        try:
+            for proc in psutil.process_iter(['pid', 'name']):
+                try:
+                    proc_name = proc.info['name']
+                    if proc_name:
+                        result['all_processes'].append(proc_name)
+                        
+                        # Vérifier si correspond à Winamax
+                        for platform_id, platform_info in self.supported_platforms.items():
+                            for process_pattern in platform_info['processes']:
+                                pattern_base = process_pattern.lower().replace('.exe', '')
+                                if (proc_name.lower() == process_pattern.lower() or
+                                    proc_name.lower() == pattern_base or
+                                    proc_name.lower().startswith(pattern_base) or
+                                    'winamax' in proc_name.lower() or
+                                    pattern_base in proc_name.lower()):
+                                    result['matching_processes'].append((proc_name, platform_id, pattern_base))
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+        except Exception as e:
+            self.logger.error(f"Erreur force_detection: {e}")
+        
+        return result
+    
     def _detect_active_platforms(self) -> set:
         """Détecte les plateformes actuellement actives"""
         active_platforms = set()
@@ -116,10 +149,16 @@ class PlatformDetector:
                     proc_name = proc.info['name']
                     if proc_name:
                         for platform_id, platform_info in self.supported_platforms.items():
-                            if any(proc_name.lower().startswith(p.lower().split('.')[0]) 
-                                  for p in platform_info['processes']):
-                                active_platforms.add(platform_id)
-                                break
+                            # Vérification améliorée des noms de processus
+                            for process_pattern in platform_info['processes']:
+                                pattern_base = process_pattern.lower().replace('.exe', '')
+                                if (proc_name.lower() == process_pattern.lower() or
+                                    proc_name.lower() == pattern_base or
+                                    proc_name.lower().startswith(pattern_base) or
+                                    pattern_base in proc_name.lower()):
+                                    active_platforms.add(platform_id)
+                                    self.logger.debug(f"Processus détecté: {proc_name} -> {platform_id}")
+                                    break
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
             
