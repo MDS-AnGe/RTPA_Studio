@@ -156,14 +156,18 @@ class RTAPGUIWindow:
         self.create_performance_tab()
     
     def create_game_tab(self):
-        """Création de l'onglet État du Jeu"""
+        """Création de l'onglet État du Jeu avec recommandations intégrées"""
         
-        # Frame principal pour centrer le contenu
+        # Frame principal
         main_container = ttk.Frame(self.game_tab)
         main_container.pack(fill='both', expand=True, padx=20, pady=20)
         
+        # Partie haute : Cartes et informations
+        top_container = ttk.Frame(main_container)
+        top_container.pack(fill='x', pady=(0, 15))
+        
         # Section Cartes du Héros
-        hero_frame = ttk.LabelFrame(main_container, text="🂡 Cartes du Héros", style='Card.TFrame')
+        hero_frame = ttk.LabelFrame(top_container, text="🂡 Cartes du Héros", style='Card.TFrame')
         hero_frame.pack(fill='x', pady=(0, 15))
         
         self.hero_cards_frame = ttk.Frame(hero_frame)
@@ -176,7 +180,7 @@ class RTAPGUIWindow:
         self.hero_card2.pack(side='left', padx=10)
         
         # Section Board
-        board_frame = ttk.LabelFrame(main_container, text="🃏 Board", style='Card.TFrame')
+        board_frame = ttk.LabelFrame(top_container, text="🃏 Board", style='Card.TFrame')
         board_frame.pack(fill='x', pady=(0, 15))
         
         self.board_cards_frame = ttk.Frame(board_frame)
@@ -189,8 +193,8 @@ class RTAPGUIWindow:
             self.board_cards.append(card)
         
         # Section Informations de Jeu
-        info_container = ttk.Frame(main_container)
-        info_container.pack(fill='both', expand=True)
+        info_container = ttk.Frame(top_container)
+        info_container.pack(fill='x', pady=(0, 15))
         
         # Colonne gauche
         left_info = ttk.Frame(info_container)
@@ -203,8 +207,8 @@ class RTAPGUIWindow:
         self.pot_label = ttk.Label(pot_frame, text="0.00€", style='Big.TLabel')
         self.pot_label.pack(pady=15)
         
-        # Stack Héros
-        stack_frame = ttk.LabelFrame(left_info, text="💵 Stack Héros", style='Card.TFrame')
+        # Stack
+        stack_frame = ttk.LabelFrame(left_info, text="💵 Stack", style='Card.TFrame')
         stack_frame.pack(fill='x', pady=(0, 10))
         
         self.stack_label = ttk.Label(stack_frame, text="0.00€", style='Big.TLabel')
@@ -214,19 +218,109 @@ class RTAPGUIWindow:
         right_info = ttk.Frame(info_container)
         right_info.pack(side='right', fill='both', expand=True, padx=(10, 0))
         
-        # Blinds
-        blinds_frame = ttk.LabelFrame(right_info, text="🎲 Blinds", style='Card.TFrame')
+        # Blinds & Antes
+        blinds_frame = ttk.LabelFrame(right_info, text="🎲 Blinds & Antes", style='Card.TFrame')
         blinds_frame.pack(fill='x', pady=(0, 10))
         
         self.blinds_label = ttk.Label(blinds_frame, text="0.00€ / 0.00€", style='Big.TLabel')
-        self.blinds_label.pack(pady=15)
+        self.blinds_label.pack(pady=10)
         
-        # Type de Table
-        table_frame = ttk.LabelFrame(right_info, text="🏓 Type de Table", style='Card.TFrame')
-        table_frame.pack(fill='x', pady=(0, 10))
+        self.antes_label = ttk.Label(blinds_frame, text="", style='Card.TLabel')
+        self.antes_label.pack(pady=(0, 10))
         
-        self.table_type_label = ttk.Label(table_frame, text="Cash Game", style='Big.TLabel')
-        self.table_type_label.pack(pady=15)
+        # Type de Table (petit, dans le coin)
+        self.table_type_label = ttk.Label(right_info, text="Cash Game", font=('Arial', 9), foreground='gray')
+        self.table_type_label.pack(anchor='ne', pady=5)
+        
+        # SECTION RECOMMANDATIONS INTÉGRÉES
+        recommendations_frame = ttk.LabelFrame(main_container, text="🎯 RECOMMANDATIONS", style='Card.TFrame')
+        recommendations_frame.pack(fill='x', pady=(0, 15))
+        
+        # Action principale (grande)
+        action_container = ttk.Frame(recommendations_frame)
+        action_container.pack(fill='x', pady=15)
+        
+        self.main_action_display = ttk.Label(
+            action_container, 
+            text="ATTENDRE", 
+            font=('Arial', 28, 'bold'),
+            foreground='orange'
+        )
+        self.main_action_display.pack()
+        
+        self.main_bet_size_label = ttk.Label(action_container, text="", style='Heading.TLabel')
+        self.main_bet_size_label.pack(pady=(5, 0))
+        
+        # Détails en ligne
+        details_container = ttk.Frame(recommendations_frame)
+        details_container.pack(fill='x', padx=15, pady=(0, 15))
+        
+        # Probabilité de victoire
+        prob_frame = ttk.Frame(details_container)
+        prob_frame.pack(side='left', fill='x', expand=True)
+        
+        ttk.Label(prob_frame, text="💪 Prob. Victoire:", style='Heading.TLabel').pack(anchor='w')
+        self.main_win_prob_label = ttk.Label(prob_frame, text="50%", font=('Arial', 16, 'bold'))
+        self.main_win_prob_label.pack(anchor='w')
+        
+        # Risque
+        risk_frame = ttk.Frame(details_container)
+        risk_frame.pack(side='left', fill='x', expand=True, padx=(20, 0))
+        
+        ttk.Label(risk_frame, text="⚠️ Niveau Risque:", style='Heading.TLabel').pack(anchor='w')
+        self.main_risk_label = ttk.Label(risk_frame, text="50%", font=('Arial', 16, 'bold'))
+        self.main_risk_label.pack(anchor='w')
+        
+        # Confiance
+        conf_frame = ttk.Frame(details_container)
+        conf_frame.pack(side='left', fill='x', expand=True, padx=(20, 0))
+        
+        ttk.Label(conf_frame, text="🎯 Confiance:", style='Heading.TLabel').pack(anchor='w')
+        self.main_confidence_label = ttk.Label(conf_frame, text="85%", font=('Arial', 16, 'bold'))
+        self.main_confidence_label.pack(anchor='w')
+        
+        # Raisonnement
+        reasoning_frame = ttk.Frame(recommendations_frame)
+        reasoning_frame.pack(fill='x', padx=15, pady=(0, 15))
+        
+        ttk.Label(reasoning_frame, text="🧠 Raisonnement:", style='Heading.TLabel').pack(anchor='w')
+        self.main_reasoning_label = ttk.Label(
+            reasoning_frame, 
+            text="En attente d'analyse...", 
+            font=('Arial', 11),
+            wraplength=800,
+            justify='left'
+        )
+        self.main_reasoning_label.pack(anchor='w', pady=(5, 0))
+        
+        # SECTION STATISTIQUES EN BAS
+        stats_frame = ttk.LabelFrame(main_container, text="📊 STATISTIQUES", style='Card.TFrame')
+        stats_frame.pack(fill='x', pady=(0, 0))
+        
+        stats_grid = ttk.Frame(stats_frame)
+        stats_grid.pack(fill='x', padx=15, pady=10)
+        
+        # Ligne de statistiques
+        stats_left = ttk.Frame(stats_grid)
+        stats_left.pack(side='left', fill='x', expand=True)
+        
+        stats_right = ttk.Frame(stats_grid)
+        stats_right.pack(side='right', fill='x', expand=True)
+        
+        # Mains jouées/gagnées
+        ttk.Label(stats_left, text="Mains:", style='Heading.TLabel').grid(row=0, column=0, sticky='w', padx=5)
+        self.main_hands_label = ttk.Label(stats_left, text="0 / 0", style='Card.TLabel')
+        self.main_hands_label.grid(row=0, column=1, sticky='w', padx=5)
+        
+        # Taux victoire
+        ttk.Label(stats_left, text="Taux Victoire:", style='Heading.TLabel').grid(row=0, column=2, sticky='w', padx=(15, 5))
+        self.main_winrate_label = ttk.Label(stats_left, text="0%", style='Card.TLabel')
+        self.main_winrate_label.grid(row=0, column=3, sticky='w', padx=5)
+        
+        # Performance vs Pro
+        ttk.Label(stats_right, text="Performance vs Pro (68%):", style='Heading.TLabel').pack(side='left', padx=5)
+        self.main_performance_label = ttk.Label(stats_right, text="0%", style='Card.TLabel')
+        self.main_performance_label.pack(side='left', padx=5)
     
     def create_recommendations_tab(self):
         """Création de l'onglet Recommandations"""
@@ -360,12 +454,14 @@ class RTAPGUIWindow:
         obj_grid = ttk.Frame(objectives_frame)
         obj_grid.pack(fill='x', padx=15, pady=15)
         
-        # Objectif de mains gagnées
+        # Objectif de mains gagnées (optimisé)
         ttk.Label(obj_grid, text="Objectif Mains Gagnées (/100):", style='Heading.TLabel').grid(row=0, column=0, sticky='w', pady=5)
         
-        self.hands_target_var = tk.StringVar(value="65")
+        self.hands_target_var = tk.StringVar(value="68")
         self.hands_target_entry = ttk.Entry(obj_grid, textvariable=self.hands_target_var, width=10)
         self.hands_target_entry.grid(row=0, column=1, padx=10, pady=5)
+        
+        ttk.Label(obj_grid, text="(Optimal: 68% pour joueur expérimenté)", font=('Arial', 9), foreground='gray').grid(row=0, column=2, sticky='w', padx=10, pady=5)
         
         self.auto_target_var = tk.BooleanVar(value=True)
         self.auto_target_check = ttk.Checkbutton(
@@ -374,12 +470,12 @@ class RTAPGUIWindow:
             variable=self.auto_target_var,
             command=self.toggle_auto_target
         )
-        self.auto_target_check.grid(row=0, column=2, padx=10, pady=5)
+        self.auto_target_check.grid(row=0, column=3, padx=10, pady=5)
         
-        # Override Risque
+        # Override Risque (optimisé)
         ttk.Label(obj_grid, text="Override Risque (%):", style='Heading.TLabel').grid(row=1, column=0, sticky='w', pady=5)
         
-        self.risk_var = tk.DoubleVar(value=50.0)
+        self.risk_var = tk.DoubleVar(value=35.0)
         self.risk_scale = ttk.Scale(
             obj_grid, 
             from_=0, 
@@ -391,8 +487,10 @@ class RTAPGUIWindow:
         )
         self.risk_scale.grid(row=1, column=1, padx=10, pady=5)
         
-        self.risk_display = ttk.Label(obj_grid, text="50%", style='Card.TLabel')
+        self.risk_display = ttk.Label(obj_grid, text="35%", style='Card.TLabel')
         self.risk_display.grid(row=1, column=2, padx=10, pady=5)
+        
+        ttk.Label(obj_grid, text="(Optimal: 30-40% pour équilibre)", font=('Arial', 9), foreground='gray').grid(row=1, column=3, sticky='w', padx=10, pady=5)
         
         # Auto Risk
         self.auto_risk_var = tk.BooleanVar(value=True)
@@ -463,6 +561,8 @@ class RTAPGUIWindow:
         self.language_combo.grid(row=0, column=1, padx=10, pady=5, sticky='w')
         self.language_combo.bind('<<ComboboxSelected>>', self.change_language)
         
+        ttk.Label(interface_grid, text="Choisir la langue des menus et recommandations", font=('Arial', 9), foreground='gray').grid(row=0, column=2, sticky='w', padx=10, pady=5)
+        
         # Thème
         ttk.Label(interface_grid, text="Thème:", style='Heading.TLabel').grid(row=1, column=0, sticky='w', pady=5)
         
@@ -476,6 +576,8 @@ class RTAPGUIWindow:
         )
         self.theme_combo.grid(row=1, column=1, padx=10, pady=5, sticky='w')
         self.theme_combo.bind('<<ComboboxSelected>>', self.change_theme)
+        
+        ttk.Label(interface_grid, text="Mode sombre recommandé pour sessions longues", font=('Arial', 9), foreground='gray').grid(row=1, column=2, sticky='w', padx=10, pady=5)
         
         # Section OCR
         ocr_frame = ttk.LabelFrame(main_container, text="👁️ OCR & Capture", style='Card.TFrame')
@@ -491,12 +593,16 @@ class RTAPGUIWindow:
         self.ocr_interval_entry = ttk.Entry(ocr_grid, textvariable=self.ocr_interval_var, width=10)
         self.ocr_interval_entry.grid(row=0, column=1, padx=10, pady=5)
         
+        ttk.Label(ocr_grid, text="Fréquence de capture d'écran (50-200ms optimal)", font=('Arial', 9), foreground='gray').grid(row=0, column=2, sticky='w', padx=10, pady=5)
+        
         # Confiance OCR
         ttk.Label(ocr_grid, text="Seuil de Confiance (%):", style='Heading.TLabel').grid(row=1, column=0, sticky='w', pady=5)
         
         self.ocr_confidence_var = tk.StringVar(value="80")
         self.ocr_confidence_entry = ttk.Entry(ocr_grid, textvariable=self.ocr_confidence_var, width=10)
         self.ocr_confidence_entry.grid(row=1, column=1, padx=10, pady=5)
+        
+        ttk.Label(ocr_grid, text="Précision minimum requise (75-90% recommandé)", font=('Arial', 9), foreground='gray').grid(row=1, column=2, sticky='w', padx=10, pady=5)
         
         # Section Type de Table
         table_frame = ttk.LabelFrame(main_container, text="🏓 Type de Table", style='Card.TFrame')
@@ -513,6 +619,8 @@ class RTAPGUIWindow:
         )
         cash_radio.pack(anchor='w', padx=15, pady=5)
         
+        ttk.Label(table_frame, text="Partie d'argent classique sans élimination", font=('Arial', 9), foreground='gray').pack(anchor='w', padx=30, pady=(0, 5))
+        
         tournament_radio = ttk.Radiobutton(
             table_frame, 
             text="🏆 Tournoi", 
@@ -521,6 +629,8 @@ class RTAPGUIWindow:
             command=self.change_table_type
         )
         tournament_radio.pack(anchor='w', padx=15, pady=5)
+        
+        ttk.Label(table_frame, text="Utilise les calculs ICM pour élimination", font=('Arial', 9), foreground='gray').pack(anchor='w', padx=30, pady=(0, 5))
     
     def create_performance_tab(self):
         """Création de l'onglet Performance"""
@@ -545,6 +655,8 @@ class RTAPGUIWindow:
         self.cpu_display = ttk.Label(res_grid, text="80%", style='Card.TLabel')
         self.cpu_display.grid(row=0, column=2, padx=10, pady=5)
         
+        ttk.Label(res_grid, text="Usage CPU max pour calculs CFR (70-85% optimal)", font=('Arial', 9), foreground='gray').grid(row=0, column=3, sticky='w', padx=10, pady=5)
+        
         # RAM
         ttk.Label(res_grid, text="Limite RAM (%):", style='Heading.TLabel').grid(row=1, column=0, sticky='w', pady=5)
         
@@ -554,6 +666,8 @@ class RTAPGUIWindow:
         
         self.ram_display = ttk.Label(res_grid, text="70%", style='Card.TLabel')
         self.ram_display.grid(row=1, column=2, padx=10, pady=5)
+        
+        ttk.Label(res_grid, text="Mémoire max pour base de données (60-80% optimal)", font=('Arial', 9), foreground='gray').grid(row=1, column=3, sticky='w', padx=10, pady=5)
         
         # GPU
         self.gpu_enabled_var = tk.BooleanVar(value=True)
@@ -565,6 +679,8 @@ class RTAPGUIWindow:
         )
         self.gpu_check.grid(row=2, column=0, columnspan=2, sticky='w', pady=5)
         
+        ttk.Label(res_grid, text="Accélération GPU pour Deep CFR (si PyTorch installé)", font=('Arial', 9), foreground='gray').grid(row=2, column=2, columnspan=2, sticky='w', padx=10, pady=5)
+        
         # Auto Resource Management
         self.auto_resource_var = tk.BooleanVar(value=True)
         self.auto_resource_check = ttk.Checkbutton(
@@ -573,7 +689,9 @@ class RTAPGUIWindow:
             variable=self.auto_resource_var,
             command=self.toggle_auto_resources
         )
-        self.auto_resource_check.grid(row=3, column=0, columnspan=3, sticky='w', pady=5)
+        self.auto_resource_check.grid(row=3, column=0, columnspan=2, sticky='w', pady=5)
+        
+        ttk.Label(res_grid, text="Ajuste automatiquement selon la charge système", font=('Arial', 9), foreground='gray').grid(row=3, column=2, columnspan=2, sticky='w', padx=10, pady=5)
         
         # Section CFR
         cfr_frame = ttk.LabelFrame(main_container, text="🧠 Paramètres CFR", style='Card.TFrame')
@@ -589,12 +707,16 @@ class RTAPGUIWindow:
         self.cfr_iterations_entry = ttk.Entry(cfr_grid, textvariable=self.cfr_iterations_var, width=10)
         self.cfr_iterations_entry.grid(row=0, column=1, padx=10, pady=5)
         
+        ttk.Label(cfr_grid, text="Nombre de simulations par calcul (500-2000 optimal)", font=('Arial', 9), foreground='gray').grid(row=0, column=2, sticky='w', padx=10, pady=5)
+        
         # Buckets d'abstraction
         ttk.Label(cfr_grid, text="Buckets d'Abstraction:", style='Heading.TLabel').grid(row=1, column=0, sticky='w', pady=5)
         
         self.buckets_var = tk.StringVar(value="64")
         self.buckets_entry = ttk.Entry(cfr_grid, textvariable=self.buckets_var, width=10)
         self.buckets_entry.grid(row=1, column=1, padx=10, pady=5)
+        
+        ttk.Label(cfr_grid, text="Groupes de mains similaires (32-128, 64 optimal)", font=('Arial', 9), foreground='gray').grid(row=1, column=2, sticky='w', padx=10, pady=5)
         
         # Deep CFR
         self.deep_cfr_var = tk.BooleanVar(value=False)
@@ -605,6 +727,8 @@ class RTAPGUIWindow:
             command=self.toggle_deep_cfr
         )
         self.deep_cfr_check.grid(row=2, column=0, columnspan=2, sticky='w', pady=5)
+        
+        ttk.Label(cfr_grid, text="IA neuronale avancée (plus lent mais précis)", font=('Arial', 9), foreground='gray').grid(row=2, column=2, sticky='w', padx=10, pady=5)
         
         # Bouton Appliquer
         apply_frame = ttk.Frame(main_container)
@@ -692,48 +816,92 @@ class RTAPGUIWindow:
                 # Informations
                 self.pot_label.configure(text=f"{game_state.pot_size:.2f}€")
                 self.stack_label.configure(text=f"{game_state.hero_stack:.2f}€")
-                self.blinds_label.configure(text=f"{game_state.small_blind:.2f}€ / {game_state.big_blind:.2f}€")
+                
+                # Blinds et antes
+                blinds_text = f"{game_state.small_blind:.2f}€ / {game_state.big_blind:.2f}€"
+                self.blinds_label.configure(text=blinds_text)
+                
+                # Antes si présentes
+                if hasattr(game_state, 'ante') and game_state.ante > 0:
+                    self.antes_label.configure(text=f"Ante: {game_state.ante:.2f}€")
+                else:
+                    self.antes_label.configure(text="")
+                
                 self.table_type_label.configure(text=game_state.table_type.title())
             
-            # Recommandations
+            # Recommandations dans l'onglet principal
             recommendation = self.app_manager.get_recommendation()
             if recommendation:
                 action = recommendation.get('action_type', 'check').upper()
-                self.action_display.configure(text=action)
+                self.main_action_display.configure(text=action)
                 
                 # Couleur selon l'action
                 if action in ['FOLD']:
-                    self.action_display.configure(foreground='red')
+                    self.main_action_display.configure(foreground='red')
                 elif action in ['CHECK', 'CALL']:
-                    self.action_display.configure(foreground='orange')
+                    self.main_action_display.configure(foreground='orange')
                 else:
-                    self.action_display.configure(foreground='green')
+                    self.main_action_display.configure(foreground='green')
                 
                 bet_size = recommendation.get('bet_size', 0.0)
-                self.bet_size_label.configure(text=f"Taille: {bet_size:.2f}€")
+                if bet_size > 0:
+                    self.main_bet_size_label.configure(text=f"Taille: {bet_size:.2f}€")
+                else:
+                    self.main_bet_size_label.configure(text="")
                 
                 win_prob = recommendation.get('win_probability', 50.0)
-                self.win_prob_label.configure(text=f"{win_prob:.1f}%")
-                self.win_prob_progress['value'] = win_prob
+                self.main_win_prob_label.configure(text=f"{win_prob:.1f}%")
                 
                 risk_level = recommendation.get('risk_level', 50.0)
-                self.risk_label.configure(text=f"{risk_level:.0f}%")
-                self.risk_progress['value'] = risk_level
+                self.main_risk_label.configure(text=f"{risk_level:.0f}%")
+                
+                confidence = recommendation.get('confidence', 85.0)
+                self.main_confidence_label.configure(text=f"{confidence:.0f}%")
                 
                 # Raisonnement
                 reasoning = recommendation.get('reasoning', 'Analyse en cours...')
-                self.reasoning_text.configure(state='normal')
-                self.reasoning_text.delete(1.0, tk.END)
-                self.reasoning_text.insert(1.0, reasoning)
-                self.reasoning_text.configure(state='disabled')
+                self.main_reasoning_label.configure(text=reasoning)
+                
+                # Aussi mettre à jour l'onglet recommandations pour compatibilité
+                if hasattr(self, 'action_display'):
+                    self.action_display.configure(text=action)
+                    if action in ['FOLD']:
+                        self.action_display.configure(foreground='red')
+                    elif action in ['CHECK', 'CALL']:
+                        self.action_display.configure(foreground='orange')
+                    else:
+                        self.action_display.configure(foreground='green')
+                    
+                    self.bet_size_label.configure(text=f"Taille: {bet_size:.2f}€")
+                    self.win_prob_label.configure(text=f"{win_prob:.1f}%")
+                    self.win_prob_progress['value'] = win_prob
+                    self.risk_label.configure(text=f"{risk_level:.0f}%")
+                    self.risk_progress['value'] = risk_level
+                    
+                    self.reasoning_text.configure(state='normal')
+                    self.reasoning_text.delete(1.0, tk.END)
+                    self.reasoning_text.insert(1.0, reasoning)
+                    self.reasoning_text.configure(state='disabled')
             
-            # Statistiques
+            # Statistiques dans l'onglet principal et onglet dédié
             stats = self.app_manager.get_statistics()
             if stats:
-                self.hands_played_value.configure(text=str(stats.get('hands_played', 0)))
-                self.hands_won_value.configure(text=str(stats.get('hands_won', 0)))
-                self.win_rate_value.configure(text=f"{stats.get('win_rate', 0.0):.1f}%")
-                self.performance_ratio_value.configure(text=f"{stats.get('performance_ratio', 0.0):.1f}%")
+                hands_played = stats.get('hands_played', 0)
+                hands_won = stats.get('hands_won', 0)
+                win_rate = stats.get('win_rate', 0.0)
+                performance_ratio = stats.get('performance_ratio', 0.0)
+                
+                # Statistiques onglet principal
+                self.main_hands_label.configure(text=f"{hands_won} / {hands_played}")
+                self.main_winrate_label.configure(text=f"{win_rate:.1f}%")
+                self.main_performance_label.configure(text=f"{performance_ratio:.1f}%")
+                
+                # Statistiques onglet dédié pour compatibilité
+                if hasattr(self, 'hands_played_value'):
+                    self.hands_played_value.configure(text=str(hands_played))
+                    self.hands_won_value.configure(text=str(hands_won))
+                    self.win_rate_value.configure(text=f"{win_rate:.1f}%")
+                    self.performance_ratio_value.configure(text=f"{performance_ratio:.1f}%")
             
         except Exception as e:
             self.logger.error(f"Erreur mise à jour interface: {e}")
