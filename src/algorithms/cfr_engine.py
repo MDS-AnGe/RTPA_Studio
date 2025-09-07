@@ -1,0 +1,624 @@
+"""
+Moteur CFR/CFR+ pour calculs Nash en temps réel
+Implémentation optimisée pour le poker Texas Hold'em No Limit
+"""
+
+import numpy as np
+import math
+import time
+import threading
+from typing import Dict, List, Tuple, Any, Optional
+from dataclasses import dataclass
+from collections import defaultdict, deque
+import itertools
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+from ..utils.logger import get_logger
+
+@dataclass
+class PokerState:
+    """État de poker pour CFR"""
+    street: int  # 0=preflop, 1=flop, 2=turn, 3=river
+    hero_cards: Tuple[str, str]
+    board_cards: List[str]
+    pot_size: float
+    hero_stack: float
+    position: int
+    num_players: int
+    current_bet: float
+    action_history: List[str]
+    table_type: str  # "cashgame" ou "tournament"
+
+@dataclass
+class ActionSpace:
+    """Espace d'actions possibles"""
+    fold: bool = True
+    check_call: bool = True
+    bet_sizes: Optional[List[float]] = None  # En pourcentage du pot
+    
+    def __post_init__(self):
+        if self.bet_sizes is None:
+            self.bet_sizes = [0.25, 0.33, 0.5, 0.66, 0.75, 1.0, 1.5, 2.0]  # Pourcentages du pot
+
+class CFREngine:
+    """Moteur CFR+ optimisé pour poker temps réel"""
+    
+    def __init__(self):
+        self.logger = get_logger(__name__)
+        
+        # Tables de regrets et stratégies
+        self.regret_sum = defaultdict(lambda: defaultdict(float))
+        self.strategy_sum = defaultdict(lambda: defaultdict(float))
+        self.current_strategy = defaultdict(lambda: defaultdict(float))
+        
+        # Configuration CFR
+        self.iterations = 0
+        self.discount_factor = 0.95
+        self.exploration_rate = 0.1
+        
+        # Abstractions
+        self.card_abstraction = CardAbstraction()
+        self.action_abstraction = ActionAbstraction()
+        
+        # Cache des calculs
+        self.equity_cache = {}
+        self.abstraction_cache = {}
+        
+        # Multithreading
+        self.calculation_lock = threading.RLock()
+        self.background_thread = None
+        self.is_running = False
+        
+        # Modèle Deep CFR (optionnel)
+        self.deep_cfr_enabled = False
+        self.advantage_net = None
+        self.strategy_net = None
+        
+        self.logger.info("CFREngine initialisé")
+    
+    def get_recommendation(self, game_state) -> Dict[str, Any]:
+        """Retourne une recommandation basée sur CFR/Nash"""
+        try:
+            with self.calculation_lock:
+                # Conversion en état poker
+                poker_state = self._convert_to_poker_state(game_state)
+                
+                # Calcul de l'information set
+                info_set = self._get_information_set(poker_state)
+                
+                # Obtention de la stratégie
+                strategy = self._get_strategy(info_set, poker_state)
+                
+                # Calcul des probabilités de victoire
+                win_probability = self._calculate_win_probability(poker_state)
+                
+                # Calcul de la valeur espérée pour chaque action
+                action_values = self._calculate_action_values(poker_state, strategy)
+                
+                # Sélection de l'action optimale
+                best_action = max(action_values.items(), key=lambda x: x[1])
+                
+                # Calcul du niveau de risque
+                risk_level = self._calculate_risk_level(poker_state, best_action[0])
+                
+                # Construction de la recommandation
+                recommendation = {
+                    'action_type': best_action[0],
+                    'bet_size': self._get_bet_size(best_action[0], poker_state),
+                    'win_probability': win_probability,
+                    'expected_value': best_action[1],
+                    'risk_level': risk_level,
+                    'confidence': self._calculate_confidence(strategy),
+                    'reasoning': self._generate_reasoning(poker_state, best_action[0], strategy),
+                    'alternative_actions': self._get_alternative_actions(action_values),
+                    'timestamp': time.time()
+                }
+                
+                return recommendation
+                
+        except Exception as e:
+            self.logger.error(f"Erreur calcul recommandation: {e}")
+            return self._get_default_recommendation()
+    
+    def _convert_to_poker_state(self, game_state) -> PokerState:
+        """Convertit l'état de jeu en état poker"""
+        try:
+            # Détermination de la street
+            board_count = len(game_state.board_cards) if game_state.board_cards else 0
+            if board_count == 0:
+                street = 0  # preflop
+            elif board_count == 3:
+                street = 1  # flop
+            elif board_count == 4:
+                street = 2  # turn
+            else:
+                street = 3  # river
+            
+            return PokerState(
+                street=street,
+                hero_cards=game_state.hero_cards,
+                board_cards=game_state.board_cards or [],
+                pot_size=game_state.pot_size,
+                hero_stack=game_state.hero_stack,
+                position=game_state.hero_position,
+                num_players=game_state.players_count,
+                current_bet=game_state.current_bet,
+                action_history=[],  # À implémenter
+                table_type=game_state.table_type
+            )
+            
+        except Exception as e:
+            self.logger.error(f"Erreur conversion état: {e}")
+            return PokerState(0, ("", ""), [], 0, 0, 0, 9, 0, [], "cashgame")
+    
+    def _get_information_set(self, poker_state: PokerState) -> str:
+        """Calcule l'information set pour CFR"""
+        try:
+            # Abstraction des cartes
+            card_bucket = self.card_abstraction.get_bucket(
+                poker_state.hero_cards, 
+                poker_state.board_cards,
+                poker_state.street
+            )
+            
+            # État abstrait du jeu
+            bet_history = "_".join(poker_state.action_history[-10:])  # Dernières 10 actions
+            
+            # SPR (Stack to Pot Ratio)
+            spr = poker_state.hero_stack / max(poker_state.pot_size, 1.0)
+            spr_bucket = min(int(spr), 20)  # Cap à 20
+            
+            # Information set
+            info_set = f"{poker_state.street}_{card_bucket}_{poker_state.position}_{spr_bucket}_{bet_history}"
+            
+            return info_set
+            
+        except Exception as e:
+            self.logger.error(f"Erreur information set: {e}")
+            return "default_0_0_0_0_"
+    
+    def _get_strategy(self, info_set: str, poker_state: PokerState) -> Dict[str, float]:
+        """Calcule la stratégie pour un information set"""
+        try:
+            actions = self._get_available_actions(poker_state)
+            
+            if info_set not in self.regret_sum:
+                # Stratégie uniforme pour nouveau info_set
+                uniform_prob = 1.0 / len(actions)
+                return {action: uniform_prob for action in actions}
+            
+            # Calcul de la stratégie basée sur les regrets
+            strategy = {}
+            regret_sum = 0.0
+            
+            for action in actions:
+                regret = max(0.0, self.regret_sum[info_set][action])
+                strategy[action] = regret
+                regret_sum += regret
+            
+            # Normalisation
+            if regret_sum > 0:
+                for action in actions:
+                    strategy[action] /= regret_sum
+            else:
+                # Stratégie uniforme si pas de regret positif
+                uniform_prob = 1.0 / len(actions)
+                strategy = {action: uniform_prob for action in actions}
+            
+            # Ajout d'exploration
+            for action in actions:
+                strategy[action] = (1.0 - self.exploration_rate) * strategy[action] + \
+                                 self.exploration_rate / len(actions)
+            
+            return strategy
+            
+        except Exception as e:
+            self.logger.error(f"Erreur calcul stratégie: {e}")
+            return {"fold": 0.3, "call": 0.4, "raise": 0.3}
+    
+    def _get_available_actions(self, poker_state: PokerState) -> List[str]:
+        """Retourne les actions disponibles"""
+        try:
+            actions = []
+            
+            # Fold toujours disponible (sauf si check possible)
+            if poker_state.current_bet > 0:
+                actions.append("fold")
+            
+            # Check/Call
+            if poker_state.current_bet == 0:
+                actions.append("check")
+            else:
+                actions.append("call")
+            
+            # Bet/Raise si stack suffisant
+            min_bet = max(poker_state.current_bet * 2, poker_state.pot_size * 0.25)
+            if poker_state.hero_stack > min_bet:
+                actions.extend(["bet_small", "bet_medium", "bet_large", "bet_allin"])
+            
+            return actions
+            
+        except Exception as e:
+            self.logger.error(f"Erreur actions disponibles: {e}")
+            return ["fold", "call", "raise"]
+    
+    def _calculate_win_probability(self, poker_state: PokerState) -> float:
+        """Calcule la probabilité de victoire"""
+        try:
+            # Cache check
+            cache_key = f"{poker_state.hero_cards}_{poker_state.board_cards}_{poker_state.num_players}"
+            if cache_key in self.equity_cache:
+                return self.equity_cache[cache_key]
+            
+            # Simulation Monte Carlo rapide
+            wins = 0
+            simulations = 1000  # Réduit pour temps réel
+            
+            for _ in range(simulations):
+                # Simulation d'une main complète
+                if self._simulate_hand(poker_state):
+                    wins += 1
+            
+            win_prob = wins / simulations
+            self.equity_cache[cache_key] = win_prob
+            
+            return win_prob
+            
+        except Exception as e:
+            self.logger.error(f"Erreur calcul probabilité: {e}")
+            return 0.5  # Valeur par défaut
+    
+    def _simulate_hand(self, poker_state: PokerState) -> bool:
+        """Simule une main complète"""
+        try:
+            # Simulation simplifiée basée sur la force des cartes
+            hero_strength = self._calculate_hand_strength(
+                poker_state.hero_cards, 
+                poker_state.board_cards
+            )
+            
+            # Estimation de la force moyenne des adversaires
+            avg_opponent_strength = 0.4 + (0.1 * (9 - poker_state.num_players))
+            
+            return hero_strength > avg_opponent_strength
+            
+        except Exception as e:
+            self.logger.error(f"Erreur simulation main: {e}")
+            return False
+    
+    def _calculate_hand_strength(self, hero_cards: Tuple[str, str], board_cards: List[str]) -> float:
+        """Calcule la force de la main (0-1)"""
+        try:
+            if not hero_cards or hero_cards == ("", ""):
+                return 0.0
+            
+            # Évaluation simplifiée basée sur les cartes hautes
+            card_values = {'A': 14, 'K': 13, 'Q': 12, 'J': 11, 'T': 10}
+            
+            strength = 0.0
+            
+            # Force des cartes individuelles
+            for card in hero_cards:
+                if card and len(card) >= 2:
+                    rank = card[0]
+                    value = card_values.get(rank, int(rank) if rank.isdigit() else 5)
+                    strength += value / 14.0
+            
+            strength /= 2.0  # Moyenne des deux cartes
+            
+            # Bonus pour paires, couleurs, etc. (à améliorer)
+            if hero_cards[0][0] == hero_cards[1][0]:  # Paire
+                strength += 0.2
+            
+            if hero_cards[0][1] == hero_cards[1][1]:  # Suited
+                strength += 0.05
+            
+            return min(strength, 1.0)
+            
+        except Exception as e:
+            self.logger.error(f"Erreur force main: {e}")
+            return 0.0
+    
+    def _calculate_action_values(self, poker_state: PokerState, strategy: Dict[str, float]) -> Dict[str, float]:
+        """Calcule les valeurs espérées pour chaque action"""
+        try:
+            action_values = {}
+            
+            for action, probability in strategy.items():
+                # Calcul EV simplifié pour chaque action
+                if action == "fold":
+                    action_values[action] = 0.0
+                elif action in ["check", "call"]:
+                    win_prob = self._calculate_win_probability(poker_state)
+                    call_amount = poker_state.current_bet
+                    pot_odds = call_amount / (poker_state.pot_size + call_amount)
+                    action_values[action] = (win_prob - pot_odds) * poker_state.pot_size
+                else:  # bet/raise
+                    action_values[action] = self._calculate_bet_ev(poker_state, action)
+            
+            return action_values
+            
+        except Exception as e:
+            self.logger.error(f"Erreur valeurs actions: {e}")
+            return {"fold": 0.0, "call": 0.0, "raise": 0.0}
+    
+    def _calculate_bet_ev(self, poker_state: PokerState, action: str) -> float:
+        """Calcule l'EV d'un bet/raise"""
+        try:
+            win_prob = self._calculate_win_probability(poker_state)
+            
+            # Taille du bet selon l'action
+            bet_size_multipliers = {
+                "bet_small": 0.33,
+                "bet_medium": 0.66,
+                "bet_large": 1.0,
+                "bet_allin": min(poker_state.hero_stack / poker_state.pot_size, 3.0)
+            }
+            
+            multiplier = bet_size_multipliers.get(action, 0.66)
+            bet_amount = poker_state.pot_size * multiplier
+            
+            # Probabilité de fold des adversaires (estimation)
+            fold_prob = min(0.6 * multiplier, 0.8)
+            
+            # EV = (fold_prob * pot_actuel) + ((1-fold_prob) * win_prob * pot_final) - bet_amount
+            immediate_win = fold_prob * poker_state.pot_size
+            showdown_ev = (1 - fold_prob) * win_prob * (poker_state.pot_size + bet_amount * 2)
+            
+            total_ev = immediate_win + showdown_ev - bet_amount
+            
+            return total_ev
+            
+        except Exception as e:
+            self.logger.error(f"Erreur EV bet: {e}")
+            return 0.0
+    
+    def _get_bet_size(self, action: str, poker_state: PokerState) -> float:
+        """Retourne la taille du bet pour une action"""
+        try:
+            if action in ["fold", "check"]:
+                return 0.0
+            elif action == "call":
+                return poker_state.current_bet
+            elif action == "bet_small":
+                return poker_state.pot_size * 0.33
+            elif action == "bet_medium":
+                return poker_state.pot_size * 0.66
+            elif action == "bet_large":
+                return poker_state.pot_size * 1.0
+            elif action == "bet_allin":
+                return poker_state.hero_stack
+            else:
+                return poker_state.pot_size * 0.5
+                
+        except Exception as e:
+            self.logger.error(f"Erreur taille bet: {e}")
+            return 0.0
+    
+    def _calculate_risk_level(self, poker_state: PokerState, action: str) -> float:
+        """Calcule le niveau de risque (0-100)"""
+        try:
+            base_risk = 0.0
+            
+            if action == "fold":
+                base_risk = 0.0
+            elif action in ["check", "call"]:
+                base_risk = 30.0
+            elif action.startswith("bet"):
+                bet_size = self._get_bet_size(action, poker_state)
+                risk_ratio = bet_size / poker_state.hero_stack
+                base_risk = 50.0 + (risk_ratio * 50.0)
+            
+            # Ajustements selon le contexte
+            if poker_state.table_type == "tournament":
+                base_risk *= 1.2  # Plus risqué en tournoi
+            
+            # Ajustement selon la position
+            if poker_state.position < 3:  # Early position
+                base_risk *= 1.1
+            
+            return min(base_risk, 100.0)
+            
+        except Exception as e:
+            self.logger.error(f"Erreur niveau risque: {e}")
+            return 50.0
+    
+    def _calculate_confidence(self, strategy: Dict[str, float]) -> float:
+        """Calcule la confiance dans la stratégie"""
+        try:
+            # Entropie comme mesure de confiance (inversée)
+            entropy = 0.0
+            for prob in strategy.values():
+                if prob > 0:
+                    entropy -= prob * math.log2(prob)
+            
+            # Normalisation (max entropy pour 3 actions = log2(3) ≈ 1.58)
+            max_entropy = math.log2(len(strategy))
+            normalized_entropy = entropy / max_entropy if max_entropy > 0 else 0
+            
+            # Confiance = 1 - entropy normalisée
+            confidence = (1.0 - normalized_entropy) * 100.0
+            
+            return confidence
+            
+        except Exception as e:
+            self.logger.error(f"Erreur confiance: {e}")
+            return 50.0
+    
+    def _generate_reasoning(self, poker_state: PokerState, action: str, strategy: Dict[str, float]) -> str:
+        """Génère une explication de la recommandation"""
+        try:
+            reasoning_parts = []
+            
+            # Analyse de la main
+            hand_strength = self._calculate_hand_strength(poker_state.hero_cards, poker_state.board_cards)
+            if hand_strength > 0.7:
+                reasoning_parts.append("Main forte")
+            elif hand_strength > 0.4:
+                reasoning_parts.append("Main moyenne")
+            else:
+                reasoning_parts.append("Main faible")
+            
+            # Analyse de position
+            if poker_state.position < 3:
+                reasoning_parts.append("position précoce")
+            elif poker_state.position < 6:
+                reasoning_parts.append("position milieu")
+            else:
+                reasoning_parts.append("position tardive")
+            
+            # Analyse du pot
+            spr = poker_state.hero_stack / max(poker_state.pot_size, 1.0)
+            if spr < 5:
+                reasoning_parts.append("SPR faible")
+            elif spr > 15:
+                reasoning_parts.append("SPR élevé")
+            
+            # Construction du message
+            base_msg = f"Recommandation {action} basée sur: {', '.join(reasoning_parts)}"
+            
+            return base_msg
+            
+        except Exception as e:
+            self.logger.error(f"Erreur génération raisonnement: {e}")
+            return f"Recommandation {action} basée sur l'analyse CFR"
+    
+    def _get_alternative_actions(self, action_values: Dict[str, float]) -> List[Dict[str, Any]]:
+        """Retourne les actions alternatives"""
+        try:
+            sorted_actions = sorted(action_values.items(), key=lambda x: x[1], reverse=True)
+            
+            alternatives = []
+            for i, (action, value) in enumerate(sorted_actions[1:3]):  # Top 2 alternatives
+                alternatives.append({
+                    'action': action,
+                    'expected_value': value,
+                    'rank': i + 2
+                })
+            
+            return alternatives
+            
+        except Exception as e:
+            self.logger.error(f"Erreur actions alternatives: {e}")
+            return []
+    
+    def _get_default_recommendation(self) -> Dict[str, Any]:
+        """Retourne une recommandation par défaut en cas d'erreur"""
+        return {
+            'action_type': 'check',
+            'bet_size': 0.0,
+            'win_probability': 50.0,
+            'expected_value': 0.0,
+            'risk_level': 30.0,
+            'confidence': 25.0,
+            'reasoning': 'Recommandation de sécurité (erreur de calcul)',
+            'alternative_actions': [],
+            'timestamp': time.time()
+        }
+    
+    def update_settings(self, settings: Dict[str, Any]):
+        """Met à jour les paramètres CFR"""
+        try:
+            if 'cfr_iterations' in settings:
+                self.iterations = settings['cfr_iterations']
+            
+            if 'exploration_rate' in settings:
+                self.exploration_rate = settings['exploration_rate']
+            
+            if 'deep_cfr_enabled' in settings:
+                self.deep_cfr_enabled = settings['deep_cfr_enabled']
+            
+            self.logger.info("Paramètres CFR mis à jour")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur mise à jour paramètres: {e}")
+    
+    def start_background_training(self):
+        """Démarre l'entraînement CFR en arrière-plan"""
+        if not self.is_running:
+            self.is_running = True
+            self.background_thread = threading.Thread(target=self._training_loop, daemon=True)
+            self.background_thread.start()
+            self.logger.info("Entraînement CFR démarré en arrière-plan")
+    
+    def stop_background_training(self):
+        """Arrête l'entraînement en arrière-plan"""
+        self.is_running = False
+        if self.background_thread:
+            self.background_thread.join(timeout=1.0)
+        self.logger.info("Entraînement CFR arrêté")
+    
+    def _training_loop(self):
+        """Boucle d'entraînement CFR continu"""
+        while self.is_running:
+            try:
+                # Mise à jour CFR+ (version simplifiée)
+                self._update_regrets()
+                time.sleep(0.1)  # 100ms entre les mises à jour
+                
+            except Exception as e:
+                self.logger.error(f"Erreur boucle entraînement: {e}")
+                time.sleep(1.0)
+    
+    def _update_regrets(self):
+        """Met à jour les regrets CFR+ (implémentation simplifiée)"""
+        try:
+            # Ici on devrait faire une traversée CFR complète
+            # Pour l'instant, on fait une mise à jour légère
+            self.iterations += 1
+            
+            # Décroissance des regrets anciens
+            if self.iterations % 100 == 0:
+                for info_set in self.regret_sum:
+                    for action in self.regret_sum[info_set]:
+                        self.regret_sum[info_set][action] *= self.discount_factor
+                        
+        except Exception as e:
+            self.logger.error(f"Erreur mise à jour regrets: {e}")
+
+class CardAbstraction:
+    """Abstraction des cartes pour CFR"""
+    
+    def __init__(self):
+        self.buckets = 64  # Nombre de buckets
+        
+    def get_bucket(self, hero_cards: Tuple[str, str], board_cards: List[str], street: int) -> int:
+        """Retourne le bucket d'abstraction pour les cartes"""
+        try:
+            # Implémentation simplifiée
+            # En pratique, on utiliserait k-means sur les équités
+            
+            if not hero_cards or hero_cards == ("", ""):
+                return 0
+            
+            # Hash simple basé sur les cartes
+            card_hash = hash(str(hero_cards) + str(board_cards))
+            return abs(card_hash) % self.buckets
+            
+        except Exception as e:
+            return 0
+
+class ActionAbstraction:
+    """Abstraction des actions pour CFR"""
+    
+    def __init__(self):
+        self.bet_sizes = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]  # Multiples du pot
+        
+    def get_abstract_action(self, action: str, bet_size: float, pot_size: float) -> str:
+        """Convertit une action réelle en action abstraite"""
+        try:
+            if action in ["fold", "check", "call"]:
+                return action
+            
+            # Abstraction des bet sizes
+            if pot_size > 0:
+                ratio = bet_size / pot_size
+                closest_size = min(self.bet_sizes, key=lambda x: abs(x - ratio))
+                return f"bet_{closest_size}"
+            
+            return "bet_0.5"
+            
+        except Exception as e:
+            return action
