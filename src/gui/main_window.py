@@ -166,39 +166,39 @@ class RTAPMainWindow:
         self.game_state_frame = ctk.CTkFrame(self.content_frame)
         self.game_state_title = ctk.CTkLabel(
             self.game_state_frame,
-            text=self.get_text("game_state"),
+            text="📊 " + self.get_text("game_state"),
             font=ctk.CTkFont(size=16, weight="bold")
         )
         
         # Widgets état du jeu
-        self.hero_cards_label = ctk.CTkLabel(self.game_state_frame, text=self.get_text("hero_cards"))
+        self.hero_cards_label = ctk.CTkLabel(self.game_state_frame, text="🂠 " + self.get_text("hero_cards"))
         self.hero_cards_value = ctk.CTkLabel(self.game_state_frame, text="-- --", font=ctk.CTkFont(size=14, weight="bold"))
         
-        self.board_cards_label = ctk.CTkLabel(self.game_state_frame, text=self.get_text("board_cards"))
+        self.board_cards_label = ctk.CTkLabel(self.game_state_frame, text="🂱 " + self.get_text("board_cards"))
         self.board_cards_value = ctk.CTkLabel(self.game_state_frame, text="-- -- -- -- --", font=ctk.CTkFont(size=14, weight="bold"))
         
-        self.pot_size_label = ctk.CTkLabel(self.game_state_frame, text=self.get_text("pot_size"))
+        self.pot_size_label = ctk.CTkLabel(self.game_state_frame, text="💰 " + self.get_text("pot_size"))
         self.pot_size_value = ctk.CTkLabel(self.game_state_frame, text="0.00€", font=ctk.CTkFont(size=14, weight="bold"))
         
-        self.stack_label = ctk.CTkLabel(self.game_state_frame, text=self.get_text("stack"))
+        self.stack_label = ctk.CTkLabel(self.game_state_frame, text="💳 " + self.get_text("stack"))
         self.stack_value = ctk.CTkLabel(self.game_state_frame, text="0.00€", font=ctk.CTkFont(size=14, weight="bold"))
         
         # Colonne 2: Recommandations
         self.recommendations_frame = ctk.CTkFrame(self.content_frame)
         self.recommendations_title = ctk.CTkLabel(
             self.recommendations_frame,
-            text=self.get_text("recommendations"),
+            text="🎯 " + self.get_text("recommendations"),
             font=ctk.CTkFont(size=16, weight="bold")
         )
         
         # Widgets recommandations
-        self.win_prob_label = ctk.CTkLabel(self.recommendations_frame, text=self.get_text("win_probability"))
+        self.win_prob_label = ctk.CTkLabel(self.recommendations_frame, text="🏆 " + self.get_text("win_probability"))
         self.win_prob_value = ctk.CTkLabel(self.recommendations_frame, text="50.0%", font=ctk.CTkFont(size=20, weight="bold"), text_color="yellow")
         
-        self.action_label = ctk.CTkLabel(self.recommendations_frame, text=self.get_text("action"))
+        self.action_label = ctk.CTkLabel(self.recommendations_frame, text="⚡ " + self.get_text("action"))
         self.action_value = ctk.CTkLabel(self.recommendations_frame, text="Check", font=ctk.CTkFont(size=18, weight="bold"), text_color="green")
         
-        self.risk_label = ctk.CTkLabel(self.recommendations_frame, text=self.get_text("risk_level"))
+        self.risk_label = ctk.CTkLabel(self.recommendations_frame, text="⚠️ " + self.get_text("risk_level"))
         self.risk_value = ctk.CTkLabel(self.recommendations_frame, text="30%", font=ctk.CTkFont(size=16, weight="bold"))
         
         # Barre de progression pour probabilité de victoire
@@ -214,19 +214,19 @@ class RTAPMainWindow:
         self.settings_tab = self.tabview.add(self.get_text("settings"))
         
         # Statistiques
-        self.hands_played_label = ctk.CTkLabel(self.stats_tab, text=self.get_text("hands_played"))
+        self.hands_played_label = ctk.CTkLabel(self.stats_tab, text="🎲 " + self.get_text("hands_played"))
         self.hands_played_value = ctk.CTkLabel(self.stats_tab, text="0", font=ctk.CTkFont(size=14, weight="bold"))
         
-        self.hands_won_label = ctk.CTkLabel(self.stats_tab, text=self.get_text("hands_won"))
+        self.hands_won_label = ctk.CTkLabel(self.stats_tab, text="🏆 " + self.get_text("hands_won"))
         self.hands_won_value = ctk.CTkLabel(self.stats_tab, text="0", font=ctk.CTkFont(size=14, weight="bold"))
         
-        self.win_rate_label = ctk.CTkLabel(self.stats_tab, text=self.get_text("win_rate"))
+        self.win_rate_label = ctk.CTkLabel(self.stats_tab, text="📊 " + self.get_text("win_rate"))
         self.win_rate_value = ctk.CTkLabel(self.stats_tab, text="0.0%", font=ctk.CTkFont(size=14, weight="bold"))
         
-        self.expected_rate_label = ctk.CTkLabel(self.stats_tab, text=self.get_text("expected_rate"))
+        self.expected_rate_label = ctk.CTkLabel(self.stats_tab, text="🎯 " + self.get_text("expected_rate"))
         self.expected_rate_value = ctk.CTkLabel(self.stats_tab, text="65.0%", font=ctk.CTkFont(size=14, weight="bold"), text_color="blue")
         
-        self.performance_label = ctk.CTkLabel(self.stats_tab, text=self.get_text("performance"))
+        self.performance_label = ctk.CTkLabel(self.stats_tab, text="📈 " + self.get_text("performance"))
         self.performance_value = ctk.CTkLabel(self.stats_tab, text="0.0%", font=ctk.CTkFont(size=14, weight="bold"))
         
         # Graphique de performance
