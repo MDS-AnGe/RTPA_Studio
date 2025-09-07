@@ -207,7 +207,7 @@ class RTAPGUIWindow:
         
         # Onglet 5: Version (dernier à droite)
         self.version_tab = ttk.Frame(self.notebook)
-        self.notebook.add(self.version_tab, text="📋 Version")
+        self.notebook.add(self.version_tab, text="📌 Version")
         self.create_version_tab()
     
     def create_dashboard_tab(self):
@@ -2093,7 +2093,7 @@ class RTAPGUIWindow:
         # Bouton vérifier MAJ
         self.check_update_btn = ctk.CTkButton(
             buttons_frame,
-            text="🔄 Vérifier les mises à jour",
+            text="Vérifier les mises à jour",
             command=self.check_for_updates,
             font=ctk.CTkFont(size=14),
             height=40
