@@ -263,20 +263,178 @@ class MemoryDatabase:
             
             self.logger.info("Historique effacé")
     
-    def export_data(self, filename: str):
-        """Exporte les données vers un fichier"""
+    def export_complete_data(self, filename: str, cfr_engine=None):
+        """Exporte toutes les données incluant CFR et Nash"""
         with self.lock:
             export_data = {
-                'game_states': [state for state in self.game_states],
-                'recommendations': [rec for rec in self.recommendations],
-                'statistics': self.statistics,
-                'export_timestamp': time.time()
+                'metadata': {
+                    'version': '1.0',
+                    'export_timestamp': time.time(),
+                    'rtpa_version': 'RTPA Studio v1.0'
+                },
+                'game_data': {
+                    'game_states': [state for state in self.game_states],
+                    'recommendations': [rec for rec in self.recommendations],
+                    'statistics': self.statistics
+                },
+                'cfr_data': {},
+                'settings': {}
             }
             
-            with open(filename, 'w', encoding='utf-8') as f:
-                json.dump(export_data, f, indent=2, ensure_ascii=False)
+            # Export des données CFR si moteur fourni
+            if cfr_engine:
+                try:
+                    export_data['cfr_data'] = {
+                        'regret_sum': dict(cfr_engine.regret_sum),
+                        'strategy_sum': dict(cfr_engine.strategy_sum),
+                        'iterations_count': getattr(cfr_engine, 'iterations_count', 0),
+                        'total_training_time': getattr(cfr_engine, 'total_training_time', 0.0)
+                    }
+                    self.logger.info("Données CFR ajoutées à l'export")
+                except Exception as e:
+                    self.logger.warning(f"Impossible d'exporter les données CFR: {e}")
             
-            self.logger.info(f"Données exportées vers {filename}")
+            # Export SQLite complet
+            try:
+                cursor = self.conn.cursor()
+                
+                # Toutes les tables
+                tables_data = {}
+                for table_name in ['game_states', 'recommendations', 'statistics']:
+                    cursor.execute(f'SELECT * FROM {table_name}')
+                    rows = cursor.fetchall()
+                    cursor.execute(f'PRAGMA table_info({table_name})')
+                    columns = [col[1] for col in cursor.fetchall()]
+                    
+                    tables_data[table_name] = {
+                        'columns': columns,
+                        'rows': rows
+                    }
+                
+                export_data['sql_backup'] = tables_data
+                self.logger.info("Sauvegarde SQL ajoutée à l'export")
+                
+            except Exception as e:
+                self.logger.warning(f"Erreur export SQL: {e}")
+            
+            # Écriture du fichier
+            try:
+                with open(filename, 'w', encoding='utf-8') as f:
+                    json.dump(export_data, f, indent=2, ensure_ascii=False, default=str)
+                
+                self.logger.info(f"Export complet réussi vers {filename}")
+                return True
+                
+            except Exception as e:
+                self.logger.error(f"Erreur écriture fichier: {e}")
+                return False
+    
+    def import_complete_data(self, filename: str, cfr_engine=None):
+        """Importe toutes les données incluant CFR et Nash"""
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                import_data = json.load(f)
+            
+            with self.lock:
+                # Vérification version
+                if 'metadata' not in import_data:
+                    self.logger.warning("Fichier d'import ancien format")
+                    return self._import_legacy_format(import_data, cfr_engine)
+                
+                # Import des données de jeu
+                if 'game_data' in import_data:
+                    game_data = import_data['game_data']
+                    
+                    # Clear et import game states
+                    self.game_states.clear()
+                    for state_data in game_data.get('game_states', []):
+                        self.game_states.append(state_data)
+                    
+                    # Clear et import recommendations
+                    self.recommendations.clear()
+                    for rec_data in game_data.get('recommendations', []):
+                        self.recommendations.append(rec_data)
+                    
+                    # Import statistics
+                    if 'statistics' in game_data:
+                        self.statistics.update(game_data['statistics'])
+                    
+                    self.logger.info("Données de jeu importées")
+                
+                # Import des données CFR
+                if 'cfr_data' in import_data and cfr_engine:
+                    try:
+                        cfr_data = import_data['cfr_data']
+                        
+                        # Restauration regret_sum et strategy_sum
+                        if 'regret_sum' in cfr_data:
+                            cfr_engine.regret_sum.clear()
+                            for info_set, actions in cfr_data['regret_sum'].items():
+                                cfr_engine.regret_sum[info_set].update(actions)
+                        
+                        if 'strategy_sum' in cfr_data:
+                            cfr_engine.strategy_sum.clear()
+                            for info_set, actions in cfr_data['strategy_sum'].items():
+                                cfr_engine.strategy_sum[info_set].update(actions)
+                        
+                        # Restauration métadonnées CFR
+                        if hasattr(cfr_engine, 'iterations_count'):
+                            cfr_engine.iterations_count = cfr_data.get('iterations_count', 0)
+                        if hasattr(cfr_engine, 'total_training_time'):
+                            cfr_engine.total_training_time = cfr_data.get('total_training_time', 0.0)
+                        
+                        self.logger.info("Données CFR restaurées avec succès")
+                        
+                    except Exception as e:
+                        self.logger.error(f"Erreur import CFR: {e}")
+                
+                # Reconstruction des index
+                self._rebuild_indexes()
+                
+                self.logger.info(f"Import complet réussi depuis {filename}")
+                return True
+                
+        except Exception as e:
+            self.logger.error(f"Erreur import fichier {filename}: {e}")
+            return False
+    
+    def _import_legacy_format(self, data, cfr_engine):
+        """Import ancien format pour compatibilité"""
+        try:
+            # Ancien format direct
+            if 'game_states' in data:
+                self.game_states.clear()
+                for state_data in data['game_states']:
+                    self.game_states.append(state_data)
+            
+            if 'recommendations' in data:
+                self.recommendations.clear()
+                for rec_data in data['recommendations']:
+                    self.recommendations.append(rec_data)
+            
+            if 'statistics' in data:
+                self.statistics.update(data['statistics'])
+            
+            self._rebuild_indexes()
+            self.logger.info("Import legacy réussi")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Erreur import legacy: {e}")
+            return False
+    
+    def _rebuild_indexes(self):
+        """Reconstruit les index après import"""
+        self.index_by_timestamp.clear()
+        self.index_by_hand_id.clear()
+        
+        for i, state_data in enumerate(self.game_states):
+            if 'timestamp' in state_data:
+                self.index_by_timestamp[state_data['timestamp']] = i
+    
+    def export_data(self, filename: str):
+        """Exporte les données vers un fichier (legacy)"""
+        return self.export_complete_data(filename)
     
     def close(self):
         """Ferme la base de données"""

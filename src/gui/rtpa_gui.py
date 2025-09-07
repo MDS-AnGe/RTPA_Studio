@@ -861,6 +861,49 @@ class RTAPGUIWindow:
         
         ttk.Label(cfr_grid, text="Amélioration CFR standard. Convergence plus rapide, recommandé", font=('Arial', 9), foreground='gray').grid(row=5, column=2, sticky='w', padx=10, pady=5)
         
+        # Section Export/Import
+        data_frame = ttk.LabelFrame(main_container, text="📁 Gestion des Données", style='Card.TFrame')
+        data_frame.pack(fill='x', pady=(0, 20))
+        
+        data_grid = ttk.Frame(data_frame)
+        data_grid.pack(fill='x', padx=15, pady=15)
+        
+        # Export données complètes
+        ttk.Label(data_grid, text="Export Base CFR:", style='Heading.TLabel').grid(row=0, column=0, sticky='w', pady=5)
+        
+        export_frame = ttk.Frame(data_grid)
+        export_frame.grid(row=0, column=1, columnspan=2, padx=10, pady=5, sticky='w')
+        
+        ttk.Button(
+            export_frame,
+            text="📤 Exporter Tout",
+            command=self.export_database,
+            style='Accent.TButton'
+        ).pack(side='left', padx=(0, 5))
+        
+        ttk.Label(export_frame, text="Sauvegarde complète (CFR + données + stats)", font=('Arial', 9), foreground='gray').pack(side='left', padx=5)
+        
+        # Import données complètes
+        ttk.Label(data_grid, text="Import Base CFR:", style='Heading.TLabel').grid(row=1, column=0, sticky='w', pady=5)
+        
+        import_frame = ttk.Frame(data_grid)
+        import_frame.grid(row=1, column=1, columnspan=2, padx=10, pady=5, sticky='w')
+        
+        ttk.Button(
+            import_frame,
+            text="📥 Importer Tout",
+            command=self.import_database,
+            style='Accent.TButton'
+        ).pack(side='left', padx=(0, 5))
+        
+        ttk.Label(import_frame, text="Restaure apprentissage CFR complet d'une session précédente", font=('Arial', 9), foreground='gray').pack(side='left', padx=5)
+        
+        # Statistiques export
+        ttk.Label(data_grid, text="Statut Données:", style='Heading.TLabel').grid(row=2, column=0, sticky='w', pady=5)
+        
+        self.data_status_label = ttk.Label(data_grid, text="Prêt pour export/import", font=('Arial', 9), foreground='blue')
+        self.data_status_label.grid(row=2, column=1, sticky='w', padx=10, pady=5)
+        
         # Bouton Appliquer
         apply_frame = ttk.Frame(main_container)
         apply_frame.pack(fill='x', pady=(20, 0))
@@ -1114,8 +1157,75 @@ class RTAPGUIWindow:
         pass
     
     def change_theme(self, event=None):
-        # Implémentation du changement de thème
-        pass
+        """Change le thème de l'interface"""
+        try:
+            theme = self.theme_var.get()
+            
+            # Application du thème
+            if theme == "dark":
+                # Thème sombre
+                self.style.theme_use('clam')  # Base theme
+                self.style.configure('TFrame', background='#2b2b2b')
+                self.style.configure('TLabel', background='#2b2b2b', foreground='white')
+                self.style.configure('TLabelFrame', background='#2b2b2b', foreground='white')
+                self.style.configure('TButton', background='#404040', foreground='white')
+                self.style.configure('TEntry', foreground='white', fieldbackground='#404040')
+                self.style.configure('TCombobox', foreground='white', fieldbackground='#404040')
+                self.style.configure('TCheckbutton', background='#2b2b2b', foreground='white')
+                self.style.configure('TScale', background='#2b2b2b')
+                
+                # Configuration de la fenêtre principale
+                self.root.configure(bg='#2b2b2b')
+                
+            else:  # light theme
+                # Thème clair
+                self.style.theme_use('default')
+                self.style.configure('TFrame', background='white')
+                self.style.configure('TLabel', background='white', foreground='black')
+                self.style.configure('TLabelFrame', background='white', foreground='black')
+                self.style.configure('TButton', background='#e0e0e0', foreground='black')
+                self.style.configure('TEntry', foreground='black', fieldbackground='white')
+                self.style.configure('TCombobox', foreground='black', fieldbackground='white')
+                self.style.configure('TCheckbutton', background='white', foreground='black')
+                self.style.configure('TScale', background='white')
+                
+                # Configuration de la fenêtre principale
+                self.root.configure(bg='white')
+            
+            self.logger.info(f"Thème changé vers: {theme}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur changement thème: {e}")
+    
+    def change_accent_color(self, event=None):
+        """Change la couleur d'accent de l'interface"""
+        try:
+            color = self.accent_color_var.get().split(' - ')[0]
+            
+            # Mapping des couleurs
+            color_map = {
+                'blue': '#0078d4',
+                'green': '#00b294',
+                'red': '#d13438',
+                'purple': '#8764b8',
+                'orange': '#ff8c00'
+            }
+            
+            accent_color = color_map.get(color, '#0078d4')
+            
+            # Application de la couleur d'accent
+            self.style.configure('Accent.TButton', background=accent_color, foreground='white')
+            self.style.configure('Success.TButton', background=accent_color, foreground='white')
+            self.style.configure('Card.TFrame', borderwidth=1, relief='solid')
+            self.style.configure('Heading.TLabel', foreground=accent_color, font=('Arial', 10, 'bold'))
+            
+            # Sauvegarde de la préférence
+            self.app_manager.update_settings({'accent_color': color})
+            
+            self.logger.info(f"Couleur d'accent changée vers: {color}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur changement couleur d'accent: {e}")
     
     def change_table_type(self):
         try:
@@ -1146,24 +1256,63 @@ class RTAPGUIWindow:
             self.logger.error(f"Erreur toggle Deep CFR: {e}")
     
     def check_pytorch_status(self):
-        """Vérifie si PyTorch est installé"""
+        """Vérifie si PyTorch est installé et détecte CUDA"""
+        gpu_info = []
+        pytorch_info = []
+        
+        # Vérification PyTorch
         try:
             import torch
             version = torch.__version__
-            cuda_available = torch.cuda.is_available()
+            pytorch_info.append(f"PyTorch {version}")
             
-            if cuda_available:
-                self.pytorch_status_label.configure(text=f"✅ PyTorch {version} (CUDA)", foreground='green')
-                self.pytorch_install_button.configure(text="Mettre à jour", state='normal')
+            # Vérification CUDA PyTorch
+            if torch.cuda.is_available():
+                cuda_version = torch.version.cuda
+                gpu_count = torch.cuda.device_count()
+                gpu_name = torch.cuda.get_device_name(0) if gpu_count > 0 else "GPU Inconnu"
+                
+                pytorch_info.append(f"CUDA {cuda_version}")
+                gpu_info.append(f"{gpu_count}x {gpu_name}")
+                
+                status_text = f"✅ {' + '.join(pytorch_info)}"
+                self.pytorch_status_label.configure(text=status_text, foreground='green')
+                self.pytorch_install_button.configure(text="✅ Installé", state='disabled')
             else:
-                self.pytorch_status_label.configure(text=f"✅ PyTorch {version} (CPU)", foreground='orange')
+                # PyTorch installé mais pas CUDA
+                status_text = f"⚠️ PyTorch {version} (CPU seulement)"
+                self.pytorch_status_label.configure(text=status_text, foreground='orange')
                 self.pytorch_install_button.configure(text="Installer CUDA", state='normal')
+                
         except ImportError:
+            # PyTorch pas installé
             self.pytorch_status_label.configure(text="❌ PyTorch non installé", foreground='red')
             self.pytorch_install_button.configure(text="Installer PyTorch", state='normal')
+            
         except Exception as e:
             self.pytorch_status_label.configure(text="⚠️ Erreur vérification", foreground='gray')
             self.pytorch_install_button.configure(text="Réessayer", state='normal')
+        
+        # Vérification système CUDA (sans PyTorch)
+        try:
+            import subprocess
+            result = subprocess.run(['nvidia-smi'], capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                # NVIDIA GPU détecté, extraire version CUDA
+                output_lines = result.stdout.split('\n')
+                cuda_line = next((line for line in output_lines if 'CUDA Version:' in line), None)
+                if cuda_line:
+                    cuda_version = cuda_line.split('CUDA Version: ')[1].split()[0]
+                    gpu_info.append(f"Driver CUDA {cuda_version}")
+                    
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+            # Pas de GPU NVIDIA ou pas de drivers
+            pass
+        
+        # Affichage détaillé des infos GPU si disponibles
+        if gpu_info:
+            gpu_details = " | ".join(gpu_info)
+            # Optionnel: afficher dans un label séparé ou tooltip
     
     def install_pytorch(self):
         """Installe PyTorch"""
@@ -1236,6 +1385,80 @@ class RTAPGUIWindow:
             self.root.attributes('-alpha', float(value))
         except Exception:
             pass  # Certains systèmes ne supportent pas l'opacité
+    
+    def export_database(self):
+        """Exporte la base de données complète"""
+        try:
+            from tkinter import filedialog
+            
+            # Sélection du fichier de destination
+            filename = filedialog.asksaveasfilename(
+                title="Exporter Base de Données CFR",
+                defaultextension=".json",
+                filetypes=[("Fichiers JSON", "*.json"), ("Tous les fichiers", "*.*")]
+            )
+            
+            if filename:
+                self.data_status_label.configure(text="Export en cours...", foreground='orange')
+                
+                # Export avec moteur CFR
+                cfr_engine = getattr(self.app_manager, 'cfr_engine', None)
+                success = self.app_manager.database.export_complete_data(filename, cfr_engine)
+                
+                if success:
+                    self.data_status_label.configure(text="✅ Export réussi", foreground='green')
+                    messagebox.showinfo("Succès", f"Base de données exportée vers:\n{filename}\n\nCette sauvegarde contient tous vos apprentissages CFR!")
+                else:
+                    self.data_status_label.configure(text="❌ Export échoué", foreground='red')
+                    messagebox.showerror("Erreur", "Échec de l'export de la base de données")
+            else:
+                self.data_status_label.configure(text="Export annulé", foreground='gray')
+                
+        except Exception as e:
+            self.logger.error(f"Erreur export database: {e}")
+            self.data_status_label.configure(text="❌ Erreur export", foreground='red')
+            messagebox.showerror("Erreur", f"Erreur lors de l'export: {e}")
+    
+    def import_database(self):
+        """Importe une base de données complète"""
+        try:
+            from tkinter import filedialog
+            
+            # Confirmation avant import
+            result = messagebox.askyesno(
+                "Import Base CFR",
+                "⚠️ Cette opération va remplacer toutes vos données actuelles par celles du fichier d'import.\n\nVoulez-vous continuer?"
+            )
+            
+            if not result:
+                return
+            
+            # Sélection du fichier source
+            filename = filedialog.askopenfilename(
+                title="Importer Base de Données CFR",
+                filetypes=[("Fichiers JSON", "*.json"), ("Tous les fichiers", "*.*")]
+            )
+            
+            if filename:
+                self.data_status_label.configure(text="Import en cours...", foreground='orange')
+                
+                # Import avec moteur CFR
+                cfr_engine = getattr(self.app_manager, 'cfr_engine', None)
+                success = self.app_manager.database.import_complete_data(filename, cfr_engine)
+                
+                if success:
+                    self.data_status_label.configure(text="✅ Import réussi", foreground='green')
+                    messagebox.showinfo("Succès", f"Base de données importée depuis:\n{filename}\n\nTous vos apprentissages CFR ont été restaurés!")
+                else:
+                    self.data_status_label.configure(text="❌ Import échoué", foreground='red')
+                    messagebox.showerror("Erreur", "Échec de l'import de la base de données")
+            else:
+                self.data_status_label.configure(text="Import annulé", foreground='gray')
+                
+        except Exception as e:
+            self.logger.error(f"Erreur import database: {e}")
+            self.data_status_label.configure(text="❌ Erreur import", foreground='red')
+            messagebox.showerror("Erreur", f"Erreur lors de l'import: {e}")
     
     def apply_settings(self):
         try:
