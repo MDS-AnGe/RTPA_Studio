@@ -193,7 +193,7 @@ class RTAPGUIWindow:
         board_frame = ttk.LabelFrame(cards_container, text="🃏 Board", style='Card.TFrame')
         board_frame.pack(side='left', fill='both', expand=True, padx=(10, 0))
         
-        self.board_cards_frame = ttk.Frame(board_frame)
+        self.board_cards_frame = tk.Frame(board_frame, bg='#2d3748')
         self.board_cards_frame.pack(anchor='center', padx=8, pady=10)
         
         # Calculer la largeur optimale pour 5 cartes (90px + padding)
@@ -229,90 +229,90 @@ class RTAPGUIWindow:
         table_info_frame = ttk.LabelFrame(left_column, text="📊 INFORMATIONS TABLE", style='Card.TFrame')
         table_info_frame.pack(fill='both', expand=True, pady=(0, 5))
         
-        table_content = ttk.Frame(table_info_frame)
+        table_content = tk.Frame(table_info_frame, bg='#2d3748')
         table_content.pack(fill='both', expand=True, padx=8, pady=6)
         
         # POT principal - centré et mis en valeur
-        pot_container = ttk.Frame(table_content)
+        pot_container = tk.Frame(table_content, bg='#2d3748')
         pot_container.pack(fill='x', pady=(0, 8))
         
-        ttk.Label(pot_container, text="💰 POT ACTUEL", font=('Arial', 11, 'bold'), foreground='#495057').pack()
-        self.pot_label = ttk.Label(pot_container, text="0.00€", font=('Arial', 20, 'bold'), foreground='#28a745')
+        tk.Label(pot_container, text="💰 POT ACTUEL", font=('Arial', 11, 'bold'), fg='#cbd5e0', bg='#2d3748').pack()
+        self.pot_label = tk.Label(pot_container, text="0.00€", font=('Arial', 20, 'bold'), fg='#28a745', bg='#2d3748')
         self.pot_label.pack()
         
         # Ligne blinds et antes - organisation horizontale optimisée
-        blinds_row = ttk.Frame(table_content)
+        blinds_row = tk.Frame(table_content, bg='#2d3748')
         blinds_row.pack(fill='x', pady=(0, 4))
         
         # Blinds section
-        blinds_container = ttk.Frame(blinds_row)
+        blinds_container = tk.Frame(blinds_row, bg='#2d3748')
         blinds_container.pack(side='left', fill='x', expand=True)
-        ttk.Label(blinds_container, text="🎲 Blinds", font=('Arial', 10, 'bold'), foreground='#495057').pack()
-        self.blinds_label = ttk.Label(blinds_container, text="0.00€ / 0.00€", font=('Arial', 12, 'bold'), foreground='#fd7e14')
+        tk.Label(blinds_container, text="🎲 Blinds", font=('Arial', 10, 'bold'), fg='#cbd5e0', bg='#2d3748').pack()
+        self.blinds_label = tk.Label(blinds_container, text="0.00€ / 0.00€", font=('Arial', 12, 'bold'), fg='#fd7e14', bg='#2d3748')
         self.blinds_label.pack()
         
         # Antes section
-        antes_container = ttk.Frame(blinds_row)
+        antes_container = tk.Frame(blinds_row, bg='#2d3748')
         antes_container.pack(side='right')
-        ttk.Label(antes_container, text="⚡ Antes", font=('Arial', 10, 'bold'), foreground='#495057').pack()
-        self.antes_label = ttk.Label(antes_container, text="0.00€", font=('Arial', 12, 'bold'), foreground='#6f42c1')
+        tk.Label(antes_container, text="⚡ Antes", font=('Arial', 10, 'bold'), fg='#cbd5e0', bg='#2d3748').pack()
+        self.antes_label = tk.Label(antes_container, text="0.00€", font=('Arial', 12, 'bold'), fg='#6f42c1', bg='#2d3748')
         self.antes_label.pack()
         
         # Type de table - en bas
-        self.table_type_label = ttk.Label(table_content, text="Cash Game", font=('Arial', 10), foreground='#6c757d')
+        self.table_type_label = tk.Label(table_content, text="Cash Game", font=('Arial', 10), fg='#6c757d', bg='#2d3748')
         self.table_type_label.pack(pady=(4, 0))
         
         # SOUS-SECTION: Recommandation principale
         rec_frame = ttk.LabelFrame(left_column, text="🎯 RECOMMANDATION", style='Card.TFrame')
         rec_frame.pack(fill='both', expand=True, pady=(0, 5))
         
-        rec_content = ttk.Frame(rec_frame)
+        rec_content = tk.Frame(rec_frame, bg='#2d3748')
         rec_content.pack(fill='both', expand=True, padx=8, pady=6)
         
         # Action principale centrée
-        action_container = ttk.Frame(rec_content)
+        action_container = tk.Frame(rec_content, bg='#2d3748')
         action_container.pack(fill='x', pady=(0, 8))
         
-        self.action_display = ttk.Label(action_container, text="CHECK", font=('Arial', 24, 'bold'), foreground='#28a745')
+        self.action_display = tk.Label(action_container, text="CHECK", font=('Arial', 24, 'bold'), fg='#28a745', bg='#2d3748')
         self.action_display.pack()
         
-        self.bet_size_label = ttk.Label(action_container, text="", font=('Arial', 18, 'bold'), foreground='#28a745')
+        self.bet_size_label = tk.Label(action_container, text="", font=('Arial', 18, 'bold'), fg='#28a745', bg='#2d3748')
         self.bet_size_label.pack()
         
         # Métriques en grille 2x2
-        metrics_frame = ttk.Frame(rec_content)
+        metrics_frame = tk.Frame(rec_content, bg='#2d3748')
         metrics_frame.pack(fill='x', pady=(0, 8))
         
         # Ligne 1: Victoire + Risque
-        metrics_row1 = ttk.Frame(metrics_frame)
+        metrics_row1 = tk.Frame(metrics_frame, bg='#2d3748')
         metrics_row1.pack(fill='x', pady=(0, 4))
         
-        victory_frame = ttk.Frame(metrics_row1)
+        victory_frame = tk.Frame(metrics_row1, bg='#2d3748')
         victory_frame.pack(side='left', fill='x', expand=True)
-        ttk.Label(victory_frame, text="🎯 Victoire", font=('Arial', 9, 'bold'), foreground='#495057').pack()
-        self.win_prob_label = ttk.Label(victory_frame, text="50%", font=('Arial', 14, 'bold'), foreground='#28a745')
+        tk.Label(victory_frame, text="🎯 Victoire", font=('Arial', 9, 'bold'), fg='#cbd5e0', bg='#2d3748').pack()
+        self.win_prob_label = tk.Label(victory_frame, text="50%", font=('Arial', 14, 'bold'), fg='#28a745', bg='#2d3748')
         self.win_prob_label.pack()
         
-        risk_frame = ttk.Frame(metrics_row1)
+        risk_frame = tk.Frame(metrics_row1, bg='#2d3748')
         risk_frame.pack(side='right', fill='x', expand=True)
-        ttk.Label(risk_frame, text="⚠️ Risque", font=('Arial', 9, 'bold'), foreground='#495057').pack()
-        self.risk_label = ttk.Label(risk_frame, text="30%", font=('Arial', 14, 'bold'), foreground='#fd7e14')
+        tk.Label(risk_frame, text="⚠️ Risque", font=('Arial', 9, 'bold'), fg='#cbd5e0', bg='#2d3748').pack()
+        self.risk_label = tk.Label(risk_frame, text="30%", font=('Arial', 14, 'bold'), fg='#fd7e14', bg='#2d3748')
         self.risk_label.pack()
         
         # Ligne 2: Confiance seule, centrée
-        confidence_frame = ttk.Frame(metrics_frame)
+        confidence_frame = tk.Frame(metrics_frame, bg='#2d3748')
         confidence_frame.pack(fill='x')
-        ttk.Label(confidence_frame, text="🔮 Confiance", font=('Arial', 9, 'bold'), foreground='#495057').pack()
-        self.main_confidence_label = ttk.Label(confidence_frame, text="85%", font=('Arial', 14, 'bold'), foreground='#6f42c1')
+        tk.Label(confidence_frame, text="🔮 Confiance", font=('Arial', 9, 'bold'), fg='#cbd5e0', bg='#2d3748').pack()
+        self.main_confidence_label = tk.Label(confidence_frame, text="85%", font=('Arial', 14, 'bold'), fg='#6f42c1', bg='#2d3748')
         self.main_confidence_label.pack()
         
         # Raisonnement optimisé
-        reasoning_frame = ttk.Frame(rec_content)
+        reasoning_frame = tk.Frame(rec_content, bg='#2d3748')
         reasoning_frame.pack(fill='both', expand=True)
-        ttk.Label(reasoning_frame, text="🧠 Raisonnement:", font=('Arial', 10, 'bold'), foreground='#495057').pack(anchor='w')
-        self.main_reasoning_label = ttk.Label(
+        tk.Label(reasoning_frame, text="🧠 Raisonnement:", font=('Arial', 10, 'bold'), fg='#cbd5e0', bg='#2d3748').pack(anchor='w')
+        self.main_reasoning_label = tk.Label(
             reasoning_frame, text="En attente d'analyse...", font=('Arial', 9),
-            wraplength=320, justify='left', foreground='#6c757d'
+            wraplength=320, justify='left', fg='#6c757d', bg='#2d3748'
         )
         self.main_reasoning_label.pack(anchor='w', fill='both', expand=True)
         
@@ -375,41 +375,41 @@ class RTAPGUIWindow:
         hero_frame = ttk.LabelFrame(right_column, text="👤 MOI", style='Card.TFrame')
         hero_frame.pack(fill='both', expand=True, pady=(0, 5))
         
-        hero_content = ttk.Frame(hero_frame)
+        hero_content = tk.Frame(hero_frame, bg='#2d3748')
         hero_content.pack(fill='x', padx=8, pady=6)
         
         # Pseudo du joueur
-        ttk.Label(hero_content, text="Pseudo:", style='Heading.TLabel').pack(anchor='w')
-        self.hero_name_label = ttk.Label(hero_content, text="MonPseudo", style='Card.TLabel', font=('Arial', 12, 'bold'), foreground='blue')
+        tk.Label(hero_content, text="Pseudo:", font=('Arial', 10, 'bold'), fg='#cbd5e0', bg='#2d3748').pack(anchor='w')
+        self.hero_name_label = tk.Label(hero_content, text="MonPseudo", font=('Arial', 12, 'bold'), fg='#007bff', bg='#2d3748')
         self.hero_name_label.pack(anchor='w', pady=(2, 8))
         
         # Stack personnel
-        ttk.Label(hero_content, text="Mon Stack:", style='Heading.TLabel').pack(anchor='w')
-        self.hero_stack_label = ttk.Label(hero_content, text="2500€", style='Card.TLabel', font=('Arial', 14, 'bold'), foreground='green')
+        tk.Label(hero_content, text="Mon Stack:", font=('Arial', 10, 'bold'), fg='#cbd5e0', bg='#2d3748').pack(anchor='w')
+        self.hero_stack_label = tk.Label(hero_content, text="2500€", font=('Arial', 14, 'bold'), fg='#28a745', bg='#2d3748')
         self.hero_stack_label.pack(anchor='w', pady=(2, 8))
         
         # Position à la table
-        ttk.Label(hero_content, text="Position:", style='Heading.TLabel').pack(anchor='w')
-        self.hero_position_label = ttk.Label(hero_content, text="Button", style='Card.TLabel', font=('Arial', 11))
+        tk.Label(hero_content, text="Position:", font=('Arial', 10, 'bold'), fg='#cbd5e0', bg='#2d3748').pack(anchor='w')
+        self.hero_position_label = tk.Label(hero_content, text="Button", font=('Arial', 11), fg='#cbd5e0', bg='#2d3748')
         self.hero_position_label.pack(anchor='w', pady=(2, 0))
         
         # SECTION 4B: AUTRES JOUEURS ACTIFS
         players_frame = ttk.LabelFrame(right_column, text="👥 AUTRES JOUEURS", style='Card.TFrame')
         players_frame.pack(fill='both', expand=True, pady=(0, 0))
         
-        players_content = ttk.Frame(players_frame)
+        players_content = tk.Frame(players_frame, bg='#2d3748')
         players_content.pack(fill='x', padx=5, pady=3)
         
         # Info générale - Table 9-max (compacte)
-        players_info = ttk.Frame(players_content)
+        players_info = tk.Frame(players_content, bg='#2d3748')
         players_info.pack(fill='x', pady=(0, 3))
         
-        ttk.Label(players_info, text="Actifs:", font=('Arial', 9, 'bold')).pack(side='left')
-        self.active_players_count = ttk.Label(players_info, text="8/9", font=('Arial', 9, 'bold'))
+        tk.Label(players_info, text="Actifs:", font=('Arial', 9, 'bold'), fg='#cbd5e0', bg='#2d3748').pack(side='left')
+        self.active_players_count = tk.Label(players_info, text="8/9", font=('Arial', 9, 'bold'), fg='#cbd5e0', bg='#2d3748')
         self.active_players_count.pack(side='left', padx=(3, 0))
         
         # Frame simple pour la liste des joueurs (sans scroll)
-        self.players_list_frame = ttk.Frame(players_content)
+        self.players_list_frame = tk.Frame(players_content, bg='#2d3748')
         self.players_list_frame.pack(fill='x')
         
         # Créer la liste des joueurs
