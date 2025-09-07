@@ -144,26 +144,26 @@ class RTAPGUIWindow:
                     font=ctk.CTkFont(size=14)).pack(anchor='w')
         
         # Contrôles et statut (en-tête droite)
-        self.controls_frame = ctk.CTkFrame(header_frame, fg_color="#2d3748", corner_radius=8)
+        self.controls_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
         self.controls_frame.pack(side='right', padx=(20, 10))
         
-        # Ligne 1: État de connexion (rouge/vert)
+        # Ligne 1: État de connexion (rouge/vert) - Plus gros
         self.connection_status_label = ctk.CTkLabel(
             self.controls_frame,
             text="En attente de plateforme",
-            font=ctk.CTkFont(size=12, weight="bold"),
+            font=ctk.CTkFont(size=16, weight="bold"),
             text_color="#ff6b6b"  # Rouge par défaut
         )
-        self.connection_status_label.pack(pady=(8, 2))
+        self.connection_status_label.pack(pady=(5, 1))
         
-        # Ligne 2: Activité du système (plus petite)
+        # Ligne 2: Activité du système - Plus gros aussi, espacement réduit
         self.activity_status_label = ctk.CTkLabel(
             self.controls_frame,
             text="Surveillance active",
-            font=ctk.CTkFont(size=10),
-            text_color="#a0a0a0"  # Gris clair
+            font=ctk.CTkFont(size=13),
+            text_color="#666666"  # Gris plus foncé pour meilleure lisibilité
         )
-        self.activity_status_label.pack(pady=(0, 8))
+        self.activity_status_label.pack(pady=(0, 5))
         
         # Notebook avec onglets
         self.notebook = ttk.Notebook(self.main_frame)
