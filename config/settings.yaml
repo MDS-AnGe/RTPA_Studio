@@ -13,7 +13,7 @@ max_players: 9
 nash_calculation_interval_ms: 50
 ocr_confidence_threshold: 0.8
 ocr_enabled: true
-ocr_interval_ms: 50  # Réactivité maximale pour temps réel
+ocr_interval_ms: 50
 ram_usage_limit: 70.0
 risk_percentage: 75.0
 screen_region:

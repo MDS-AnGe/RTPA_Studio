@@ -24,7 +24,7 @@ from numba import jit, prange
 @dataclass
 class AccelerationConfig:
     """Configuration pour l'accélération GPU/CPU"""
-    gpu_enabled: bool = True
+    gpu_enabled: bool = False
     gpu_memory_limit: float = 0.8
     cpu_threads: int = mp.cpu_count()
     use_mixed_precision: bool = True

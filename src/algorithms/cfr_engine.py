@@ -63,7 +63,7 @@ class CFREngine:
         # Configuration d'accélération GPU/CPU
         self.device = self._setup_compute_device()
         self.use_acceleration = TORCH_AVAILABLE
-        self.gpu_enabled = True  # Activé par défaut pour performance maximale
+        self.gpu_enabled = False  # Désactivé - environnement CPU uniquement
         self.gpu_memory_limit = 0.8  # 80% max mémoire GPU
         self.cpu_threads = mp.cpu_count()
         
@@ -103,10 +103,14 @@ class CFREngine:
         self.background_thread = None
         self.is_running = False
         
-        # Configuration du threading optimal
+        # Configuration du threading optimal (seulement si pas déjà configuré)
         if TORCH_AVAILABLE:
-            torch.set_num_threads(self.cpu_threads)
-            torch.set_num_interop_threads(self.cpu_threads // 2)
+            try:
+                torch.set_num_threads(self.cpu_threads)
+                torch.set_num_interop_threads(max(1, self.cpu_threads // 2))
+            except RuntimeError as e:
+                # Threads déjà configurés, ignorer l'erreur
+                self.logger.debug(f"Threads PyTorch déjà configurés: {e}")
         
         # Modèle Deep CFR (optionnel)
         self.deep_cfr_enabled = False
