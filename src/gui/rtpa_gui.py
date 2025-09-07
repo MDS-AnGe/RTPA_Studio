@@ -1617,10 +1617,24 @@ class RTAPGUIWindow:
                     text_color="#ff6b6b"  # Rouge
                 )
             elif self.current_connection_status == "active":
-                self.connection_status_label.configure(
-                    text="Plateforme détectée - Actif",
-                    text_color="#51cf66"  # Vert
-                )
+                # Afficher le nom de la plateforme connectée
+                if self.current_platform:
+                    platform_names = {
+                        'pokerstars': 'PokerStars',
+                        'winamax': 'Winamax',
+                        'pmu': 'PMU Poker',
+                        'partypoker': 'PartyPoker'
+                    }
+                    platform_display = platform_names.get(self.current_platform, self.current_platform.title())
+                    self.connection_status_label.configure(
+                        text=platform_display,
+                        text_color="#51cf66"  # Vert
+                    )
+                else:
+                    self.connection_status_label.configure(
+                        text="Plateforme active",
+                        text_color="#51cf66"  # Vert
+                    )
             elif self.current_connection_status == "error":
                 self.connection_status_label.configure(
                     text="Erreur de connexion",
