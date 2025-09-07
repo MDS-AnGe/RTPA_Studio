@@ -527,91 +527,101 @@ class RTAPGUIWindow:
         self.create_players_display(all_players)
     
     def create_players_display(self, players_data=None):
-        """Création de l'affichage des joueurs actifs avec positions 9-max"""
+        """Affichage des 9 positions fixes d'une table 9-max"""
         
         # Effacer l'affichage existant
         for widget in self.players_list_frame.winfo_children():
             widget.destroy()
         
-        # Utiliser les données fournies ou une liste vide par défaut
-        if players_data is None:
-            # Aucune donnée par défaut - attendre les vraies données OCR
-            players_data = []
+        # Définir les 9 positions fixes d'une table 9-max
+        positions = [
+            {'name': 'UTG', 'index': 0},
+            {'name': 'UTG+1', 'index': 1}, 
+            {'name': 'MP1', 'index': 2},
+            {'name': 'MP2', 'index': 3},
+            {'name': 'MP3', 'index': 4},
+            {'name': 'CO', 'index': 5},
+            {'name': 'BTN', 'index': 6},
+            {'name': 'SB', 'index': 7},
+            {'name': 'BB', 'index': 8}
+        ]
         
-        # Si aucune donnée, afficher un message informatif
-        if not players_data:
-            info_frame = tk.Frame(self.players_list_frame, bg='#dbdbdb')
-            info_frame.pack(fill='x', pady=10)
-            
-            tk.Label(info_frame, 
-                    text="Aucune donnée de joueurs disponible",
-                    font=('Arial', 10, 'italic'),
-                    fg='#6c757d', bg='#dbdbdb').pack()
-            
-            tk.Label(info_frame, 
-                    text="Les informations apparaîtront après une première partie",
-                    font=('Arial', 9),
-                    fg='#6c757d', bg='#dbdbdb').pack()
-            return
+        # Créer un dictionnaire des joueurs par position
+        players_by_position = {}
+        if players_data:
+            for player in players_data:
+                pos_index = player.get('position', 0)
+                players_by_position[pos_index] = player
         
-        # Trier par position pour affichage dans l'ordre de la table
-        sorted_players = sorted(players_data, key=lambda p: p.get('position', 0))
-        
-        # Affichage ultra-compact pour les autres joueurs
-        for i, player in enumerate(sorted_players):
+        # Afficher chaque position (siège vide ou occupé)
+        for pos in positions:
             player_frame = ttk.Frame(self.players_list_frame)
             player_frame.pack(fill='x', pady=1, padx=2)
             
-            # Couleur de statut
-            status_color = '#28a745' if player['status'] == 'actif' else '#6c757d'
-            status_icon = "●" if player['status'] == 'actif' else "○"
-            
-            # Déterminer icône de position
-            position_icon = ""
-            if player.get('is_button'):
-                position_icon = "🔴"  # Button
-            elif player.get('is_sb'):
-                position_icon = "🟡"  # Small Blind
-            elif player.get('is_bb'):
-                position_icon = "🔵"  # Big Blind
-            
-            # Ligne unique ultra-compacte: Position Nom Stack (Stats)
             main_line = ttk.Frame(player_frame)
             main_line.pack(fill='x')
             
-            # Position (3 chars max)
-            pos_text = player.get('position_name', 'POS')[:3]
-            if position_icon:
-                pos_text = f"{pos_text}{position_icon}"
-            ttk.Label(main_line, text=pos_text, font=('Arial', 8, 'bold')).pack(side='left')
+            # Position avec icône selon le type
+            pos_text = pos['name']
+            position_icon = ""
+            if pos['index'] == 6:  # BTN
+                position_icon = " 🟢"
+            elif pos['index'] == 7:  # SB
+                position_icon = " 🟡"  
+            elif pos['index'] == 8:  # BB
+                position_icon = " 🔵"
             
-            # Statut
-            ttk.Label(main_line, text=status_icon, font=('Arial', 8), foreground=status_color).pack(side='left', padx=(2, 3))
+            ttk.Label(main_line, text=f"{pos_text}{position_icon}", 
+                     font=('Arial', 8, 'bold')).pack(side='left')
             
-            # Nom (tronqué si nécessaire) - en gras si c'est le héros
-            name = player['name'][:8] + "." if len(player['name']) > 8 else player['name']
-            is_hero = player.get('is_hero', False)
-            font_weight = 'bold' if is_hero else 'normal'
-            name_color = '#007bff' if is_hero else status_color  # Bleu pour le héros
-            ttk.Label(main_line, text=name, font=('Arial', 8, font_weight), foreground=name_color).pack(side='left')
+            # Vérifier si la position est occupée
+            player = players_by_position.get(pos['index'])
             
-            # Stats compactes au centre
-            vpip = player.get('vpip', 0)
-            pfr = player.get('pfr', 0)
-            stats_text = f"{vpip}/{pfr}"
-            ttk.Label(main_line, text=stats_text, font=('Arial', 7), foreground='#6c757d').pack(side='left', padx=(5, 0))
-            
-            # Stack à droite
-            stack_value = player.get('stack', 0)
-            if isinstance(stack_value, (int, float)):
-                if stack_value >= 1000:
-                    stack_text = f"{stack_value/1000:.1f}k"
+            if player:
+                # Position occupée - afficher les infos du joueur
+                status_color = '#28a745' if player.get('status') == 'actif' else '#6c757d'
+                status_icon = "●" if player.get('status') == 'actif' else "○"
+                
+                # Statut
+                ttk.Label(main_line, text=status_icon, font=('Arial', 8), 
+                         foreground=status_color).pack(side='left', padx=(2, 3))
+                
+                # Nom - en bleu et gras si c'est le héros
+                name = player.get('name', 'Joueur')[:8]
+                if len(player.get('name', '')) > 8:
+                    name += "."
+                    
+                is_hero = player.get('is_hero', False)
+                font_weight = 'bold' if is_hero else 'normal'
+                name_color = '#007bff' if is_hero else status_color
+                ttk.Label(main_line, text=name, font=('Arial', 8, font_weight), 
+                         foreground=name_color).pack(side='left')
+                
+                # Stats
+                vpip = player.get('vpip', 0)
+                pfr = player.get('pfr', 0)
+                stats_text = f"{vpip}/{pfr}"
+                ttk.Label(main_line, text=stats_text, font=('Arial', 7), 
+                         foreground='#6c757d').pack(side='left', padx=(5, 0))
+                
+                # Stack
+                stack_value = player.get('stack', 0)
+                if isinstance(stack_value, (int, float)):
+                    if stack_value >= 1000:
+                        stack_text = f"{stack_value/1000:.1f}k"
+                    else:
+                        stack_text = f"{stack_value:.0f}"
                 else:
-                    stack_text = f"{stack_value:.0f}"
+                    stack_text = str(stack_value)
+                
+                ttk.Label(main_line, text=stack_text, font=('Arial', 8, 'bold'), 
+                         foreground='#28a745').pack(side='right')
             else:
-                stack_text = str(stack_value)
-            
-            ttk.Label(main_line, text=stack_text, font=('Arial', 8, 'bold'), foreground='#28a745').pack(side='right')
+                # Position vide
+                ttk.Label(main_line, text="○", font=('Arial', 8), 
+                         foreground='#cccccc').pack(side='left', padx=(2, 3))
+                ttk.Label(main_line, text="Siège vide", font=('Arial', 8, 'italic'), 
+                         foreground='#999999').pack(side='left')
     
     def create_options_tab(self):
         """Création de l'onglet Options"""
