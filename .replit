@@ -1,0 +1,7 @@
+modules = ["cpp-clang14", "python-3.11", "rust-stable"]
+[agent]
+expertMode = true
+
+[nix]
+channel = "stable-25_05"
+packages = ["SDL2", "SDL2_image", "SDL2_mixer", "SDL2_ttf", "cairo", "ffmpeg-full", "fontconfig", "freetype", "ghostscript", "gobject-introspection", "gtk3", "lcms2", "libGL", "libGLU", "libcxx", "libimagequant", "libjpeg", "libjpeg_turbo", "libpng", "libtiff", "libwebp", "libxcrypt", "libyaml", "openjpeg", "pkg-config", "portmidi", "qhull", "tcl", "tesseract", "tk", "which", "xsimd", "zlib"]
