@@ -1829,8 +1829,8 @@ class RTAPGUIWindow:
             if self.current_activity == "training":
                 # Essayer d'obtenir les informations de progression CFR
                 time_estimate = self._get_cfr_time_estimate()
-                if time_estimate:
-                    return f"Entraînement CFR en cours ({time_estimate})"
+                if time_estimate and time_estimate != "En cours...":
+                    return time_estimate
                 else:
                     return "Entraînement CFR en cours"
             
@@ -1863,36 +1863,36 @@ class RTAPGUIWindow:
             completed = getattr(trainer, 'current_iteration', 0)
             target = getattr(trainer, 'target_iterations', 100000)
             
-            # Afficher la progression avec des infos de debug temporaire
-            print(f"DEBUG CFR: completed={completed}, target={target}")
-            
             # Si on a une progression valide
             if completed > 0 and target > completed:
                 progress_percent = int((completed / target) * 100)
                 
                 # Calcul estimation temps si on a le temps de démarrage
-                if hasattr(trainer, 'training_start_time') and trainer.training_start_time:
+                if hasattr(trainer, 'start_time') and trainer.start_time:
                     import time
-                    elapsed_time = time.time() - trainer.training_start_time
-                    if elapsed_time > 10:  # Au moins 10 secondes d'entraînement
+                    elapsed_time = time.time() - trainer.start_time
+                    if elapsed_time > 5:  # Au moins 5 secondes d'entraînement
                         iterations_per_second = completed / elapsed_time
                         if iterations_per_second > 0:
                             remaining_iterations = target - completed
                             remaining_seconds = remaining_iterations / iterations_per_second
                             
                             if remaining_seconds < 60:
-                                return f"{progress_percent}% terminé ({int(remaining_seconds)}s restant)"
+                                return f"CFR: {progress_percent}% ({int(remaining_seconds)}s restant)"
                             elif remaining_seconds < 3600:
                                 minutes = int(remaining_seconds / 60)
-                                return f"{progress_percent}% terminé ({minutes}min restant)"
+                                return f"CFR: {progress_percent}% ({minutes}min restant)"
                             else:
                                 hours = int(remaining_seconds / 3600)
                                 minutes = int((remaining_seconds % 3600) / 60)
-                                return f"{progress_percent}% terminé ({hours}h{minutes}min restant)"
+                                return f"CFR: {progress_percent}% ({hours}h{minutes}min restant)"
                 
-                return f"{progress_percent}% terminé"
+                return f"CFR: {progress_percent}% terminé"
             elif completed >= target and target > 0:
-                return "Entraînement terminé"
+                return "CFR: Entraînement terminé"
+            elif completed > 0:
+                # Affichage basique avec itérations
+                return f"CFR: {completed:,} itérations"
             else:
                 # Pas de métriques fiables - afficher un message générique
                 return "En cours..."
