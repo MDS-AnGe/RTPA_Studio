@@ -232,29 +232,28 @@ class RTAPGUIWindow:
         table_content = ttk.Frame(table_info_frame)
         table_content.pack(padx=10, pady=8)
         
-        # Ligne 1: Pot (principal) - plus visible
+        # Ligne 1: Pot + Blinds (alignés à gauche)
         row1 = ttk.Frame(table_content)
-        row1.pack(fill='x', pady=(0, 8))
+        row1.pack(anchor='w', pady=(0, 8))
         
         ttk.Label(row1, text="💰 POT:", style='Heading.TLabel', font=('Arial', 13, 'bold')).pack(side='left', padx=(0, 8))
         self.pot_label = ttk.Label(row1, text="0.00€", style='Card.TLabel', font=('Arial', 18, 'bold'), foreground='#28a745')
-        self.pot_label.pack(side='left')
+        self.pot_label.pack(side='left', padx=(0, 20))
         
-        # Stack supprimé (déjà dans MOI)
+        ttk.Label(row1, text="🎲 Blinds:", style='Heading.TLabel', font=('Arial', 11)).pack(side='left', padx=(0, 8))
+        self.blinds_label = ttk.Label(row1, text="0.00€ / 0.00€", style='Card.TLabel', font=('Arial', 13, 'bold'), foreground='#fd7e14')
+        self.blinds_label.pack(side='left')
         
-        # Ligne 2: Blinds + Type (plus compact)
+        # Ligne 2: Antes + Type (alignés à gauche) 
         row2 = ttk.Frame(table_content)
-        row2.pack(fill='x', pady=(5, 0))
+        row2.pack(anchor='w', pady=(5, 0))
         
-        ttk.Label(row2, text="🎲 Blinds:", style='Heading.TLabel', font=('Arial', 11)).pack(side='left', padx=(0, 8))
-        self.blinds_label = ttk.Label(row2, text="0.00€ / 0.00€", style='Card.TLabel', font=('Arial', 13, 'bold'), foreground='#fd7e14')
-        self.blinds_label.pack(side='left', padx=(0, 15))
+        ttk.Label(row2, text="⚡ Antes:", style='Heading.TLabel', font=('Arial', 10)).pack(side='left', padx=(0, 8))
+        self.antes_label = ttk.Label(row2, text="0.00€", style='Card.TLabel', font=('Arial', 11), foreground='#6f42c1')
+        self.antes_label.pack(side='left', padx=(0, 20))
         
         self.table_type_label = ttk.Label(row2, text="Cash Game", font=('Arial', 11), foreground='#6c757d')
         self.table_type_label.pack(side='left')
-        
-        # Labels cachés pour compatibilité
-        self.antes_label = ttk.Label(table_content, text="")
         
         # SOUS-SECTION: Recommandation principale
         rec_frame = ttk.LabelFrame(left_column, text="🎯 RECOMMANDATION", style='Card.TFrame')
@@ -302,36 +301,32 @@ class RTAPGUIWindow:
         stats_content = ttk.Frame(stats_frame)
         stats_content.pack(padx=10, pady=6)
         
-        # Ligne 1: Mains (compact)
+        # Ligne 1: Mains + Taux (alignés à gauche)
         stats_line1 = ttk.Frame(stats_content)
-        stats_line1.pack(fill='x', pady=(0, 8))
+        stats_line1.pack(anchor='w', pady=(0, 8))
         
         ttk.Label(stats_line1, text="Mains:", style='Heading.TLabel', font=('Arial', 11, 'bold')).pack(side='left')
         self.hands_played_value = ttk.Label(stats_line1, text="0", style='Card.TLabel', font=('Arial', 13, 'bold'), foreground='#495057')
-        self.hands_played_value.pack(side='left', padx=(8, 20))
+        self.hands_played_value.pack(side='left', padx=(8, 15))
         
         ttk.Label(stats_line1, text="Gagnées:", style='Heading.TLabel', font=('Arial', 11, 'bold')).pack(side='left')
         self.hands_won_value = ttk.Label(stats_line1, text="0", style='Card.TLabel', font=('Arial', 13, 'bold'), foreground='#28a745')
-        self.hands_won_value.pack(side='left', padx=(8, 0))
+        self.hands_won_value.pack(side='left', padx=(8, 20))
         
-        # Ligne 2: Taux (plus visible)
+        ttk.Label(stats_line1, text="TAUX:", style='Heading.TLabel', font=('Arial', 12, 'bold')).pack(side='left')
+        self.win_rate_value = ttk.Label(stats_line1, text="0.0%", style='Card.TLabel', font=('Arial', 16, 'bold'), foreground='#dc3545')
+        self.win_rate_value.pack(side='left', padx=(8, 0))
+        
+        # Ligne 2: Pro + Performance (alignés à gauche)
         stats_line2 = ttk.Frame(stats_content)
-        stats_line2.pack(fill='x', pady=(5, 8))
+        stats_line2.pack(anchor='w', pady=(5, 0))
         
-        ttk.Label(stats_line2, text="TAUX VICTOIRE:", style='Heading.TLabel', font=('Arial', 12, 'bold')).pack(side='left')
-        self.win_rate_value = ttk.Label(stats_line2, text="0.0%", style='Card.TLabel', font=('Arial', 16, 'bold'), foreground='#dc3545')
-        self.win_rate_value.pack(side='left', padx=(10, 0))
-        
-        # Ligne 3: Pro + Performance (compact)
-        stats_line3 = ttk.Frame(stats_content)
-        stats_line3.pack(fill='x', pady=(5, 0))
-        
-        ttk.Label(stats_line3, text="Pro:", style='Heading.TLabel', font=('Arial', 10)).pack(side='left')
-        self.expected_rate_value = ttk.Label(stats_line3, text="68.0%", style='Card.TLabel', font=('Arial', 11), foreground='#6f42c1')
+        ttk.Label(stats_line2, text="Pro:", style='Heading.TLabel', font=('Arial', 10)).pack(side='left')
+        self.expected_rate_value = ttk.Label(stats_line2, text="68.0%", style='Card.TLabel', font=('Arial', 11), foreground='#6f42c1')
         self.expected_rate_value.pack(side='left', padx=(5, 20))
         
-        ttk.Label(stats_line3, text="Perf:", style='Heading.TLabel', font=('Arial', 10)).pack(side='left')
-        self.performance_ratio_value = ttk.Label(stats_line3, text="0.0%", style='Card.TLabel', font=('Arial', 11), foreground='#fd7e14')
+        ttk.Label(stats_line2, text="Perf:", style='Heading.TLabel', font=('Arial', 10)).pack(side='left')
+        self.performance_ratio_value = ttk.Label(stats_line2, text="0.0%", style='Card.TLabel', font=('Arial', 11), foreground='#fd7e14')
         self.performance_ratio_value.pack(side='left', padx=(5, 0))
         
         # Colonne droite: Informations joueurs
@@ -367,12 +362,12 @@ class RTAPGUIWindow:
         players_content = ttk.Frame(players_frame)
         players_content.pack(fill='both', expand=True, padx=8, pady=6)
         
-        # Info générale
+        # Info générale - Table 9-max
         players_info = ttk.Frame(players_content)
         players_info.pack(fill='x', pady=(0, 8))
         
         ttk.Label(players_info, text="Actifs:", style='Heading.TLabel').pack(side='left')
-        self.active_players_count = ttk.Label(players_info, text="5/6", style='Card.TLabel', font=('Arial', 11, 'bold'))
+        self.active_players_count = ttk.Label(players_info, text="8/9", style='Card.TLabel', font=('Arial', 11, 'bold'))
         self.active_players_count.pack(side='left', padx=(5, 0))
         
         # Scroll pour la liste des joueurs
@@ -826,8 +821,7 @@ class RTAPGUIWindow:
             # Mettre à jour les informations de table
             if 'pot' in data:
                 self.pot_label.config(text=f"{data['pot']}")
-            if 'stack' in data:
-                self.stack_label.config(text=f"{data['stack']}")
+            # Stack supprimé - redondant avec section MOI
             if 'blinds' in data:
                 self.blinds_label.config(text=data['blinds'])
             if 'table_type' in data:
