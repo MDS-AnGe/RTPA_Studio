@@ -204,7 +204,7 @@ class RTAPGUIWindow:
         hero_frame = ttk.LabelFrame(cards_container, text="🂡 Main", style='Card.TFrame')
         hero_frame.pack(side='left', padx=(0, 10), fill='y')
         
-        self.hero_cards_frame = ttk.Frame(hero_frame)
+        self.hero_cards_frame = tk.Frame(hero_frame, bg='#dbdbdb')
         self.hero_cards_frame.pack(padx=8, pady=10)
         
         # Cartes visuelles Main
@@ -237,8 +237,11 @@ class RTAPGUIWindow:
         board_frame = ttk.LabelFrame(cards_container, text="🃏 Board", style='Card.TFrame')
         board_frame.pack(side='left', fill='both', expand=True, padx=(10, 0))
         
-        self.board_cards_frame = tk.Frame(board_frame, bg='#dbdbdb')
-        self.board_cards_frame.pack(anchor='center', padx=8, pady=10)
+        board_content = tk.Frame(board_frame, bg='#dbdbdb')
+        board_content.pack(fill='both', expand=True, padx=8, pady=6)
+        
+        self.board_cards_frame = tk.Frame(board_content, bg='#dbdbdb')
+        self.board_cards_frame.pack(anchor='center')
         
         # Calculer la largeur optimale pour 5 cartes (90px + padding)
         optimal_board_width = (5 * 90) + (4 * 5) + 16  # 5 cartes + 4 espacements + padding
