@@ -892,10 +892,46 @@ class CFRTrainer:
             self.logger.error(f"Erreur sauvegarde progrès: {e}")
     
     def get_training_statistics(self) -> Dict[str, Any]:
-        """Retourne les statistiques d'entraînement"""
+        """Retourne les statistiques d'entraînement stabilisées"""
         
-        current_quality = self._evaluate_strategy_quality()
+        # Calcul qualité lissée pour éviter fluctuations
+        try:
+            if not hasattr(self, '_quality_history'):
+                self._quality_history = []
+            
+            raw_quality = self._evaluate_strategy_quality()
+            self._quality_history.append(raw_quality)
+            
+            # Garder seulement les 5 dernières valeurs pour lissage
+            if len(self._quality_history) > 5:
+                self._quality_history.pop(0)
+            
+            # Moyenne mobile pour stabilité
+            current_quality = sum(self._quality_history) / len(self._quality_history)
+        except Exception:
+            current_quality = getattr(self, '_last_quality', 0.0)
+        
+        self._last_quality = current_quality
+        
+        # Convergence stabilisée
         last_convergence = self.convergence_history[-1] if self.convergence_history else 1.0
+        
+        # Progression monotone croissante
+        if not hasattr(self, '_last_progress'):
+            self._last_progress = 0.0
+        
+        current_progress = min(100, (self.cfr_engine.iterations / max(self.target_iterations, 1)) * 100)
+        # S'assurer que la progression ne recule jamais
+        self._last_progress = max(self._last_progress, current_progress)
+        
+        # Temps d'estimation stabilisé
+        if self.iteration_times and len(self.iteration_times) > 5:
+            avg_time = np.mean(list(self.iteration_times)[-5:])  # Moyenne des 5 dernières
+        else:
+            avg_time = np.mean(list(self.iteration_times)) if self.iteration_times else 0.1
+        
+        remaining_iterations = max(0, self.target_iterations - self.cfr_engine.iterations)
+        estimated_time_remaining = remaining_iterations * avg_time
         
         return {
             'is_training': self.is_training,
@@ -905,11 +941,12 @@ class CFRTrainer:
             'regret_updates': self.regret_updates,
             'strategy_updates': self.strategy_updates,
             'total_training_time': self.total_training_time,
-            'current_quality': current_quality,
-            'last_convergence': last_convergence,
+            'current_quality': min(1.0, max(0.0, current_quality)),
+            'last_convergence': max(0.001, last_convergence),
             'convergence_threshold': self.convergence_threshold,
             'quality_threshold': self.quality_threshold,
-            'avg_iteration_time': np.mean(list(self.iteration_times)) if self.iteration_times else 0.0,
+            'avg_iteration_time': max(0.01, avg_time),
             'info_sets_learned': len(self.cfr_engine.strategy_sum),
-            'progress_percentage': min(100, (self.cfr_engine.iterations / self.target_iterations) * 100)
+            'progress_percentage': self._last_progress,
+            'estimated_time_remaining': max(0, estimated_time_remaining)
         }
