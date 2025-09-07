@@ -2193,69 +2193,19 @@ class RTAPGUIWindow:
             return False
 
     def _check_github_updates(self):
-        """Thread pour vérifier GitHub avec gestion d'erreurs robuste"""
+        """Thread pour vérifier GitHub - temporairement désactivé"""
         try:
-            # Vérification réseau préalable
-            if not self._check_network_connectivity():
-                self.root.after(0, lambda: self.update_status_label.configure(
-                    text="Aucune connexion réseau détectée", text_color="red"
-                ))
-                self.root.after(0, lambda: self.check_update_btn.configure(state="normal"))
-                return
-                
-            import requests
-            from packaging import version
-            
-            # Dépôt GitHub temporairement non disponible
+            # Fonctionnalité de mise à jour désactivée temporairement
+            # Le dépôt GitHub n'est pas encore configuré pour ce projet
             self.root.after(0, lambda: self.update_status_label.configure(
                 text="Vérification des mises à jour non disponible", text_color="orange"
             ))
             self.root.after(0, lambda: self.check_update_btn.configure(state="normal"))
-            return
             
-            url = "https://api.github.com/repos/MDS-AnGe/RTPA_Studio/releases/latest"  # désactivé
-            
-            # Tentatives multiples avec timeouts courts
-            for attempt in range(3):
-                try:
-                    response = requests.get(url, timeout=5 + attempt * 2)
-                    if response.status_code == 200:
-                        break
-                except requests.RequestException:
-                    if attempt == 2:  # Dernière tentative
-                        raise
-                    continue
-            
-            if response.status_code == 200:
-                release_data = response.json()
-                latest_version = release_data['tag_name'].lstrip('v')
-                
-                # Récupération version actuelle depuis le fichier
-                current_version = self._get_current_version()
-                
-                if version.parse(latest_version) > version.parse(current_version):
-                    self.root.after(0, lambda: self._update_ui_new_version(latest_version))
-                else:
-                    self.root.after(0, lambda: self.update_status_label.configure(
-                        text="Vous avez la dernière version", text_color="green"
-                    ))
-                    self.root.after(0, lambda: self.check_update_btn.configure(state="normal"))
-            else:
-                self.root.after(0, lambda: self.update_status_label.configure(
-                    text=f"Erreur serveur: {response.status_code}", text_color="red"
-                ))
-                self.root.after(0, lambda: self.check_update_btn.configure(state="normal"))
-                
         except Exception as e:
-            print(f"Erreur GitHub: {e}")
-            error_msg = "Connexion impossible"
-            if "timeout" in str(e).lower():
-                error_msg = "Délai d'attente dépassé"
-            elif "connection" in str(e).lower():
-                error_msg = "Erreur de connexion"
-                
+            print(f"Erreur système: {e}")
             self.root.after(0, lambda: self.update_status_label.configure(
-                text=error_msg, text_color="red"
+                text="Erreur système", text_color="red"
             ))
             self.root.after(0, lambda: self.check_update_btn.configure(state="normal"))
 
