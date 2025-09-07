@@ -220,11 +220,23 @@ class RTAPGUIWindow:
         self.notebook.add(self.version_tab, text="📌 Version")
         self.create_version_tab()
         
+        # Initialiser l'optimiseur système
+        try:
+            from src.utils.system_optimizer import SystemOptimizer
+            self.system_optimizer = SystemOptimizer()
+            # Charger la configuration sauvegardée
+            self.system_optimizer.load_configuration()
+            self.logger.info("Optimiseur système initialisé")
+        except Exception as e:
+            self.logger.error(f"Erreur initialisation optimiseur: {e}")
+            self.system_optimizer = None
+        
         # Charger les paramètres sauvegardés après création des éléments
         self.load_saved_settings()
         
-        # Démarrer la mise à jour du progrès CFR
+        # Démarrer les mises à jour
         self.root.after(1000, self.update_cfr_progress)  # Démarrer après 1 seconde
+        self.root.after(2000, self.update_system_metrics)  # Métriques système
     
     def create_dashboard_tab(self):
         """Création de l'onglet Tableau de Bord complet (état du jeu + recommandations + statistiques)"""
@@ -842,11 +854,40 @@ class RTAPGUIWindow:
                                                     font=ctk.CTkFont(size=11))
             self.pytorch_status_label.pack()
         
+        # === PROFILS DE PERFORMANCE ===
+        profiles_frame = ctk.CTkFrame(perf_container)
+        profiles_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(profiles_frame, text="⚡ Profils de Performance", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        
+        # Sélecteur de profil
+        profile_selector_frame = ctk.CTkFrame(profiles_frame)
+        profile_selector_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        ctk.CTkLabel(profile_selector_frame, text="Profil actuel:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.performance_profile = ctk.CTkComboBox(profile_selector_frame, 
+                                                 values=["Économe", "Équilibré", "Performance Max", "Personnalisé"],
+                                                 command=self.change_performance_profile)
+        self.performance_profile.pack(side='left', padx=10)
+        self.performance_profile.set("Équilibré")
+        
+        # Auto-détection recommandée
+        auto_detect_frame = ctk.CTkFrame(profiles_frame)
+        auto_detect_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        self.auto_detect_btn = ctk.CTkButton(auto_detect_frame, text="🔍 Détecter optimal", 
+                                           command=self.auto_detect_performance, width=150)
+        self.auto_detect_btn.pack(side='left', padx=10, pady=10)
+        
+        self.system_info_label = ctk.CTkLabel(auto_detect_frame, text="", 
+                                            font=ctk.CTkFont(size=11), text_color="gray")
+        self.system_info_label.pack(side='left', padx=20, pady=10)
+        
         # === MÉTRIQUES SYSTÈME ===
         system_frame = ctk.CTkFrame(perf_container)
         system_frame.pack(fill='x', pady=(0, 20))
         
-        ctk.CTkLabel(system_frame, text="💻 Système", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        ctk.CTkLabel(system_frame, text="💻 Utilisation Système", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
         
         # Métriques en grille
         metrics_grid = ctk.CTkFrame(system_frame)
@@ -862,6 +903,77 @@ class RTAPGUIWindow:
         # RAM
         ram_metric_frame = ctk.CTkFrame(metrics_grid)
         ram_metric_frame.pack(side='left', fill='x', expand=True, padx=5)
+        ctk.CTkLabel(ram_metric_frame, text="RAM", font=ctk.CTkFont(weight="bold")).pack(pady=5)
+        self.ram_usage_label = ctk.CTkLabel(ram_metric_frame, text="0%", font=ctk.CTkFont(size=16, weight="bold"))
+        self.ram_usage_label.pack(pady=5)
+        
+        # GPU
+        gpu_metric_frame = ctk.CTkFrame(metrics_grid)
+        gpu_metric_frame.pack(side='left', fill='x', expand=True, padx=(5, 0))
+        ctk.CTkLabel(gpu_metric_frame, text="GPU", font=ctk.CTkFont(weight="bold")).pack(pady=5)
+        self.gpu_usage_label = ctk.CTkLabel(gpu_metric_frame, text="N/A", font=ctk.CTkFont(size=16, weight="bold"))
+        self.gpu_usage_label.pack(pady=5)
+        
+        # === LIMITES PERSONNALISÉES ===
+        custom_limits_frame = ctk.CTkFrame(perf_container)
+        custom_limits_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(custom_limits_frame, text="🎛️ Limites Personnalisées", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        
+        # CPU Limit
+        cpu_limit_frame = ctk.CTkFrame(custom_limits_frame)
+        cpu_limit_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        ctk.CTkLabel(cpu_limit_frame, text="Limite CPU:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.cpu_limit_slider = ctk.CTkSlider(cpu_limit_frame, from_=10, to=100, command=self.update_cpu_limit)
+        self.cpu_limit_slider.pack(side='left', padx=10, fill='x', expand=True)
+        self.cpu_limit_slider.set(80)
+        
+        self.cpu_limit_label = ctk.CTkLabel(cpu_limit_frame, text="80%", font=ctk.CTkFont(weight="bold"))
+        self.cpu_limit_label.pack(side='left', padx=10)
+        
+        # RAM Limit
+        ram_limit_frame = ctk.CTkFrame(custom_limits_frame)
+        ram_limit_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        ctk.CTkLabel(ram_limit_frame, text="Limite RAM:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
+        self.ram_limit_slider = ctk.CTkSlider(ram_limit_frame, from_=10, to=95, command=self.update_ram_limit)
+        self.ram_limit_slider.pack(side='left', padx=10, fill='x', expand=True)
+        self.ram_limit_slider.set(70)
+        
+        self.ram_limit_label = ctk.CTkLabel(ram_limit_frame, text="70%", font=ctk.CTkFont(weight="bold"))
+        self.ram_limit_label.pack(side='left', padx=10)
+        
+        # GPU Settings
+        gpu_settings_frame = ctk.CTkFrame(custom_limits_frame)
+        gpu_settings_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        self.gpu_enabled_checkbox = ctk.CTkCheckBox(gpu_settings_frame, text="Activer GPU (si disponible)",
+                                                   command=self.toggle_gpu_enabled)
+        self.gpu_enabled_checkbox.pack(side='left', padx=10, pady=10)
+        
+        self.gpu_memory_slider = ctk.CTkSlider(gpu_settings_frame, from_=10, to=95, command=self.update_gpu_memory)
+        self.gpu_memory_slider.pack(side='left', padx=10, fill='x', expand=True)
+        self.gpu_memory_slider.set(60)
+        
+        self.gpu_memory_label = ctk.CTkLabel(gpu_settings_frame, text="60% VRAM", font=ctk.CTkFont(weight="bold"))
+        self.gpu_memory_label.pack(side='left', padx=10)
+        
+        # Boutons d'action
+        actions_frame = ctk.CTkFrame(custom_limits_frame)
+        actions_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        self.apply_limits_btn = ctk.CTkButton(actions_frame, text="✅ Appliquer limites", 
+                                            command=self.apply_custom_limits, width=150)
+        self.apply_limits_btn.pack(side='left', padx=10, pady=10)
+        
+        self.reset_limits_btn = ctk.CTkButton(actions_frame, text="🔄 Réinitialiser", 
+                                            command=self.reset_to_recommended, width=130)
+        self.reset_limits_btn.pack(side='left', padx=10, pady=10)
+        
+        self.save_profile_btn = ctk.CTkButton(actions_frame, text="💾 Sauvegarder profil", 
+                                            command=self.save_custom_profile, width=160)
+        self.save_profile_btn.pack(side='left', padx=10, pady=10)
         ctk.CTkLabel(ram_metric_frame, text="RAM", font=ctk.CTkFont(weight="bold")).pack(pady=5)
         self.ram_usage_label = ctk.CTkLabel(ram_metric_frame, text="0 GB", font=ctk.CTkFont(size=16, weight="bold"))
         self.ram_usage_label.pack(pady=5)
@@ -1263,6 +1375,197 @@ class RTAPGUIWindow:
             print(f"Erreur update CFR progress: {e}")
             # Reprogram même en cas d'erreur
             self.root.after(5000, self.update_cfr_progress)
+    
+    def change_performance_profile(self, profile_name):
+        """Change le profil de performance"""
+        try:
+            if not self.system_optimizer:
+                return
+            
+            profile_mapping = {
+                "Économe": "econome",
+                "Équilibré": "equilibre", 
+                "Performance Max": "performance_max",
+                "Personnalisé": "custom"
+            }
+            
+            internal_name = profile_mapping.get(profile_name, "equilibre")
+            success = self.system_optimizer.set_profile(internal_name)
+            
+            if success:
+                # Mettre à jour l'interface avec les nouvelles limites
+                limits = self.system_optimizer.get_current_limits()
+                self.cpu_limit_slider.set(limits.cpu_percent)
+                self.ram_limit_slider.set(limits.ram_percent)
+                self.gpu_memory_slider.set(limits.gpu_memory_percent)
+                
+                if limits.gpu_enabled:
+                    self.gpu_enabled_checkbox.select()
+                else:
+                    self.gpu_enabled_checkbox.deselect()
+                
+                # Mettre à jour les labels
+                self.update_cpu_limit(limits.cpu_percent)
+                self.update_ram_limit(limits.ram_percent)
+                self.update_gpu_memory(limits.gpu_memory_percent)
+                
+                self.logger.info(f"Profil de performance changé: {profile_name}")
+            else:
+                self.logger.error(f"Erreur changement profil: {profile_name}")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur change_performance_profile: {e}")
+    
+    def auto_detect_performance(self):
+        """Détecte automatiquement le profil optimal"""
+        try:
+            if not self.system_optimizer:
+                self.system_info_label.configure(text="⚠️ Optimiseur non disponible")
+                return
+            
+            recommended = self.system_optimizer.get_recommended_profile()
+            caps = self.system_optimizer.capabilities
+            
+            # Mapper le profil interne vers l'affichage
+            profile_display = {
+                "econome": "Économe",
+                "equilibre": "Équilibré",
+                "performance_max": "Performance Max"
+            }
+            
+            recommended_display = profile_display.get(recommended, "Équilibré")
+            self.performance_profile.set(recommended_display)
+            self.change_performance_profile(recommended_display)
+            
+            # Afficher les informations système
+            info_text = f"Détecté: {caps.cpu_cores}C/{caps.cpu_threads}T, {caps.ram_total_gb:.1f}GB RAM"
+            if caps.gpu_available:
+                info_text += f", GPU: {caps.gpu_name[:20]}..."
+            
+            self.system_info_label.configure(text=info_text)
+            self.logger.info(f"Profil auto-détecté: {recommended_display}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur auto_detect_performance: {e}")
+            self.system_info_label.configure(text="❌ Erreur détection")
+    
+    def update_cpu_limit(self, value):
+        """Met à jour la limite CPU"""
+        try:
+            self.cpu_limit_label.configure(text=f"{int(value)}%")
+        except Exception as e:
+            self.logger.error(f"Erreur update_cpu_limit: {e}")
+    
+    def update_ram_limit(self, value):
+        """Met à jour la limite RAM"""
+        try:
+            self.ram_limit_label.configure(text=f"{int(value)}%")
+        except Exception as e:
+            self.logger.error(f"Erreur update_ram_limit: {e}")
+    
+    def update_gpu_memory(self, value):
+        """Met à jour la limite mémoire GPU"""
+        try:
+            self.gpu_memory_label.configure(text=f"{int(value)}% VRAM")
+        except Exception as e:
+            self.logger.error(f"Erreur update_gpu_memory: {e}")
+    
+    def toggle_gpu_enabled(self):
+        """Active/désactive le GPU"""
+        try:
+            enabled = self.gpu_enabled_checkbox.get()
+            self.logger.info(f"GPU {'activé' if enabled else 'désactivé'}")
+        except Exception as e:
+            self.logger.error(f"Erreur toggle_gpu_enabled: {e}")
+    
+    def apply_custom_limits(self):
+        """Applique les limites personnalisées"""
+        try:
+            if not self.system_optimizer:
+                return
+            
+            cpu_percent = self.cpu_limit_slider.get()
+            ram_percent = self.ram_limit_slider.get()
+            gpu_enabled = self.gpu_enabled_checkbox.get()
+            gpu_memory_percent = self.gpu_memory_slider.get()
+            
+            success = self.system_optimizer.set_custom_limits(
+                cpu_percent, ram_percent, gpu_enabled, gpu_memory_percent
+            )
+            
+            if success:
+                self.performance_profile.set("Personnalisé")
+                self.system_optimizer.set_profile("custom")
+                
+                # Appliquer au moteur CFR si disponible
+                if hasattr(self, 'app_manager') and self.app_manager:
+                    optimal_settings = self.system_optimizer.get_optimal_cfr_settings()
+                    self.app_manager.update_settings(optimal_settings)
+                
+                self.logger.info("Limites personnalisées appliquées")
+                self.system_info_label.configure(text="✅ Limites appliquées")
+            else:
+                self.system_info_label.configure(text="❌ Erreur application")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur apply_custom_limits: {e}")
+    
+    def reset_to_recommended(self):
+        """Remet les paramètres recommandés"""
+        try:
+            if self.system_optimizer:
+                self.auto_detect_performance()
+                self.system_info_label.configure(text="🔄 Paramètres réinitialisés")
+        except Exception as e:
+            self.logger.error(f"Erreur reset_to_recommended: {e}")
+    
+    def save_custom_profile(self):
+        """Sauvegarde le profil personnalisé"""
+        try:
+            if self.system_optimizer:
+                success = self.system_optimizer.save_configuration()
+                if success:
+                    self.system_info_label.configure(text="💾 Profil sauvegardé")
+                    self.logger.info("Profil personnalisé sauvegardé")
+                else:
+                    self.system_info_label.configure(text="❌ Erreur sauvegarde")
+        except Exception as e:
+            self.logger.error(f"Erreur save_custom_profile: {e}")
+    
+    def update_system_metrics(self):
+        """Met à jour les métriques système en temps réel"""
+        try:
+            if self.system_optimizer:
+                usage = self.system_optimizer.monitor_resource_usage()
+                
+                # Mettre à jour les labels d'utilisation
+                self.cpu_usage_label.configure(text=f"{usage['cpu_percent']:.1f}%")
+                self.ram_usage_label.configure(text=f"{usage['ram_percent']:.1f}%")
+                
+                if usage['gpu_usage'] > 0:
+                    self.gpu_usage_label.configure(text=f"{usage['gpu_usage']:.1f}%")
+                else:
+                    self.gpu_usage_label.configure(text="N/A")
+                
+                # Couleurs selon l'utilisation
+                cpu_color = "#ff4444" if usage['cpu_percent'] > 90 else "#00b300" if usage['cpu_percent'] < 70 else "#ff8c00"
+                ram_color = "#ff4444" if usage['ram_percent'] > 85 else "#00b300" if usage['ram_percent'] < 60 else "#ff8c00"
+                
+                self.cpu_usage_label.configure(text_color=cpu_color)
+                self.ram_usage_label.configure(text_color=ram_color)
+                
+                # Auto-ajustement si nécessaire
+                adjusted = self.system_optimizer.auto_adjust_if_needed()
+                if adjusted and hasattr(self, 'system_info_label'):
+                    self.system_info_label.configure(text="⚠️ Auto-ajustement appliqué")
+            
+            # Programmer la prochaine mise à jour
+            self.root.after(3000, self.update_system_metrics)  # Toutes les 3 secondes
+            
+        except Exception as e:
+            self.logger.error(f"Erreur update_system_metrics: {e}")
+            # Reprogram même en cas d'erreur
+            self.root.after(5000, self.update_system_metrics)
     
     def _update_task_display_loop(self):
         """Boucle de mise à jour de l'affichage des tâches"""
