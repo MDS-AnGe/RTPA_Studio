@@ -1952,7 +1952,7 @@ class RTAPGUIWindow:
             info_frame,
             text=f"Version Actuelle: {version_info['version']}",
             font=ctk.CTkFont(size=16, weight="bold"),
-            text_color="cyan"
+            text_color="white"
         )
         version_label.pack(pady=(15, 5))
         
@@ -1997,16 +1997,15 @@ class RTAPGUIWindow:
         )
         self.check_update_btn.pack(pady=(15, 5))
         
-        # Bouton mettre à jour
+        # Bouton mettre à jour (masqué par défaut)
         self.update_btn = ctk.CTkButton(
             buttons_frame,
             text="⬇️ Mettre à jour",
             command=self.perform_update,
             font=ctk.CTkFont(size=14),
-            height=40,
-            state="disabled"
+            height=40
         )
-        self.update_btn.pack(pady=5)
+        self.update_btn.pack_forget()  # Masqué par défaut
         
         # Status de mise à jour
         self.update_status_label = ctk.CTkLabel(
@@ -2070,9 +2069,10 @@ class RTAPGUIWindow:
         """Interface quand nouvelle version disponible"""
         self.update_status_label.configure(
             text=f"Nouvelle version disponible: v{latest_version}", 
-            text_color="cyan"
+            text_color="orange"
         )
-        self.update_btn.configure(state="normal")
+        # Afficher le bouton "Mettre à jour" seulement maintenant
+        self.update_btn.pack(pady=5, before=self.update_status_label)
         self.check_update_btn.configure(state="normal")
 
     def perform_update(self):
