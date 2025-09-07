@@ -747,14 +747,39 @@ class RTAPGUIWindow:
         try:
             import torch
             TORCH_AVAILABLE = True
-            ctk.CTkLabel(pytorch_frame, text="✅ PyTorch détecté", 
-                        font=ctk.CTkFont(size=14, weight="bold"), 
-                        text_color="#00b300").pack(pady=(15, 5))
             
-            ctk.CTkLabel(pytorch_frame, 
-                        text=f"Version: {torch.__version__} - GPU acceleration disponible", 
-                        font=ctk.CTkFont(size=12), 
-                        text_color="gray").pack(pady=(0, 15))
+            ctk.CTkLabel(pytorch_frame, text="🚀 PyTorch Status", 
+                        font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 5))
+            
+            ctk.CTkLabel(pytorch_frame, text="✅ PyTorch installé et fonctionnel", 
+                        font=ctk.CTkFont(size=14, weight="bold"), 
+                        text_color="#00b300").pack(pady=(5, 5))
+            
+            # Informations détaillées de PyTorch
+            info_frame = ctk.CTkFrame(pytorch_frame)
+            info_frame.pack(fill='x', padx=20, pady=(5, 15))
+            
+            ctk.CTkLabel(info_frame, 
+                        text=f"Version: {torch.__version__}", 
+                        font=ctk.CTkFont(size=12, weight="bold")).pack(pady=(10, 2))
+            
+            # Détection GPU CUDA
+            if torch.cuda.is_available():
+                gpu_name = torch.cuda.get_device_name(0) if torch.cuda.device_count() > 0 else "GPU CUDA"
+                ctk.CTkLabel(info_frame, 
+                            text=f"🎮 GPU détecté: {gpu_name}", 
+                            font=ctk.CTkFont(size=11), 
+                            text_color="#00b300").pack(pady=2)
+            else:
+                ctk.CTkLabel(info_frame, 
+                            text="💻 Fonctionnement CPU (GPU CUDA non détecté)", 
+                            font=ctk.CTkFont(size=11), 
+                            text_color="#666666").pack(pady=2)
+            
+            ctk.CTkLabel(info_frame, 
+                        text="Accélération GPU activée pour les calculs CFR intensifs", 
+                        font=ctk.CTkFont(size=10), 
+                        text_color="gray").pack(pady=(2, 10))
         except ImportError:
             TORCH_AVAILABLE = False
             ctk.CTkLabel(pytorch_frame, text="⚠️ PyTorch non détecté", 
