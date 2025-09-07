@@ -60,8 +60,9 @@ class CFREngine:
     def __init__(self):
         self.logger = get_logger(__name__)
         
-        # Configuration des paramètres
-        self.config = self._load_configuration()
+        # Configuration des paramètres - Utiliser les paramètres globaux
+        from ..config.settings import Settings
+        self.config = Settings()
         
         # Configuration d'accélération GPU/CPU
         self.device = self._setup_compute_device()
