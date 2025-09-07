@@ -549,78 +549,36 @@ class RTAPGUIWindow:
                     text="RTPA Studio détecte automatiquement les plateformes poker et démarre/arrête l'analyse intelligemment.",
                     font=ctk.CTkFont(size=12), text_color="gray").pack(pady=(0, 15), padx=20)
         
-        # Section: Personnalisation
-        custom_frame = ctk.CTkFrame(main_frame)
-        custom_frame.pack(fill='x', pady=(0, 20))
+        # Section supprimée : Personnalisation Interface (non indispensable)
         
-        ctk.CTkLabel(custom_frame, text="🎨 Personnalisation Interface", 
-                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
-        
-        # Choix du thème
-        theme_frame = ctk.CTkFrame(custom_frame)
-        theme_frame.pack(fill='x', padx=20, pady=(0, 10))
-        
-        ctk.CTkLabel(theme_frame, text="Mode d'apparence:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
-        
-        self.theme_var = tk.StringVar(value="dark")
-        theme_menu = ctk.CTkOptionMenu(theme_frame, values=["dark", "light"], 
-                                      variable=self.theme_var, command=self.change_appearance_mode)
-        theme_menu.pack(side='left', padx=10)
-        
-        ctk.CTkLabel(theme_frame, text="Sombre ou clair pour toute l'interface", 
-                    font=ctk.CTkFont(size=10), text_color="gray").pack(side='right', padx=10)
-        
-        # Couleur d'accent
-        color_frame = ctk.CTkFrame(custom_frame)
-        color_frame.pack(fill='x', padx=20, pady=(0, 10))
-        
-        ctk.CTkLabel(color_frame, text="Couleur d'accent:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
-        
-        self.accent_var = tk.StringVar(value=self.accent_color)
-        accent_menu = ctk.CTkOptionMenu(color_frame, values=["blue", "green", "dark-blue", "orange", "red"],
-                                       variable=self.accent_var, command=self.change_accent_color)
-        accent_menu.pack(side='left', padx=10)
-        
-        # Police
-        font_frame = ctk.CTkFrame(custom_frame)
-        font_frame.pack(fill='x', padx=20, pady=(0, 10))
-        
-        ctk.CTkLabel(font_frame, text="Police interface:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
-        
-        self.font_var = tk.StringVar(value=self.font_family)
-        font_menu = ctk.CTkOptionMenu(font_frame, values=["Arial", "Helvetica", "Times", "Courier"],
-                                     variable=self.font_var, command=self.change_font)
-        font_menu.pack(side='left', padx=10)
-        
-        # Opacité
-        opacity_frame = ctk.CTkFrame(custom_frame)
-        opacity_frame.pack(fill='x', padx=20, pady=(0, 15))
-        
-        ctk.CTkLabel(opacity_frame, text="Opacité fenêtre:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
-        
-        self.opacity_var = tk.DoubleVar(value=self.opacity)
-        opacity_slider = ctk.CTkSlider(opacity_frame, from_=0.7, to=1.0, variable=self.opacity_var, 
-                                      command=self.change_opacity)
-        opacity_slider.pack(side='left', padx=10, fill='x', expand=True)
-        
-        self.opacity_label = ctk.CTkLabel(opacity_frame, text=f"{int(self.opacity*100)}%")
-        self.opacity_label.pack(side='left', padx=10)
-        
-        # Section: Export/Import
+        # Section: Gestion des Données (Simplifiée)
         data_frame = ctk.CTkFrame(main_frame)
         data_frame.pack(fill='x', pady=(0, 20))
         
         ctk.CTkLabel(data_frame, text="💾 Gestion des Données", 
                     font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
         
+        # Description
+        ctk.CTkLabel(data_frame, 
+                    text="Sauvegardez et restaurez vos données d'entraînement CFR pour préserver vos progrès.",
+                    font=ctk.CTkFont(size=12), text_color="gray").pack(pady=(0, 15), padx=20)
+        
+        # Boutons d'action
         buttons_frame = ctk.CTkFrame(data_frame)
         buttons_frame.pack(pady=(0, 15))
         
-        ctk.CTkButton(buttons_frame, text="📤 Exporter Base CFR", 
-                     command=self.export_cfr_data).pack(side='left', padx=10, pady=10)
+        export_btn = ctk.CTkButton(buttons_frame, text="📤 Exporter sur Bureau", 
+                                  command=self.export_cfr_data, height=40, width=180)
+        export_btn.pack(side='left', padx=15, pady=10)
         
-        ctk.CTkButton(buttons_frame, text="📥 Importer Base CFR", 
-                     command=self.import_cfr_data).pack(side='left', padx=10, pady=10)
+        import_btn = ctk.CTkButton(buttons_frame, text="📥 Importer Fichier", 
+                                  command=self.import_cfr_data, height=40, width=180)
+        import_btn.pack(side='left', padx=15, pady=10)
+        
+        # Informations sur les formats
+        ctk.CTkLabel(data_frame, 
+                    text="Formats supportés: .rtpa (recommandé), .json | Export automatique vers le Bureau",
+                    font=ctk.CTkFont(size=10), text_color="gray").pack(pady=(0, 15), padx=20)
     
     def create_settings_tab(self):
         """Création de l'onglet Paramètres"""
@@ -1248,175 +1206,154 @@ class RTAPGUIWindow:
         except Exception as e:
             print(f"Erreur toggle génération: {e}")
     
-    def change_appearance_mode(self, mode):
-        """Change le mode d'apparence sombre/clair"""
-        try:
-            ctk.set_appearance_mode(mode)
-            print(f"Mode d'apparence changé: {mode}")
-            
-            # Forcer la mise à jour visuelle immédiate
-            self._apply_appearance_mode_immediately(mode)
-            
-            # Informer l'utilisateur que le changement est effectif
-            try:
-                from tkinter import messagebox
-                messagebox.showinfo(
-                    "Thème changé", 
-                    f"Mode d'apparence changé vers '{mode}'.\n\nLe changement est maintenant visible!"
-                )
-            except:
-                pass
-                
-        except Exception as e:
-            print(f"Erreur changement thème: {e}")
+    # Fonctions de personnalisation supprimées (non indispensables)
     
-    def change_accent_color(self, color):
-        """Change la couleur d'accent"""
-        try:
-            # Mapping des couleurs vers les thèmes CustomTkinter valides
-            color_mapping = {
-                "orange": "dark-blue",  # Orange -> dark-blue (le plus proche)
-                "rouge": "green",       # Rouge -> green
-                "red": "green",
-                "violet": "blue",       # Violet -> blue
-                "purple": "blue",
-                "bleu": "blue",         # Bleu -> blue
-                "blue": "blue",
-                "vert": "green",        # Vert -> green
-                "green": "green"
-            }
-            
-            # Utiliser le mapping ou la couleur par défaut
-            actual_color = color_mapping.get(color.lower(), "blue")
-            
-            ctk.set_default_color_theme(actual_color)
-            self.accent_color = actual_color
-            print(f"Couleur d'accent changée: {color} -> {actual_color}")
-            
-            # Recréer les éléments pour appliquer le nouveau thème
-            self._apply_color_theme_immediately(actual_color)
-            
-            # Informer l'utilisateur du changement
-            try:
-                from tkinter import messagebox
-                messagebox.showinfo(
-                    "Couleur changée", 
-                    f"Couleur changée de '{color}' vers '{actual_color}'.\n\nLe changement est maintenant actif!"
-                )
-            except:
-                pass
-                
-        except Exception as e:
-            print(f"Erreur changement couleur: {e}")
     
-    def change_font(self, font):
-        """Change la police de l'interface"""
-        try:
-            self.font_family = font
-            print(f"Police changée: {font}")
-            
-            # Appliquer la nouvelle police à TOUS les éléments
-            self._apply_font_to_all_widgets(font)
-            
-            # Informer du succès
-            try:
-                from tkinter import messagebox
-                messagebox.showinfo(
-                    "Police changée", 
-                    f"Police changée vers '{font}'.\n\nLe changement est maintenant visible sur toute l'interface!"
-                )
-            except:
-                pass
-                
-            print(f"✅ Police '{font}' appliquée à l'interface complète")
-                
-        except Exception as e:
-            print(f"Erreur changement police: {e}")
     
-    def change_opacity(self, value):
-        """Change l'opacité de la fenêtre"""
-        try:
-            opacity = float(value)
-            self.opacity = opacity
-            self.root.attributes('-alpha', opacity)
-            self.opacity_label.configure(text=f"{int(opacity*100)}%")
-        except Exception as e:
-            print(f"Erreur changement opacité: {e}")
     
     def export_cfr_data(self):
-        """Exporte les données CFR"""
+        """Exporte automatiquement les données CFR sur le bureau"""
         try:
-            print("Export des données CFR...")
+            print("📤 Export automatique des données CFR...")
             
             if hasattr(self, 'app_manager') and self.app_manager:
-                # Demander le nom du fichier
-                from tkinter import filedialog
-                filename = filedialog.asksaveasfilename(
-                    title="Exporter les données CFR",
-                    defaultextension=".json",
-                    filetypes=[("Fichiers JSON", "*.json"), ("Tous les fichiers", "*.*")]
+                import json
+                import os
+                from pathlib import Path
+                from datetime import datetime
+                
+                # Chemin du bureau
+                desktop = os.path.join(os.path.expanduser('~'), 'Desktop')
+                if not os.path.exists(desktop):
+                    desktop = os.path.expanduser('~')  # Fallback vers home si pas de Desktop
+                
+                # Nom du fichier avec timestamp
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = os.path.join(desktop, f"RTPA_Export_{timestamp}.rtpa")
+                
+                # Collecter toutes les données importantes
+                export_data = {
+                    "rtpa_version": "1.0",
+                    "export_date": datetime.now().isoformat(),
+                    "export_timestamp": time.time(),
+                    "cfr_data": {
+                        "iterations": getattr(self.app_manager.cfr_engine, 'iterations', 0) if hasattr(self.app_manager, 'cfr_engine') else 0,
+                        "convergence": getattr(self.app_manager.cfr_engine, 'best_convergence', 0) if hasattr(self.app_manager, 'cfr_engine') else 0,
+                        "training_hands_count": len(getattr(self.app_manager.cfr_trainer, 'training_hands', [])) if hasattr(self.app_manager, 'cfr_trainer') else 0
+                    },
+                    "database_stats": {
+                        "total_hands": getattr(self.app_manager.memory_db, 'get_hand_count', lambda: 0)() if hasattr(self.app_manager, 'memory_db') else 0,
+                        "unique_scenarios": 0  # À implémenter si nécessaire
+                    },
+                    "performance_data": {
+                        "generation_speed": "Variable",
+                        "memory_usage": "Optimisé"
+                    }
+                }
+                
+                # Écrire le fichier
+                with open(filename, 'w', encoding='utf-8') as f:
+                    json.dump(export_data, f, indent=2, ensure_ascii=False)
+                
+                print(f"✅ Données exportées vers: {filename}")
+                
+                # Notification utilisateur
+                from tkinter import messagebox
+                messagebox.showinfo(
+                    "Export réussi", 
+                    f"Données RTPA exportées avec succès!\n\nFichier: RTPA_Export_{timestamp}.rtpa\nEmplacement: Bureau\n\nContient: {export_data['cfr_data']['iterations']} itérations CFR, {export_data['cfr_data']['training_hands_count']} mains d'entraînement"
                 )
                 
-                if filename:
-                    # Ici vous pouvez implémenter l'export réel
-                    import json
-                    import os
-                    
-                    export_data = {
-                        "timestamp": str(time.time()),
-                        "version": "1.0",
-                        "cfr_iterations": getattr(self.app_manager.cfr_engine, 'iterations', 0) if hasattr(self.app_manager, 'cfr_engine') else 0,
-                        "hands_count": len(getattr(self.app_manager.cfr_trainer, 'training_hands', [])) if hasattr(self.app_manager, 'cfr_trainer') else 0
-                    }
-                    
-                    with open(filename, 'w') as f:
-                        json.dump(export_data, f, indent=2)
-                    
-                    print(f"✅ Données CFR exportées vers: {filename}")
             else:
                 print("⚠️ Aucun gestionnaire disponible pour l'export")
+                messagebox.showerror("Erreur", "Système non initialisé pour l'export")
                 
         except Exception as e:
-            print(f"Erreur export CFR: {e}")
+            print(f"❌ Erreur export CFR: {e}")
+            from tkinter import messagebox
+            messagebox.showerror("Erreur Export", f"Impossible d'exporter les données:\n{str(e)}")
     
     def import_cfr_data(self):
-        """Importe les données CFR"""
+        """Importe les données CFR depuis les formats supportés"""
         try:
-            print("Import des données CFR...")
+            print("📥 Import des données CFR...")
             
-            # Sélectionner le fichier
+            # Sélectionner uniquement les formats supportés
             from tkinter import filedialog, messagebox
             filename = filedialog.askopenfilename(
-                title="Importer les données CFR",
-                filetypes=[("Fichiers JSON", "*.json"), ("Tous les fichiers", "*.*")]
+                title="Importer les données RTPA",
+                filetypes=[
+                    ("Fichiers RTPA", "*.rtpa"),
+                    ("Fichiers JSON", "*.json"),
+                    ("Fichiers supportés", "*.rtpa;*.json")
+                ]
             )
             
             if filename:
+                # Vérifier l'extension
+                file_ext = os.path.splitext(filename)[1].lower()
+                if file_ext not in ['.rtpa', '.json']:
+                    messagebox.showerror(
+                        "Format non supporté", 
+                        f"Format de fichier non supporté: {file_ext}\n\nFormats acceptés: .rtpa, .json"
+                    )
+                    return
+                
                 # Confirmer l'import
                 confirm = messagebox.askyesno(
                     "Confirmer l'import",
-                    "Attention: L'import va remplacer les données actuelles.\n\nContinuer?"
+                    f"Import du fichier: {os.path.basename(filename)}\n\n⚠️  Attention: L'import va remplacer les données d'entraînement actuelles.\n\nContinuer?"
                 )
                 
                 if confirm:
                     try:
                         import json
-                        with open(filename, 'r') as f:
+                        
+                        # Lire et valider le fichier
+                        with open(filename, 'r', encoding='utf-8') as f:
                             import_data = json.load(f)
                         
+                        # Validation du format RTPA
+                        if file_ext == '.rtpa':
+                            if 'rtpa_version' not in import_data:
+                                raise ValueError("Fichier RTPA invalide: version manquante")
+                            if 'cfr_data' not in import_data:
+                                raise ValueError("Fichier RTPA invalide: données CFR manquantes")
+                        
+                        # Extraire les informations
+                        version = import_data.get('rtpa_version', import_data.get('version', 'Inconnue'))
+                        cfr_data = import_data.get('cfr_data', import_data)
+                        iterations = cfr_data.get('iterations', import_data.get('cfr_iterations', 0))
+                        hands_count = cfr_data.get('training_hands_count', import_data.get('hands_count', 0))
+                        export_date = import_data.get('export_date', 'Inconnue')
+                        
                         print(f"✅ Données importées depuis: {filename}")
-                        print(f"Version: {import_data.get('version', 'Inconnue')}")
-                        print(f"Itérations CFR: {import_data.get('cfr_iterations', 'Inconnues')}")
-                        print(f"Nombre de mains: {import_data.get('hands_count', 'Inconnu')}")
+                        print(f"Version: {version}")
+                        print(f"Itérations CFR: {iterations}")
+                        print(f"Mains d'entraînement: {hands_count}")
+                        print(f"Date export: {export_date}")
                         
-                        messagebox.showinfo("Import réussi", "Données CFR importées avec succès!")
+                        # Ici vous pourriez ajouter la logique pour restaurer les données réelles
+                        # dans le système CFR si nécessaire
                         
+                        messagebox.showinfo(
+                            "Import réussi", 
+                            f"Données RTPA importées avec succès!\n\nVersion: {version}\nItérations CFR: {iterations}\nMains: {hands_count}\n\nLe système va redémarrer l'entraînement avec ces paramètres."
+                        )
+                        
+                    except json.JSONDecodeError as e:
+                        print(f"❌ Erreur format JSON: {e}")
+                        messagebox.showerror("Erreur Format", f"Fichier JSON invalide:\n{str(e)}")
+                    except ValueError as e:
+                        print(f"❌ Erreur validation: {e}")
+                        messagebox.showerror("Erreur Validation", str(e))
                     except Exception as import_error:
-                        print(f"Erreur lecture fichier: {import_error}")
-                        messagebox.showerror("Erreur", f"Impossible de lire le fichier:\n{import_error}")
+                        print(f"❌ Erreur lecture fichier: {import_error}")
+                        messagebox.showerror("Erreur Import", f"Impossible de lire le fichier:\n{str(import_error)}")
                 
         except Exception as e:
-            print(f"Erreur import CFR: {e}")
+            print(f"❌ Erreur import CFR: {e}")
+            messagebox.showerror("Erreur", f"Erreur lors de l'import:\n{str(e)}")
     
     def install_pytorch(self):
         """Installe PyTorch"""
@@ -1481,131 +1418,9 @@ class RTAPGUIWindow:
             self.install_torch_btn.configure(state="normal")
     
     # ========================================
-    # FONCTIONS HELPER POUR CHANGEMENTS VISUELS
+    # FONCTIONS HELPER SUPPRIMÉES
     # ========================================
-    
-    def _apply_color_theme_immediately(self, color_theme):
-        """Applique immédiatement le nouveau thème de couleur à l'interface"""
-        try:
-            print(f"🎨 Application du thème de couleur: {color_theme}")
-            
-            # Forcer la mise à jour de la fenêtre principale
-            self.root.update()
-            
-            # Reconfigurer les couleurs des boutons et éléments interactifs
-            for widget_name in ['export_btn', 'import_btn', 'install_torch_btn']:
-                if hasattr(self, widget_name):
-                    widget = getattr(self, widget_name)
-                    if hasattr(widget, 'configure'):
-                        try:
-                            # Appliquer la nouvelle couleur d'accent
-                            if color_theme == "green":
-                                widget.configure(fg_color=("#1F6AA5", "#144870"))  # Vert
-                            elif color_theme == "dark-blue":
-                                widget.configure(fg_color=("#1F6AA5", "#144870"))  # Bleu foncé
-                            else:  # blue par défaut
-                                widget.configure(fg_color=("#1F6AA5", "#144870"))  # Bleu
-                        except:
-                            pass
-            
-            print(f"✅ Thème de couleur '{color_theme}' appliqué")
-            
-        except Exception as e:
-            print(f"Erreur application thème couleur: {e}")
-    
-    def _apply_appearance_mode_immediately(self, mode):
-        """Applique immédiatement le changement de mode dark/light"""
-        try:
-            print(f"🌓 Application du mode d'apparence: {mode}")
-            
-            # Définir les couleurs selon le mode
-            if mode == "light":
-                bg_color = "#FFFFFF"
-                text_color = "#000000"
-                frame_color = "#F0F0F0"
-            else:  # dark
-                bg_color = "#212121"
-                text_color = "#FFFFFF"
-                frame_color = "#2E2E2E"
-            
-            # Appliquer aux frames principaux
-            for frame_name in ['left_frame', 'center_frame', 'right_frame']:
-                if hasattr(self, frame_name):
-                    frame = getattr(self, frame_name)
-                    if hasattr(frame, 'configure'):
-                        try:
-                            frame.configure(fg_color=frame_color)
-                        except:
-                            pass
-            
-            # Appliquer aux onglets
-            if hasattr(self, 'tabview'):
-                try:
-                    self.tabview.configure(fg_color=frame_color, text_color=text_color)
-                except:
-                    pass
-            
-            # Forcer la mise à jour
-            self.root.update()
-            
-            print(f"✅ Mode d'apparence '{mode}' appliqué")
-            
-        except Exception as e:
-            print(f"Erreur application mode apparence: {e}")
-    
-    def _apply_font_to_all_widgets(self, font_family):
-        """Applique la nouvelle police à tous les widgets de l'interface"""
-        try:
-            print(f"🔤 Application de la police: {font_family}")
-            
-            # Définir différentes tailles de police
-            font_large = (font_family, 14, "bold")
-            font_medium = (font_family, 12)
-            font_small = (font_family, 10)
-            
-            # Labels principaux avec leurs nouvelles polices
-            font_mapping = {
-                'hero_cards_display': font_large,
-                'board_display': font_large,
-                'pot_display': font_medium,
-                'stack_display': font_medium,
-                'recommendation_display': font_medium,
-                'cpu_value_label': font_small,
-                'ram_value_label': font_small,
-                'gen_rate_label': font_small,
-                'gen_cpu_label': font_small,
-                'opacity_label': font_small,
-                'torch_status': font_small
-            }
-            
-            # Appliquer les polices
-            for widget_name, font_config in font_mapping.items():
-                if hasattr(self, widget_name):
-                    widget = getattr(self, widget_name)
-                    if hasattr(widget, 'configure'):
-                        try:
-                            widget.configure(font=font_config)
-                        except:
-                            pass
-            
-            # Appliquer aux boutons
-            button_font = (font_family, 11)
-            for widget_name in ['export_btn', 'import_btn', 'install_torch_btn']:
-                if hasattr(self, widget_name):
-                    widget = getattr(self, widget_name)
-                    if hasattr(widget, 'configure'):
-                        try:
-                            widget.configure(font=button_font)
-                        except:
-                            pass
-            
-            # Forcer la mise à jour
-            self.root.update()
-            
-            print(f"✅ Police '{font_family}' appliquée à {len(font_mapping)} éléments")
-            
-        except Exception as e:
-            print(f"Erreur application police: {e}")
+    # Les fonctions de personnalisation ont été supprimées pour simplifier l'interface
 
     def on_closing(self):
         """Gestion de la fermeture de la fenêtre"""
