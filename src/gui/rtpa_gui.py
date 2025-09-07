@@ -153,9 +153,10 @@ class RTAPGUIWindow:
         cards_container = ttk.Frame(main_container)
         cards_container.pack(fill='x', pady=(0, 10))
         
-        # Section Main (compacte, à gauche)
-        hero_frame = ttk.LabelFrame(cards_container, text="🂡 Main", style='Card.TFrame')
-        hero_frame.pack(side='left', padx=(0, 10), fill='y')
+        # Section Main (largeur fixe pour alignement)
+        hero_frame = ttk.LabelFrame(cards_container, text="🂡 Main", style='Card.TFrame', width=220)
+        hero_frame.pack(side='left', padx=(0, 10))
+        hero_frame.pack_propagate(False)
         
         self.hero_cards_frame = ttk.Frame(hero_frame)
         self.hero_cards_frame.pack(padx=8, pady=10)
@@ -186,9 +187,10 @@ class RTAPGUIWindow:
         )
         self.hero_card2.pack(expand=True, fill='both')
         
-        # Section Board (à droite) - largeur contrôlée pour alignement
-        board_frame = ttk.LabelFrame(cards_container, text="🃏 Board", style='Card.TFrame')
-        board_frame.pack(side='left', fill='x', padx=(10, 0))  # Pas d'expand, juste fill-x
+        # Section Board (largeur fixe pour alignement parfait)
+        board_frame = ttk.LabelFrame(cards_container, text="🃏 Board", style='Card.TFrame', width=420)
+        board_frame.pack(side='left', padx=(10, 0))
+        board_frame.pack_propagate(False)
         
         self.board_cards_frame = ttk.Frame(board_frame)
         self.board_cards_frame.pack(anchor='w', padx=8, pady=10)
@@ -218,9 +220,10 @@ class RTAPGUIWindow:
         main_layout = ttk.Frame(main_container)
         main_layout.pack(fill='x', pady=(0, 10))  # Fill en X seulement, pas d'expand
         
-        # Colonne gauche: Informations table et recommandations (largeur limitée)
-        left_column = ttk.Frame(main_layout)
+        # Colonne gauche: Informations table et recommandations (largeur fixe)
+        left_column = ttk.Frame(main_layout, width=550)
         left_column.pack(side='left', fill='y', padx=(0, 15))
+        left_column.pack_propagate(False)
         
         # SOUS-SECTION: Informations de table
         table_info_frame = ttk.LabelFrame(left_column, text="📊 INFORMATIONS TABLE", style='Card.TFrame')
@@ -329,9 +332,10 @@ class RTAPGUIWindow:
         self.performance_ratio_value = ttk.Label(stats_line2, text="0.0%", style='Card.TLabel')
         self.performance_ratio_value.pack(side='left', padx=(5, 0))
         
-        # Colonne droite: Informations joueurs (proche de la gauche)
-        right_column = ttk.Frame(main_layout)
-        right_column.pack(side='left', fill='both', padx=(5, 10))  # Retour au fill both pour assurer l'affichage
+        # Colonne droite: Informations joueurs (largeur fixe pour alignement)
+        right_column = ttk.Frame(main_layout, width=420)
+        right_column.pack(side='left', fill='y', padx=(5, 10))
+        right_column.pack_propagate(False)
         
         # SECTION 4A: NOS INFOS PERSONNELLES
         hero_frame = ttk.LabelFrame(right_column, text="👤 MOI", style='Card.TFrame')
