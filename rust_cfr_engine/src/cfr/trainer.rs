@@ -25,8 +25,8 @@ impl CfrTrainer {
         }
     }
 
-    /// Démarrer entraînement asynchrone
-    pub async fn start_training(&self, states: Vec<PokerState>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    /// Démarrer entraînement asynchrone  
+    pub async fn start_training(&self, states: Vec<PokerState>) -> Result<(), String> {
         if self.is_training.load(Ordering::Relaxed) {
             return Err("Training déjà en cours".into());
         }
@@ -54,10 +54,10 @@ impl CfrTrainer {
             let iter_start = Instant::now();
             
             // Échantillonner batch pour cette itération
-            let batch = self.sample_training_batch(&states, 100)?;
+            let batch = self.sample_training_batch(&states, 100).map_err(|e| e.to_string())?;
             
             // Entraînement CFR sur batch
-            let convergence = self.engine.train_batch(&batch).await?;
+            let convergence = self.engine.train_batch(&batch).await.map_err(|e| e.to_string())?;
             
             // Mise à jour métriques
             self.iterations_completed.fetch_add(1, Ordering::Relaxed);
@@ -120,7 +120,7 @@ impl CfrTrainer {
     }
 
     /// Échantillonner batch de training
-    fn sample_training_batch(&self, states: &[PokerState], batch_size: usize) -> Result<Vec<PokerState>, Box<dyn std::error::Error>> {
+    fn sample_training_batch(&self, states: &[PokerState], batch_size: usize) -> Result<Vec<PokerState>, String> {
         use rand::seq::SliceRandom;
         use rand::thread_rng;
         
@@ -194,7 +194,7 @@ impl CfrTrainer {
     }
 
     /// Générer nouvelles hands pour training
-    pub fn generate_training_hands(&self, count: usize) -> Result<Vec<PokerState>, Box<dyn std::error::Error>> {
+    pub fn generate_training_hands(&self, count: usize) -> Result<Vec<PokerState>, String> {
         use rand::{thread_rng, Rng};
         use rand::seq::SliceRandom;
         

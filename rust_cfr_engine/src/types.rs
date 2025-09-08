@@ -23,12 +23,12 @@ pub struct PokerState {
 }
 
 /// Rounds de mise
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum BettingRound {
-    Preflop,
-    Flop,
-    Turn,
-    River,
+    Preflop = 0,
+    Flop = 1,
+    Turn = 2,
+    River = 3,
 }
 
 /// Actions possibles

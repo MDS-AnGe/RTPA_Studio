@@ -18,7 +18,7 @@ pub struct GpuCompute {
 
 impl GpuCompute {
     /// Initialisation GPU compute
-    pub async fn new(config: GpuConfig) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn new(config: GpuConfig) -> Result<Self, String> {
         // Créer instance WGPU
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
@@ -33,7 +33,7 @@ impl GpuCompute {
                 force_fallback_adapter: false,
             })
             .await
-            .ok_or("Aucun adapteur GPU trouvé")?;
+            .ok_or_else(|| "Aucun adapteur GPU trouvé".to_string())?;
 
         println!("🔥 GPU détecté: {:?}", adapter.get_info());
 
@@ -44,11 +44,10 @@ impl GpuCompute {
                     required_features: wgpu::Features::empty(),
                     required_limits: wgpu::Limits::default(),
                     label: Some("CFR GPU Device"),
-                    memory_hints: wgpu::MemoryHints::Performance,
                 },
                 None,
             )
-            .await?;
+            .await.map_err(|e| e.to_string())?;
 
         // Charger shader compute
         let shader_source = include_str!("shaders/cfr_compute.wgsl");
@@ -63,8 +62,6 @@ impl GpuCompute {
             layout: None,
             module: &compute_shader,
             entry_point: "main",
-            compilation_options: Default::default(),
-            cache: None,
         });
 
         // Créer buffers
@@ -108,12 +105,12 @@ impl GpuCompute {
     pub async fn compute_cfr_batch(
         &self,
         states: &[PokerState], 
-        strategies: &Arc<DashMap<InformationSet, Strategy>>,
-        abstraction: &AbstractionManager
-    ) -> Result<f64, Box<dyn std::error::Error>> {
+        _strategies: &Arc<DashMap<InformationSet, Strategy>>,
+        _abstraction: &AbstractionManager
+    ) -> Result<f64, String> {
         
         // Convertir states en données GPU
-        let gpu_data = self.prepare_gpu_data(states, abstraction)?;
+        let gpu_data = self.prepare_gpu_data(states)?;
         
         // Écrire données dans buffer GPU
         self.queue.write_buffer(&self.input_buffer, 0, &gpu_data);
@@ -185,7 +182,7 @@ impl GpuCompute {
     }
 
     /// Préparer données pour GPU
-    fn prepare_gpu_data(&self, states: &[PokerState], abstraction: &AbstractionManager) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    fn prepare_gpu_data(&self, states: &[PokerState]) -> Result<Vec<u8>, String> {
         let mut gpu_data = Vec::new();
         
         for state in states.iter().take(self.config.batch_size) {
@@ -242,9 +239,9 @@ impl GpuCompute {
     }
 
     /// Parser résultats GPU
-    fn parse_gpu_results(&self, data: &[u8], num_states: usize) -> Result<f64, Box<dyn std::error::Error>> {
+    fn parse_gpu_results(&self, data: &[u8], num_states: usize) -> Result<f64, String> {
         if data.len() < num_states * 4 {
-            return Err("Données GPU insuffisantes".into());
+            return Err("Données GPU insuffisantes".to_string());
         }
         
         let mut total_convergence = 0.0;

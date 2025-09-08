@@ -890,20 +890,26 @@ class CFRTrainer:
         
         for hand in hands:
             try:
-                # Convertir ParsedHand vers format dict pour Rust
+                # Convertir ParsedHand vers format dict pour Rust avec gestion robuste
+                hole_cards = []
+                if hasattr(hand, 'hero_cards') and hand.hero_cards:
+                    for card in hand.hero_cards:
+                        if hasattr(card, 'rank') and hasattr(card, 'suit'):
+                            hole_cards.append({"rank": card.rank, "suit": card.suit})
+                
+                community_cards = []
+                if hasattr(hand, 'board_cards') and hand.board_cards:
+                    for card in hand.board_cards:
+                        if hasattr(card, 'rank') and hasattr(card, 'suit'):
+                            community_cards.append({"rank": card.rank, "suit": card.suit})
+                
                 rust_state = {
-                    "hole_cards": [
-                        {"rank": card.rank, "suit": card.suit} 
-                        for card in hand.hero_cards if hasattr(card, 'rank')
-                    ],
-                    "community_cards": [
-                        {"rank": card.rank, "suit": card.suit}
-                        for card in hand.board_cards if hasattr(card, 'rank')
-                    ],
-                    "pot_size": float(hand.pot_size) if hasattr(hand, 'pot_size') else 10.0,
-                    "stack_size": float(hand.hero_stack) if hasattr(hand, 'hero_stack') else 100.0,
-                    "position": int(hand.hero_position) if hasattr(hand, 'hero_position') else 0,
-                    "num_players": int(hand.num_players) if hasattr(hand, 'num_players') else 2,
+                    "hole_cards": hole_cards,
+                    "community_cards": community_cards,
+                    "pot_size": float(getattr(hand, 'pot_size', 10.0)),
+                    "stack_size": float(getattr(hand, 'hero_stack', 100.0)),
+                    "position": int(getattr(hand, 'hero_position', 0)),
+                    "num_players": int(getattr(hand, 'num_players', 2)),
                     "betting_round": getattr(hand, 'betting_round', 'preflop')
                 }
                 rust_states.append(rust_state)

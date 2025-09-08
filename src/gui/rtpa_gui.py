@@ -97,6 +97,12 @@ class RTAPGUIWindow:
         # Configuration de l'événement de fermeture
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
+        # 🔧 ANTI-FREEZE: Bind événements pour détecter activité utilisateur
+        self.root.bind("<Button-1>", self._on_user_activity)  # Clics souris
+        self.root.bind("<Key>", self._on_user_activity)       # Touches clavier
+        self.root.bind("<Motion>", self._on_user_activity)    # Mouvement souris
+        self.last_user_activity = time.time()
+        
         # OPTIMISATION : Marquer comme en cours d'exécution pour les boucles de mise à jour
         self.running = True
         
@@ -3147,6 +3153,93 @@ class RTAPGUIWindow:
             print(f"❌ Erreur test Rust: {e}")
             self.rust_status_label.configure(text=f"❌ Erreur: {str(e)[:30]}...")
 
+    def _on_user_activity(self, event=None):
+        """Enregistre l'activité utilisateur pour gestion anti-freeze"""
+        self.last_user_activity = time.time()
+        
+        # Si changement d'onglet détecté, force un refresh immédiat
+        if hasattr(event, 'widget') and hasattr(self, 'notebook'):
+            if isinstance(event.widget, ctk.CTkTabview) or str(event.widget).find('notebook') != -1:
+                # Changement d'onglet détecté - refresh immédiat pour éviter freeze
+                self.root.after(10, self._immediate_tab_refresh)
+    
+    def _immediate_tab_refresh(self):
+        """Refresh immédiat lors changement d'onglet pour éviter freeze"""
+        try:
+            if hasattr(self, 'notebook') and self.notebook:
+                current_tab = self.notebook.get()
+                
+                # Force le rendu des éléments du nouvel onglet
+                if current_tab == "⚡ Performance":
+                    self._refresh_performance_tab()
+                elif current_tab == "📊 Statistiques": 
+                    self._refresh_statistics_tab()
+                elif current_tab == "⚙️ Configuration":
+                    self._refresh_configuration_tab()
+                elif current_tab == "🎮 Analyse Temps Réel":
+                    self._refresh_analysis_tab()
+                    
+                # Force le rendu graphique
+                self.root.update_idletasks()
+                
+        except Exception as e:
+            print(f"Erreur refresh onglet: {e}")
+    
+    def _refresh_performance_tab(self):
+        """Refresh spécifique onglet Performance"""
+        try:
+            # Mettre à jour les métriques système en temps réel
+            if hasattr(self, 'cpu_usage_label'):
+                import psutil
+                cpu_percent = psutil.cpu_percent(interval=0.1)
+                if self.cpu_usage_label:
+                    self.cpu_usage_label.configure(text=f"{cpu_percent:.1f}%")
+            
+            if hasattr(self, 'rust_status_label') and self.rust_status_label:
+                # Vérifier statut Rust CFR
+                try:
+                    if hasattr(self.app_manager, 'cfr_engine') and hasattr(self.app_manager.cfr_engine, 'trainer'):
+                        stats = self.app_manager.cfr_engine.trainer.get_rust_performance_stats()
+                        if stats.get('engine') == 'Rust + GPU':
+                            self.rust_status_label.configure(text="🚀 Rust + GPU: Opérationnel")
+                        else:
+                            self.rust_status_label.configure(text="🐍 Python fallback: Fonctionnel")
+                except:
+                    self.rust_status_label.configure(text="🔄 Vérification système...")
+                    
+        except Exception as e:
+            pass
+    
+    def _refresh_statistics_tab(self):
+        """Refresh spécifique onglet Statistiques"""
+        try:
+            if hasattr(self, 'hands_played_label') and self.hands_played_label:
+                # Mise à jour stats instantanée
+                if hasattr(self.app_manager, 'hands_played'):
+                    self.hands_played_label.configure(text=str(self.app_manager.hands_played))
+        except Exception as e:
+            pass
+    
+    def _refresh_configuration_tab(self):
+        """Refresh spécifique onglet Configuration"""
+        try:
+            if hasattr(self, 'detected_platform_label') and self.detected_platform_label:
+                # Vérification rapide plateforme détectée
+                self.detected_platform_label.configure(text="Détection en cours...")
+        except Exception as e:
+            pass
+    
+    def _refresh_analysis_tab(self):
+        """Refresh spécifique onglet Analyse"""
+        try:
+            # Force refresh des widgets principaux
+            if hasattr(self, 'hero_cards_frame'):
+                self.hero_cards_frame.update_idletasks()
+            if hasattr(self, 'board_frame'):
+                self.board_frame.update_idletasks()
+        except Exception as e:
+            pass
+
     def on_closing(self):
         """Gestion propre de la fermeture"""
         self.running = False
@@ -3170,12 +3263,16 @@ class RTAPGUIWindow:
         self.update_thread.start()
     
     def _update_loop(self):
-        """Boucle de mise à jour de l'interface avec stabilisation"""
+        """Boucle de mise à jour de l'interface avec gestion anti-freeze"""
         last_data = None
         update_pending = False
+        last_activity = time.time()
+        adaptive_sleep = 1.0  # Sleep adaptatif selon l'activité
         
         while self.running:
             try:
+                current_time = time.time()
+                
                 if self.app_manager and not update_pending:
                     # Récupérer les données du gestionnaire (si la méthode existe)
                     if hasattr(self.app_manager, 'get_display_data'):
@@ -3200,6 +3297,7 @@ class RTAPGUIWindow:
                     if data != last_data:
                         update_pending = True
                         last_data = data.copy() if isinstance(data, dict) else data
+                        last_activity = current_time
                         
                         # Mettre à jour dans le thread principal avec callback de fin
                         def update_complete():
@@ -3208,24 +3306,83 @@ class RTAPGUIWindow:
                         
                         self.root.after(0, lambda: self._perform_stable_update(data, update_complete))
                 
-                time.sleep(1.0)  # Mise à jour optimisée pour performance et réactivité
+                # 🔧 ANTI-FREEZE: Gestion adaptative du sommeil
+                inactive_time = current_time - last_activity
+                
+                if inactive_time > 300:  # Plus de 5 minutes d'inactivité
+                    adaptive_sleep = 2.0  # Réduire fréquence de mise à jour
+                    # Maintenir widgets actifs pour éviter freeze au réveil
+                    if inactive_time % 60 == 0:  # Toutes les minutes
+                        self.root.after(0, self._maintain_widgets_activity)
+                elif inactive_time > 120:  # Plus de 2 minutes d'inactivité
+                    adaptive_sleep = 1.5
+                else:  # Activité récente
+                    adaptive_sleep = 1.0
+                
+                time.sleep(adaptive_sleep)
                 
             except Exception as e:
                 print(f"Erreur dans la boucle de mise à jour: {e}")
                 update_pending = False
                 time.sleep(1)
     
+    def _maintain_widgets_activity(self):
+        """Maintient l'activité des widgets pour éviter freeze après inactivité"""
+        try:
+            # Micro-mise à jour invisible pour maintenir widgets actifs
+            if hasattr(self, 'notebook') and self.notebook:
+                current_tab = self.notebook.get()
+                # Force un rafraîchissement minimal du tab actuel
+                self.root.update_idletasks()
+                
+                # Pré-charge les widgets des autres tabs si pas fait récemment
+                for tab_name in ["🎮 Analyse Temps Réel", "📊 Statistiques", "⚙️ Configuration", "⚡ Performance"]:
+                    if tab_name != current_tab:
+                        # Pré-initialise les widgets de l'onglet pour éviter freeze
+                        self.root.after_idle(lambda t=tab_name: self._pre_warm_tab(t))
+                        
+        except Exception as e:
+            print(f"Erreur maintenance widgets: {e}")
+    
+    def _pre_warm_tab(self, tab_name):
+        """Pré-réchauffe un onglet pour éviter freeze lors du changement"""
+        try:
+            # Très légère activation des widgets de l'onglet sans changement visible
+            if tab_name == "⚡ Performance":
+                # Maintien des éléments de performance actifs
+                if hasattr(self, 'cpu_usage_label') and self.cpu_usage_label:
+                    self.cpu_usage_label.update_idletasks()
+                if hasattr(self, 'rust_status_label') and self.rust_status_label:
+                    self.rust_status_label.update_idletasks()
+            elif tab_name == "📊 Statistiques":
+                # Maintien des stats actives
+                if hasattr(self, 'hands_played_label') and self.hands_played_label:
+                    self.hands_played_label.update_idletasks()
+            elif tab_name == "⚙️ Configuration":
+                # Maintien config active
+                if hasattr(self, 'platform_selector') and self.platform_selector:
+                    self.platform_selector.update_idletasks()
+                    
+        except Exception as e:
+            pass  # Ignore silencieusement les erreurs de pré-réchauffage
+
     def _perform_stable_update(self, data, callback):
         """Effectue une mise à jour stable et complète des données"""
         try:
-            # Mise à jour complète en une seule fois
-            self.update_display(data)
+            # 🔧 OPTIMISATION: Mise à jour seulement si tab visible ou récemment changé
+            current_tab = None
+            if hasattr(self, 'notebook') and self.notebook:
+                current_tab = self.notebook.get()
             
-            # Mettre à jour les joueurs si disponibles
-            if data.get('players_info'):
-                self.update_players_from_ocr(data['players_info'])
+            # Mise à jour complète seulement pour onglet actif
+            if current_tab == "🎮 Analyse Temps Réel":
+                self.update_display(data)
+                
+                # Mettre à jour les joueurs si disponibles
+                if data.get('players_info'):
+                    self.update_players_from_ocr(data['players_info'])
             
-            # Forcer la mise à jour graphique
+            # Forcer la mise à jour graphique de manière efficace
             self.root.update_idletasks()
             
         except Exception as e:

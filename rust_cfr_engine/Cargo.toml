@@ -8,35 +8,8 @@ name = "rust_cfr_engine"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-# PyO3 pour bindings Python
+# PyO3 pour bindings Python - Version MVP simplifiée
 pyo3 = { version = "0.20", features = ["extension-module"] }
-
-# GPU Computing avec WGPU
-wgpu = "0.19"
-pollster = "0.3"
-bytemuck = { version = "1.4", features = ["derive"] }
-
-# Calculs mathématiques
-nalgebra = "0.32"
-ndarray = "0.15"
-rayon = "1.8"  # Parallélisme CPU
-
-# Random et utilities  
-rand = "0.8"
-rand_distr = "0.4"
-ahash = "0.8"  # Hash maps rapides
-dashmap = "5.5"  # Concurrent hash maps
-
-# Sérialisation
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-
-# Async runtime
-tokio = { version = "1.0", features = ["full"] }
-futures-intrusive = "0.5"
-
-# Système
-num_cpus = "1.0"
 
 [features]
 default = ["gpu"]

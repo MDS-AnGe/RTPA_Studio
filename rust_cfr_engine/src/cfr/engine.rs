@@ -22,7 +22,7 @@ pub struct CfrEngine {
 
 impl CfrEngine {
     /// Création nouvelle instance CFR
-    pub async fn new(config: CfrConfig) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn new(config: CfrConfig) -> Result<Self, String> {
         // Initialiser GPU si demandé
         let gpu_compute = if config.gpu_config.enabled {
             match GpuCompute::new(config.gpu_config.clone()).await {

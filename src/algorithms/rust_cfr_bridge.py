@@ -34,17 +34,31 @@ class RustCfrBridge:
     def _init_rust_engine(self):
         """Initialiser engine Rust"""
         try:
-            # Importer module Rust compilé
-            sys.path.append(os.path.join(os.path.dirname(__file__), '../../rust_cfr_engine/target/release'))
+            # 🔧 CHEMIN FLEXIBLE: Recherche module Rust dans plusieurs emplacements
+            rust_paths = [
+                os.path.join(os.path.dirname(__file__), '../../rust_cfr_engine/target/release'),
+                os.path.join(os.path.dirname(__file__), '../../rust_cfr_engine/target/debug'),
+                './rust_cfr_engine/target/release',
+                './rust_cfr_engine/target/debug'
+            ]
             
-            try:
-                import rust_cfr_engine
-                self.rust_engine = rust_cfr_engine.RustCfrEngine(self.config)
+            rust_engine = None
+            for path in rust_paths:
+                try:
+                    if os.path.exists(path):
+                        sys.path.insert(0, path)
+                        import rust_cfr_engine
+                        rust_engine = rust_cfr_engine.RustCfrEngine(self.config)
+                        break
+                except ImportError:
+                    continue
+            
+            if rust_engine:
+                self.rust_engine = rust_engine
                 self.is_initialized = True
                 print("🚀 Bridge Rust CFR initialisé avec succès!")
-                
-            except ImportError as e:
-                print(f"⚠️  Module Rust non trouvé: {e}")
+            else:
+                print("⚠️  Module Rust non trouvé dans les chemins standards")
                 print("   Utilisation fallback Python CFR")
                 self.is_initialized = False
                 
