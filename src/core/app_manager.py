@@ -10,39 +10,20 @@ import yaml
 
 from ..database.memory_db import MemoryDatabase
 import os
-# 🔍 DÉTECTION AUTOMATIQUE D'ENVIRONNEMENT
-import platform
-import sys
+# 🔍 CAPTURE D'ÉCRAN RÉELLE FORCÉE - PLUS DE SIMULATION
+print("🔍 RTPA - Mode capture d'écran réelle FORCÉ")
+print("📹 Élimination complète du mode simulation")
 
-# Détection intelligente de l'environnement
-if os.getenv('REPL_SLUG') or os.getenv('REPLIT_ENVIRONMENT'):
-    # Mode Replit - Simulation
-    print("🎯 Environnement Replit détecté - Mode simulation")
-    from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
-    REAL_CAPTURE_ACTIVE = False
-elif platform.system() == 'Windows':
-    # Mode Windows - Vraie capture
-    print("🔍 Environnement Windows détecté - Activation capture d'écran réelle")
-    try:
-        from ..ocr.screen_capture import ScreenCapture
-        print("✅ Capture d'écran réelle activée pour Windows")
-        print("📹 Prêt pour détection Winamax en temps réel")
-        REAL_CAPTURE_ACTIVE = True
-    except Exception as e:
-        print(f"❌ Erreur activation capture réelle: {e}")
-        print("⚠️ Fallback vers simulation")
-        from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
-        REAL_CAPTURE_ACTIVE = False
-else:
-    # Autres environnements - Auto-détection
-    try:
-        from ..ocr.screen_capture import ScreenCapture
-        print("✅ Capture d'écran réelle activée")
-        REAL_CAPTURE_ACTIVE = True
-    except Exception as e:
-        print(f"⚠️ Capture d'écran non disponible: {e}")
-        from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
-        REAL_CAPTURE_ACTIVE = False
+try:
+    from ..ocr.screen_capture import ScreenCapture
+    print("✅ Capture d'écran réelle activée")
+    print("🎯 Prêt pour détection temps réel Winamax")
+    REAL_CAPTURE_ACTIVE = True
+except Exception as e:
+    print(f"❌ ERREUR CRITIQUE: Impossible d'activer la capture réelle")
+    print(f"❌ Détails: {e}")
+    print("🚨 RTPA nécessite une capture d'écran fonctionnelle")
+    raise RuntimeError(f"Capture d'écran requise pour RTPA: {e}")
 from ..algorithms.cfr_engine import CFREngine
 from ..utils.logger import get_logger
 from ..config.settings import Settings

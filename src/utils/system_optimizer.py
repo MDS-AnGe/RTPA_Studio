@@ -238,52 +238,117 @@ class SystemOptimizer:
         return settings
     
     def monitor_resource_usage(self) -> Dict[str, float]:
-        """Surveille l'utilisation actuelle des ressources"""
+        """Surveille l'utilisation actuelle des ressources (CPU/RAM/GPU)"""
         try:
             cpu_percent = psutil.cpu_percent(interval=1)
             memory = psutil.virtual_memory()
             ram_percent = memory.percent
             
-            gpu_usage = 0.0
-            gpu_memory_percent = 0.0
+            # Surveillance GPU améliorée
+            gpu_metrics = self._get_advanced_gpu_metrics()
             
+            metrics = {
+                'cpu_percent': cpu_percent,
+                'ram_percent': ram_percent,
+                'ram_available_gb': memory.available / (1024**3),
+                'ram_total_gb': memory.total / (1024**3)
+            }
+            
+            # Fusion des métriques GPU
+            metrics.update(gpu_metrics)
+            
+            return metrics
+            
+        except Exception as e:
+            self.logger.error(f"Erreur monitoring ressources: {e}")
+            return {
+                'cpu_percent': 0, 'ram_percent': 0, 'ram_available_gb': 0, 'ram_total_gb': 8,
+                'gpu_usage': 0, 'gpu_memory_percent': 0, 'gpu_memory_used_gb': 0, 
+                'gpu_memory_total_gb': 0, 'gpu_temperature': 0, 'gpu_available': False
+            }
+    
+    def _get_advanced_gpu_metrics(self) -> Dict[str, float]:
+        """Surveillance GPU complète avec multiples méthodes de détection"""
+        gpu_metrics = {
+            'gpu_usage': 0.0,
+            'gpu_memory_percent': 0.0,
+            'gpu_memory_used_gb': 0.0,
+            'gpu_memory_total_gb': 0.0,
+            'gpu_temperature': 0.0,
+            'gpu_available': False
+        }
+        
+        try:
+            # Méthode 1: NVIDIA-ML (plus précise)
+            try:
+                import pynvml
+                pynvml.nvmlInit()
+                
+                device_count = pynvml.nvmlDeviceGetCount()
+                if device_count > 0:
+                    handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+                    
+                    # Utilisation GPU
+                    utilization = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                    gpu_metrics['gpu_usage'] = utilization.gpu
+                    
+                    # Mémoire GPU
+                    memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                    gpu_metrics['gpu_memory_percent'] = (memory_info.used / memory_info.total) * 100
+                    gpu_metrics['gpu_memory_used_gb'] = memory_info.used / (1024**3)
+                    gpu_metrics['gpu_memory_total_gb'] = memory_info.total / (1024**3)
+                    
+                    # Température
+                    try:
+                        temp = pynvml.nvmlDeviceGetTemperature(handle, pynvml.NVML_TEMPERATURE_GPU)
+                        gpu_metrics['gpu_temperature'] = temp
+                    except:
+                        gpu_metrics['gpu_temperature'] = 0
+                    
+                    gpu_metrics['gpu_available'] = True
+                    return gpu_metrics
+                    
+            except (ImportError, Exception):
+                pass
+            
+            # Méthode 2: GPUtil (fallback)
+            try:
+                import GPUtil
+                gpus = GPUtil.getGPUs()
+                if gpus:
+                    gpu = gpus[0]
+                    gpu_metrics['gpu_usage'] = gpu.load * 100
+                    gpu_metrics['gpu_memory_percent'] = gpu.memoryUtil * 100
+                    gpu_metrics['gpu_memory_used_gb'] = (gpu.memoryUtil * gpu.memoryTotal) / 1024
+                    gpu_metrics['gpu_memory_total_gb'] = gpu.memoryTotal / 1024
+                    gpu_metrics['gpu_temperature'] = gpu.temperature or 0
+                    gpu_metrics['gpu_available'] = True
+                    return gpu_metrics
+                    
+            except (ImportError, Exception):
+                pass
+            
+            # Méthode 3: PyTorch (fallback pour CUDA)
             try:
                 import torch
                 if torch.cuda.is_available():
                     gpu_memory_used = torch.cuda.memory_allocated(0)
                     gpu_memory_total = torch.cuda.get_device_properties(0).total_memory
-                    gpu_memory_percent = (gpu_memory_used / gpu_memory_total) * 100
-                    # GPU usage approximation via NVIDIA-ML si disponible
-                    try:
-                        import pynvml
-                        pynvml.nvmlInit()
-                        handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-                        util = pynvml.nvmlDeviceGetUtilizationRates(handle)
-                        gpu_usage = util.gpu
-                    except:
-                        gpu_usage = gpu_memory_percent  # Fallback
-            except:
+                    
+                    gpu_metrics['gpu_memory_percent'] = (gpu_memory_used / gpu_memory_total) * 100
+                    gpu_metrics['gpu_memory_used_gb'] = gpu_memory_used / (1024**3)
+                    gpu_metrics['gpu_memory_total_gb'] = gpu_memory_total / (1024**3)
+                    gpu_metrics['gpu_usage'] = gpu_metrics['gpu_memory_percent']  # Approximation
+                    gpu_metrics['gpu_available'] = True
+                    return gpu_metrics
+                    
+            except (ImportError, Exception):
                 pass
-            
-            # Déterminer si GPU est disponible
-            gpu_available = False
-            try:
-                import torch
-                gpu_available = torch.cuda.is_available()
-            except:
-                pass
-            
-            return {
-                'cpu_percent': cpu_percent,
-                'ram_percent': ram_percent,
-                'gpu_usage': gpu_usage,
-                'gpu_memory_percent': gpu_memory_percent,
-                'gpu_available': gpu_available
-            }
-            
+                
         except Exception as e:
-            self.logger.error(f"Erreur monitoring ressources: {e}")
-            return {'cpu_percent': 0, 'ram_percent': 0, 'gpu_usage': 0, 'gpu_memory_percent': 0, 'gpu_available': False}
+            self.logger.debug(f"Surveillance GPU non disponible: {e}")
+            
+        return gpu_metrics
     
     def auto_adjust_if_needed(self) -> bool:
         """Ajuste automatiquement si les ressources sont surchargées"""
