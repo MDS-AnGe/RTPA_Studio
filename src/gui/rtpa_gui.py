@@ -1472,14 +1472,14 @@ class RTAPGUIWindow:
                 )
             
             # Mettre à jour la nouvelle interface de détection automatique
-            if hasattr(self, 'detected_platform_label'):
+            if hasattr(self, 'detected_platform_label') and self.detected_platform_label:
                 self.detected_platform_label.configure(
                     text=display_name,
                     text_color="#00b300"
                 )
             
             # Mettre à jour le statut de calibrage
-            if hasattr(self, 'calibration_status_label'):
+            if hasattr(self, 'calibration_status_label') and self.calibration_status_label:
                 self.calibration_status_label.configure(
                     text=f"✅ Calibré pour {display_name}",
                     text_color="#00b300"
@@ -1572,19 +1572,20 @@ class RTAPGUIWindow:
             else:
                 raise Exception(f"Erreur installation: {result.stderr}")
                 
-        except subprocess.TimeoutExpired:
-            self.root.after(100, lambda: self.pytorch_status_label.configure(text="Timeout - Installation trop longue", text_color="red"))
         except Exception as e:
-            self.root.after(100, lambda: self.pytorch_status_label.configure(text=f"❌ Erreur: {str(e)[:50]}...", text_color="red"))
+            if "timeout" in str(e).lower():
+                self.root.after(100, lambda: self.pytorch_status_label.configure(text="Timeout - Installation trop longue", text_color="red"))
+            else:
+                self.root.after(100, lambda: self.pytorch_status_label.configure(text=f"❌ Erreur: {str(e)[:50]}...", text_color="red"))
             self.root.after(100, lambda: self.install_pytorch_btn.configure(state="normal", text="🔥 Installer PyTorch"))
     
     def update_task_display(self, task_name, time_info=None):
         """Met à jour l'affichage de la tâche en cours"""
         try:
-            if hasattr(self, 'current_task_label'):
+            if hasattr(self, 'current_task_label') and self.current_task_label:
                 self.current_task_label.configure(text=task_name)
             
-            if time_info and hasattr(self, 'task_time_label'):
+            if time_info and hasattr(self, 'task_time_label') and self.task_time_label:
                 if isinstance(time_info, str):
                     # Texte formaté directement
                     self.task_time_label.configure(text=time_info)
@@ -1597,7 +1598,7 @@ class RTAPGUIWindow:
                     self.task_time_label.configure(text=time_text)
                 else:
                     self.task_time_label.configure(text=str(time_info))
-            elif hasattr(self, 'task_time_label'):
+            elif hasattr(self, 'task_time_label') and self.task_time_label:
                 self.task_time_label.configure(text="")
         except Exception as e:
             print(f"Erreur mise à jour tâche: {e}")
@@ -3035,7 +3036,7 @@ class RTAPGUIWindow:
                 if hasattr(self, 'cpu_limit') and self.cpu_limit:
                     cpu_value = getattr(settings, 'cpu_usage_limit', 80.0)
                     self.cpu_limit.set(cpu_value)
-                    if hasattr(self, 'cpu_value_label'):
+                    if hasattr(self, 'cpu_value_label') and self.cpu_value_label:
                         self.cpu_value_label.configure(text=f"{int(cpu_value)}%")
                 
                 # Charger RAM (convertir pourcentage en GB approximatif)
@@ -3044,7 +3045,7 @@ class RTAPGUIWindow:
                     # Convertir pourcentage en GB (assumant 16GB total)
                     ram_gb = (ram_percentage / 100.0) * 16.0
                     self.ram_limit.set(ram_gb)
-                    if hasattr(self, 'ram_value_label'):
+                    if hasattr(self, 'ram_value_label') and self.ram_value_label:
                         self.ram_value_label.configure(text=f"{ram_gb:.1f} GB")
                 
                 # Charger GPU
