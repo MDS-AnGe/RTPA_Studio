@@ -10,6 +10,8 @@ import threading
 import time
 import sys
 import os
+import subprocess
+import logging
 from typing import Dict, Any, Optional, List
 
 # Configuration CustomTkinter
@@ -72,6 +74,19 @@ class RTAPGUIWindow:
         self.profile_description_label = None
         self.profile_status_label = None
         self.apply_profile_button = None
+        
+        # Variables pour OCR et plateforme (ajoutées pour corriger les erreurs LSP)
+        self.ocr_zone_entries = {}
+        self.platform_selector = None
+        self.detected_platform_label = None
+        self.calibration_status_label = None
+        
+        # Variables pour tâches et logs
+        self.current_task_label = None
+        self.task_time_label = None
+        
+        # Logger
+        self.logger = logging.getLogger(__name__)
         
         # Interface utilisateur
         self.create_interface()
@@ -244,7 +259,7 @@ class RTAPGUIWindow:
         self.load_saved_settings()
         
         # Charger la configuration OCR si elle existe (avec vérification)
-        if hasattr(self, 'ocr_zone_entries'):
+        if self.ocr_zone_entries:
             self.load_ocr_configuration()
         
         # Démarrer les mises à jour
