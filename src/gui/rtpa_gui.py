@@ -784,6 +784,11 @@ class RTAPGUIWindow:
                                            command=self.import_cfr_database, width=180)
         self.import_cfr_btn.pack(side='left', padx=5, pady=15)
         
+        # Bouton Debug CFR inspiré d'iciamyplant
+        self.debug_cfr_btn = ctk.CTkButton(cfr_buttons_frame, text="🔍 Debug CFR", 
+                                          command=self.debug_cfr_status, width=140)
+        self.debug_cfr_btn.pack(side='left', padx=5, pady=15)
+        
         # Status export/import
         self.cfr_status_label = ctk.CTkLabel(cfr_buttons_frame, text="Prêt pour export/import", 
                                             font=ctk.CTkFont(size=10), text_color="gray")
@@ -3292,6 +3297,70 @@ class RTAPGUIWindow:
             self.root.after(0, lambda: self.import_cfr_btn.configure(
                 state="normal", text="📥 Importer CFR"
             ))
+    
+    def debug_cfr_status(self):
+        """Affiche le debug CFR dans le style iciamyplant"""
+        try:
+            if hasattr(self, 'app_manager') and self.app_manager:
+                if hasattr(self.app_manager, 'cfr_engine') and self.app_manager.cfr_engine:
+                    # Afficher les résultats CFR dans la console
+                    print("\n" + "="*60)
+                    print("🔍 DEBUG CFR - Style iciamyplant")
+                    print("="*60)
+                    
+                    # Utiliser notre nouvelle fonction d'inspection
+                    inspection = self.app_manager.cfr_engine.inspect_cfr_strategies(limit=10)
+                    
+                    if 'error' not in inspection:
+                        print(f"📊 Itérations CFR: {inspection['iterations']}")
+                        print(f"📈 Information sets: {inspection['total_info_sets']}")
+                        print(f"⚡ Convergence: {inspection['convergence']:.4f}")
+                        print(f"✨ Qualité: {inspection['quality']:.4f}")
+                        
+                        if inspection['top_strategies']:
+                            print(f"\n🎯 Top 5 Stratégies:")
+                            for i, strategy in enumerate(inspection['top_strategies'][:5]):
+                                info_set = strategy['info_set']
+                                normalized_strategy = strategy['strategy']
+                                
+                                print(f"  {i+1}. Info Set: '{info_set}'")
+                                for action, prob in normalized_strategy.items():
+                                    print(f"     {action}: {prob:.3f}")
+                                print()
+                        
+                        # Mettre à jour le statut GUI
+                        self.cfr_status_label.configure(
+                            text=f"✅ Debug: {inspection['iterations']} iter, {inspection['total_info_sets']} sets", 
+                            text_color="green"
+                        )
+                    else:
+                        print(f"❌ Erreur debug CFR: {inspection['error']}")
+                        self.cfr_status_label.configure(
+                            text="❌ Erreur debug CFR", 
+                            text_color="red"
+                        )
+                    
+                    print("="*60)
+                    
+                else:
+                    print("❌ Moteur CFR non disponible")
+                    self.cfr_status_label.configure(
+                        text="❌ CFR non disponible", 
+                        text_color="red"
+                    )
+            else:
+                print("❌ App Manager non disponible")
+                self.cfr_status_label.configure(
+                    text="❌ Manager non disponible", 
+                    text_color="red"
+                )
+                
+        except Exception as e:
+            print(f"❌ Erreur debug CFR: {e}")
+            self.cfr_status_label.configure(
+                text="❌ Erreur debug", 
+                text_color="red"
+            )
     
     def update_display(self, data):
         """Met à jour l'affichage avec les données reçues"""

@@ -1040,14 +1040,142 @@ class CFREngine:
             self.iterations += 1
             self.iterations_count = self.iterations  # Synchronisation
             
-            # Décroissance des regrets anciens
+            # Calcul métriques de qualité CFR améliorées
             if self.iterations % 100 == 0:
+                convergence_metric = self._calculate_convergence_metric()
+                strategy_quality = self._calculate_strategy_quality()
+                
+                if self.iterations % 1000 == 0:
+                    self.logger.info(f"CFR Debug - Itération {self.iterations}: convergence={convergence_metric:.4f}, qualité={strategy_quality:.4f}")
+                
+                # Décroissance des regrets anciens
                 for info_set in self.regret_sum:
                     for action in self.regret_sum[info_set]:
                         self.regret_sum[info_set][action] *= self.discount_factor
                         
         except Exception as e:
             self.logger.error(f"Erreur mise à jour regrets: {e}")
+    
+    def _calculate_convergence_metric(self) -> float:
+        """Calcule une métrique de convergence CFR inspirée d'iciamyplant"""
+        try:
+            if not self.regret_sum:
+                return 0.0
+            
+            total_regret = 0.0
+            info_set_count = 0
+            
+            for info_set in self.regret_sum:
+                info_set_regret = sum(abs(regret) for regret in self.regret_sum[info_set].values())
+                total_regret += info_set_regret
+                info_set_count += 1
+            
+            # Moyenne des regrets absolus normalisée
+            convergence = (total_regret / max(info_set_count, 1)) * 1000  # Échelle similaire à iciamyplant
+            return convergence
+            
+        except Exception as e:
+            return 0.0
+    
+    def _calculate_strategy_quality(self) -> float:
+        """Calcule une métrique de qualité des stratégies"""
+        try:
+            if not self.strategy_sum:
+                return 0.0
+            
+            # Mesure d'entropie des stratégies pour évaluer la qualité
+            total_entropy = 0.0
+            strategy_count = 0
+            
+            for info_set in self.strategy_sum:
+                strategy_probs = list(self.strategy_sum[info_set].values())
+                if strategy_probs:
+                    # Normalisation
+                    prob_sum = sum(strategy_probs)
+                    if prob_sum > 0:
+                        normalized_probs = [p/prob_sum for p in strategy_probs]
+                        # Calcul entropie
+                        entropy = -sum(p * math.log(p + 1e-10) for p in normalized_probs if p > 0)
+                        total_entropy += entropy
+                        strategy_count += 1
+            
+            # Qualité basée sur l'entropie (plus l'entropie est équilibrée, meilleure est la qualité)
+            quality = (total_entropy / max(strategy_count, 1)) if strategy_count > 0 else 0.0
+            return min(quality, 1.0)  # Normaliser entre 0-1
+            
+        except Exception as e:
+            return 0.0
+    
+    def inspect_cfr_strategies(self, limit: int = 10) -> Dict[str, Any]:
+        """Fonction d'inspection CFR inspirée du style iciamyplant"""
+        try:
+            result = {
+                'total_info_sets': len(self.regret_sum),
+                'iterations': self.iterations,
+                'convergence': self._calculate_convergence_metric(),
+                'quality': self._calculate_strategy_quality(),
+                'top_strategies': []
+            }
+            
+            # Affichage des stratégies principales
+            sorted_info_sets = sorted(self.regret_sum.items(), key=lambda x: len(x[0]))[:limit]
+            
+            for info_set, regrets in sorted_info_sets:
+                if info_set in self.strategy_sum:
+                    strategy_data = {
+                        'info_set': info_set,
+                        'regrets': dict(regrets),
+                        'strategy': self._get_normalized_strategy(info_set)
+                    }
+                    result['top_strategies'].append(strategy_data)
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Erreur inspection CFR: {e}")
+            return {'error': str(e)}
+    
+    def _get_normalized_strategy(self, info_set: str) -> Dict[str, float]:
+        """Retourne une stratégie normalisée pour un information set"""
+        try:
+            if info_set not in self.strategy_sum:
+                return {}
+            
+            strategy = dict(self.strategy_sum[info_set])
+            total = sum(strategy.values())
+            
+            if total > 0:
+                return {action: prob/total for action, prob in strategy.items()}
+            else:
+                return strategy
+                
+        except Exception as e:
+            return {}
+    
+    def display_cfr_results(self, detailed: bool = False):
+        """Affiche les résultats CFR dans le style iciamyplant pour debug"""
+        try:
+            inspection = self.inspect_cfr_strategies(limit=15 if detailed else 5)
+            
+            print(f"\n=== CFR Engine Status (Style iciamyplant) ===")
+            print(f"Itérations: {inspection['iterations']}")
+            print(f"Information sets: {inspection['total_info_sets']}")
+            print(f"Convergence: {inspection['convergence']:.4f}")
+            print(f"Qualité: {inspection['quality']:.4f}")
+            
+            if detailed and inspection['top_strategies']:
+                print(f"\n=== Top Strategies ===")
+                for strategy in inspection['top_strategies']:
+                    info_set = strategy['info_set']
+                    normalized_strategy = strategy['strategy']
+                    
+                    print(f"Info Set: {info_set}")
+                    for action, prob in normalized_strategy.items():
+                        print(f"  {action}: {prob:.3f}")
+                    print()
+            
+        except Exception as e:
+            print(f"Erreur affichage CFR: {e}")
 
 class CardAbstraction:
     """Abstraction des cartes pour CFR"""
