@@ -10,24 +10,18 @@ import yaml
 
 from ..database.memory_db import MemoryDatabase
 import os
-# Option pour forcer la vraie capture d'écran
-FORCE_REAL_CAPTURE = os.getenv('RTPA_FORCE_REAL_CAPTURE', 'false').lower() == 'true'
-
-if FORCE_REAL_CAPTURE:
-    print("🔍 Mode capture d'écran réelle forcé")
-    try:
-        from ..ocr.screen_capture import ScreenCapture
-        print("✅ Capture d'écran réelle activée")
-    except Exception as e:
-        print(f"❌ Erreur capture réelle: {e} - Fallback simulation")
-        from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
-elif os.getenv('REPLIT_ENVIRONMENT') or not (os.getenv('DISPLAY') and os.name != 'nt'):
+# 🔍 CAPTURE D'ÉCRAN RÉELLE FORCÉE POUR VRAIES DONNÉES WINAMAX
+print("🔍 Forçage capture d'écran réelle activé")
+try:
+    from ..ocr.screen_capture import ScreenCapture
+    print("✅ Module de capture d'écran réelle chargé")
+    print("📹 Mode: Capture OCR en temps réel de l'écran")
+    REAL_CAPTURE_ACTIVE = True
+except Exception as e:
+    print(f"❌ Erreur chargement capture réelle: {e}")
+    print("⚠️ Fallback vers simulation")
     from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
-else:
-    try:
-        from ..ocr.screen_capture import ScreenCapture
-    except Exception:
-        from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
+    REAL_CAPTURE_ACTIVE = False
 from ..algorithms.cfr_engine import CFREngine
 from ..utils.logger import get_logger
 from ..config.settings import Settings

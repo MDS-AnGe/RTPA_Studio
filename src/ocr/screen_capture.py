@@ -66,7 +66,8 @@ class ScreenCapture:
         self.last_analysis = None
         self.capture_lock = threading.Lock()
         
-        self.logger.info("ScreenCapture initialisé")
+        print("✅ VRAIE CAPTURE D'ÉCRAN ACTIVÉE - Lecture OCR en temps réel")
+        self.logger.info("ScreenCapture initialisé - Mode capture réelle")
     
     def capture_screen_region(self, region: Optional[Dict[str, int]] = None) -> Optional[np.ndarray]:
         """Capture une région spécifique de l'écran"""
