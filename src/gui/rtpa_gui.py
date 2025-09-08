@@ -100,8 +100,9 @@ class RTAPGUIWindow:
         # OPTIMISATION : Marquer comme en cours d'exécution pour les boucles de mise à jour
         self.running = True
         
-        # OPTIMISATION : Charger les paramètres d'affichage plus tard pour améliorer le démarrage
-        self.root.after(5000, self.load_display_settings)  # 5 secondes au lieu de 2
+        # 🚨 CHARGEMENT PARAMÈTRES DÉSACTIVÉ - Mode ultra minimal
+        print("🚨 CHARGEMENT PARAMÈTRES DÉSACTIVÉ - Mode ultra minimal")
+        # self.root.after(5000, self.load_display_settings)  # DÉSACTIVÉ COMPLÈTEMENT
     
     def _set_windows_properties(self):
         """Configure les propriétés Windows pour une meilleure identification"""
@@ -271,9 +272,9 @@ class RTAPGUIWindow:
         
         # OPTIMISATION PERFORMANCES : Centraliser les mises à jour en une seule boucle
         self.update_counter = 0
-        # ✅ RÉACTIVATION GUI UPDATE LOOP pour test OCR
-        print("✅ GUI UPDATE LOOP réactivée - Test réactivité avec OCR")
-        self.root.after(1000, self.unified_update_loop)  # 1 seconde pour réactivité
+        # 🚨 DÉSACTIVATION COMPLÈTE GUI UPDATE LOOP - Mode ultra minimal
+        print("🚨 GUI UPDATE LOOP COMPLÈTEMENT DÉSACTIVÉE - Mode ultra minimal")
+        # self.root.after(1000, self.unified_update_loop)  # DÉSACTIVÉ COMPLÈTEMENT
         
         # Initialiser l'affichage de la tâche
         if hasattr(self, 'main_task_label'):

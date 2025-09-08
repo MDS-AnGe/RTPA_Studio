@@ -156,8 +156,9 @@ class RTAPStudioManager:
         except Exception as e:
             self.logger.error(f"Erreur initialisation différée CFR: {e}")
         
-        # Démarrer la surveillance automatique des plateformes
-        self.platform_detector.start_monitoring()
+        # 🚨 SURVEILLANCE DÉSACTIVÉE - Mode ultra minimal  
+        print("🚨 SURVEILLANCE PLATEFORME DÉSACTIVÉE - Mode ultra minimal")
+        # self.platform_detector.start_monitoring()  # DÉSACTIVÉ COMPLÈTEMENT
     
     def start(self):
         """Démarre le système d'analyse (OCR DÉSACTIVÉ pour test interface pure)"""
