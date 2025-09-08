@@ -954,6 +954,59 @@ class RTAPGUIWindow:
         # Initialiser le profil par défaut
         self._init_performance_profiles()
         
+        # === MÉTRIQUES SYSTÈME EN TEMPS RÉEL ===
+        system_metrics_frame = ctk.CTkFrame(perf_container)
+        system_metrics_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(system_metrics_frame, text="📊 Utilisation des Ressources", 
+                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        
+        # Container pour les métriques
+        metrics_container = ctk.CTkFrame(system_metrics_frame)
+        metrics_container.pack(fill='x', padx=20, pady=(0, 15))
+        
+        # CPU Usage
+        cpu_frame = ctk.CTkFrame(metrics_container)
+        cpu_frame.pack(fill='x', pady=(10, 5))
+        
+        ctk.CTkLabel(cpu_frame, text="CPU:", font=ctk.CTkFont(size=14, weight="bold")).pack(side='left', padx=(10, 10))
+        
+        self.cpu_usage_bar = ctk.CTkProgressBar(cpu_frame, width=200, height=20)
+        self.cpu_usage_bar.pack(side='left', padx=(0, 10))
+        self.cpu_usage_bar.set(0)
+        
+        self.cpu_usage_label = ctk.CTkLabel(cpu_frame, text="0%", font=ctk.CTkFont(size=12, weight="bold"))
+        self.cpu_usage_label.pack(side='left', padx=(0, 10))
+        
+        # RAM Usage  
+        ram_frame = ctk.CTkFrame(metrics_container)
+        ram_frame.pack(fill='x', pady=5)
+        
+        ctk.CTkLabel(ram_frame, text="RAM:", font=ctk.CTkFont(size=14, weight="bold")).pack(side='left', padx=(10, 10))
+        
+        self.ram_usage_bar = ctk.CTkProgressBar(ram_frame, width=200, height=20)
+        self.ram_usage_bar.pack(side='left', padx=(0, 10))
+        self.ram_usage_bar.set(0)
+        
+        self.ram_usage_label = ctk.CTkLabel(ram_frame, text="0%", font=ctk.CTkFont(size=12, weight="bold"))
+        self.ram_usage_label.pack(side='left', padx=(0, 10))
+        
+        # GPU Usage (si disponible)
+        gpu_frame = ctk.CTkFrame(metrics_container)
+        gpu_frame.pack(fill='x', pady=(5, 10))
+        
+        ctk.CTkLabel(gpu_frame, text="GPU:", font=ctk.CTkFont(size=14, weight="bold")).pack(side='left', padx=(10, 10))
+        
+        self.gpu_usage_bar = ctk.CTkProgressBar(gpu_frame, width=200, height=20)
+        self.gpu_usage_bar.pack(side='left', padx=(0, 10))
+        self.gpu_usage_bar.set(0)
+        
+        self.gpu_usage_label = ctk.CTkLabel(gpu_frame, text="N/A", font=ctk.CTkFont(size=12, weight="bold"))
+        self.gpu_usage_label.pack(side='left', padx=(0, 10))
+        
+        # Démarrer la mise à jour des métriques
+        self.root.after(1000, self.update_system_metrics)
+        
         # === AFFICHAGE TÂCHE EN COURS UNIFIÉ ===
         task_frame = ctk.CTkFrame(perf_container)
         task_frame.pack(fill='x', pady=(0, 20))
@@ -1532,18 +1585,41 @@ class RTAPGUIWindow:
             if hasattr(self, 'app_manager') and self.app_manager and hasattr(self.app_manager, 'cfr_engine'):
                 cfr_engine = self.app_manager.cfr_engine
                 
-                # Priorité: Tâche CFR en cours
+                # Priorité 1: Génération de mains synthétiques en cours
                 if hasattr(cfr_engine, 'cfr_trainer') and cfr_engine.cfr_trainer:
                     trainer = cfr_engine.cfr_trainer
                     
-                    # Vérifier si l'entraînement est actif
-                    if hasattr(trainer, 'training_active') and getattr(trainer, 'training_active', False):
-                        # Récupérer les informations de progression CFR
-                        iterations = getattr(trainer, 'current_iteration', 0)
-                        target = getattr(trainer, 'target_iterations', 100000)
+                    # Vérifier génération de mains synthétiques
+                    if hasattr(trainer, 'generation_active') and getattr(trainer, 'generation_active', False):
+                        generated = getattr(trainer, 'hands_generated', 0)
+                        target_gen = getattr(trainer, 'target_hands', 200000)
+                        
+                        if target_gen > 0:
+                            progress = min(100.0, (generated / target_gen) * 100)
+                            task_text = f"🔄 Génération de mains synthétiques ({generated:,}/{target_gen:,})"
+                            
+                            if hasattr(self, 'main_task_label'):
+                                self.main_task_label.configure(text=task_text, text_color="#ff8c00")
+                            
+                            if hasattr(self, 'task_progress_bar'):
+                                self.task_progress_bar.set(progress / 100.0)
+                            
+                            if hasattr(self, 'task_detail_label'):
+                                self.task_detail_label.configure(text=f"Progression: {progress:.1f}% - {generated:,} mains générées")
+                            
+                            self.root.after(500, self.update_cfr_progress)  # Mise à jour rapide
+                            return
+                    
+                    # Priorité 2: Entraînement CFR intensif - Utiliser get_training_progress()
+                    try:
+                        progress_info = cfr_engine.get_training_progress()
+                        if progress_info.get('training_active', False):
+                            iterations = progress_info.get('iterations', 0)
+                            target = progress_info.get('target_iterations', 100000)
                         
                         if target > 0:
                             progress = min(100.0, (iterations / target) * 100)
+                            task_text = f"⚡ Calculs Nash/CFR en cours ({iterations:,}/{target:,} itérations)"
                             
                             # Calculer le temps restant
                             time_str = "Calcul..."
@@ -1578,7 +1654,7 @@ class RTAPGUIWindow:
                                 self.task_progress_bar.set(progress / 100.0)
                             
                             if hasattr(self, 'task_detail_label'):
-                                detail_text = f"Itérations: {iterations:,} sur {target:,}"
+                                detail_text = f"Progression: {progress:.1f}% - Convergence Nash en cours"
                                 if hasattr(trainer, 'training_start_time'):
                                     import time
                                     elapsed = time.time() - trainer.training_start_time
@@ -1588,6 +1664,8 @@ class RTAPGUIWindow:
                             # Programmer la prochaine mise à jour
                             self.root.after(1000, self.update_cfr_progress)  # Mise à jour chaque seconde
                             return
+                    except Exception as e:
+                        print(f"Erreur récupération training progress: {e}")
                     
                     # Vérifier s'il y a une génération de mains en cours
                     elif hasattr(trainer, 'is_generating') and getattr(trainer, 'is_generating', False):
@@ -1613,17 +1691,39 @@ class RTAPGUIWindow:
                             return
             
             # Aucune tâche en cours - affichage par défaut
+            # Priorité 3: Génération continue en cours
+            if hasattr(cfr_engine, 'cfr_trainer') and cfr_engine.cfr_trainer and hasattr(cfr_engine.cfr_trainer, 'continuous_generator'):
+                cont_gen = cfr_engine.cfr_trainer.continuous_generator
+                if hasattr(cont_gen, 'running') and getattr(cont_gen, 'running', False):
+                    hands_per_min = getattr(cont_gen, 'current_rate', 450)
+                    
+                    if hasattr(self, 'main_task_label'):
+                        self.main_task_label.configure(text=f"🔄 Génération continue active ({hands_per_min} mains/min)", text_color="#00b300")
+                    
+                    if hasattr(self, 'task_progress_bar'):
+                        # Animation pour génération continue
+                        current_time = time.time() if 'time' in globals() else 0
+                        animation_progress = (current_time % 2) / 2  # Animation de 2 secondes
+                        self.task_progress_bar.set(animation_progress)
+                    
+                    if hasattr(self, 'task_detail_label'):
+                        self.task_detail_label.configure(text="Amélioration continue des stratégies Nash")
+                    
+                    self.root.after(1000, self.update_cfr_progress)
+                    return
+            
+            # Aucune tâche active
             if hasattr(self, 'main_task_label'):
-                self.main_task_label.configure(text="Système en attente", text_color="#666666")
+                self.main_task_label.configure(text="🎯 Système prêt", text_color="#666666")
             
             if hasattr(self, 'task_progress_bar'):
                 self.task_progress_bar.set(0)
             
             if hasattr(self, 'task_detail_label'):
-                self.task_detail_label.configure(text="Aucune tâche en cours")
+                self.task_detail_label.configure(text="En attente de détection de plateforme poker")
             
             # Programmer la prochaine vérification
-            self.root.after(3000, self.update_cfr_progress)
+            self.root.after(2000, self.update_cfr_progress)
             
         except Exception as e:
             print(f"Erreur update progress: {e}")
@@ -2587,6 +2687,53 @@ class RTAPGUIWindow:
                 
         except Exception as e:
             print(f"Erreur redémarrage CFR: {e}")
+    
+    def update_system_metrics(self):
+        """Met à jour les métriques système en temps réel (CPU/RAM/GPU)"""
+        try:
+            import psutil
+            
+            # CPU Usage
+            cpu_percent = psutil.cpu_percent(interval=0.1)
+            if hasattr(self, 'cpu_usage_bar'):
+                self.cpu_usage_bar.set(cpu_percent / 100.0)
+            if hasattr(self, 'cpu_usage_label'):
+                self.cpu_usage_label.configure(text=f"{cpu_percent:.1f}%")
+            
+            # RAM Usage
+            memory = psutil.virtual_memory()
+            ram_percent = memory.percent
+            if hasattr(self, 'ram_usage_bar'):
+                self.ram_usage_bar.set(ram_percent / 100.0)
+            if hasattr(self, 'ram_usage_label'):
+                self.ram_usage_label.configure(text=f"{ram_percent:.1f}%")
+            
+            # GPU Usage (si PyTorch disponible)
+            gpu_usage = 0.0
+            gpu_text = "N/A"
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    gpu_memory_used = torch.cuda.memory_allocated(0)
+                    gpu_memory_total = torch.cuda.get_device_properties(0).total_memory
+                    gpu_percent = (gpu_memory_used / gpu_memory_total) * 100
+                    gpu_usage = gpu_percent / 100.0
+                    gpu_text = f"{gpu_percent:.1f}%"
+            except Exception:
+                pass
+            
+            if hasattr(self, 'gpu_usage_bar'):
+                self.gpu_usage_bar.set(gpu_usage)
+            if hasattr(self, 'gpu_usage_label'):
+                self.gpu_usage_label.configure(text=gpu_text)
+            
+            # Programmer la prochaine mise à jour
+            self.root.after(2000, self.update_system_metrics)  # Toutes les 2 secondes
+            
+        except Exception as e:
+            print(f"Erreur update system metrics: {e}")
+            # Reprogram même en cas d'erreur
+            self.root.after(5000, self.update_system_metrics)
 
     def on_closing(self):
         """Gestion propre de la fermeture"""
