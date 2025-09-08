@@ -237,10 +237,11 @@ class RTAPGUIWindow:
         self.notebook.add(self.settings_tab, text="🔧 Paramètres")
         self.tabs_created['settings'] = False
         
-        # Onglet 4: Performance (lazy loading)
+        # Onglet 4: Performance (créé immédiatement car contient métriques système importantes)
         self.performance_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.performance_tab, text="⚡ Performance")
-        self.tabs_created['performance'] = False
+        self.create_performance_tab()  # Créer immédiatement pour les métriques système
+        self.tabs_created['performance'] = True
         
         # Onglet 5: Version (lazy loading)
         self.version_tab = ttk.Frame(self.notebook)
@@ -2354,30 +2355,35 @@ class RTAPGUIWindow:
             self.logger.error(f"Erreur save_custom_profile: {e}")
     
     def update_system_metrics(self):
-        """Met à jour les métriques système en temps réel"""
+        """Met à jour les métriques système en temps réel (avec protection lazy loading)"""
         try:
             if self.system_optimizer:
                 usage = self.system_optimizer.monitor_resource_usage()
                 
-                # Mettre à jour les labels d'utilisation
-                self.cpu_usage_label.configure(text=f"{usage['cpu_percent']:.1f}%")
-                self.ram_usage_label.configure(text=f"{usage['ram_percent']:.1f}%")
+                # PROTECTION LAZY LOADING : Vérifier si les éléments existent avant mise à jour
+                if hasattr(self, 'cpu_usage_label') and self.cpu_usage_label is not None:
+                    # Mettre à jour les labels d'utilisation
+                    self.cpu_usage_label.configure(text=f"{usage['cpu_percent']:.1f}%")
+                    
+                    # Couleurs selon l'utilisation  
+                    cpu_color = "#ff4444" if usage['cpu_percent'] > 90 else "#00b300" if usage['cpu_percent'] < 70 else "#ff8c00"
+                    self.cpu_usage_label.configure(text_color=cpu_color)
                 
-                # Affichage GPU amélioré
-                if usage.get('gpu_available', False):
-                    if usage['gpu_usage'] > 0:
-                        self.gpu_usage_label.configure(text=f"{usage['gpu_usage']:.1f}%")
+                if hasattr(self, 'ram_usage_label') and self.ram_usage_label is not None:
+                    self.ram_usage_label.configure(text=f"{usage['ram_percent']:.1f}%")
+                    
+                    ram_color = "#ff4444" if usage['ram_percent'] > 85 else "#00b300" if usage['ram_percent'] < 60 else "#ff8c00"
+                    self.ram_usage_label.configure(text_color=ram_color)
+                
+                if hasattr(self, 'gpu_usage_label') and self.gpu_usage_label is not None:
+                    # Affichage GPU amélioré
+                    if usage.get('gpu_available', False):
+                        if usage['gpu_usage'] > 0:
+                            self.gpu_usage_label.configure(text=f"{usage['gpu_usage']:.1f}%")
+                        else:
+                            self.gpu_usage_label.configure(text="0%")  # GPU détecté mais pas utilisé
                     else:
-                        self.gpu_usage_label.configure(text="0%")  # GPU détecté mais pas utilisé
-                else:
-                    self.gpu_usage_label.configure(text="Indisponible")
-                
-                # Couleurs selon l'utilisation
-                cpu_color = "#ff4444" if usage['cpu_percent'] > 90 else "#00b300" if usage['cpu_percent'] < 70 else "#ff8c00"
-                ram_color = "#ff4444" if usage['ram_percent'] > 85 else "#00b300" if usage['ram_percent'] < 60 else "#ff8c00"
-                
-                self.cpu_usage_label.configure(text_color=cpu_color)
-                self.ram_usage_label.configure(text_color=ram_color)
+                        self.gpu_usage_label.configure(text="N/A")
                 
                 # Auto-ajustement si nécessaire
                 adjusted = self.system_optimizer.auto_adjust_if_needed()
