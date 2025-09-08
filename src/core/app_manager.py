@@ -10,20 +10,41 @@ import yaml
 
 from ..database.memory_db import MemoryDatabase
 import os
-# 🔍 CAPTURE D'ÉCRAN RÉELLE FORCÉE - PLUS DE SIMULATION
-print("🔍 RTPA - Mode capture d'écran réelle FORCÉ")
-print("📹 Élimination complète du mode simulation")
+# 🔍 DÉTECTION INTELLIGENTE D'ENVIRONNEMENT
+import platform
+import sys
 
-try:
-    from ..ocr.screen_capture import ScreenCapture
-    print("✅ Capture d'écran réelle activée")
-    print("🎯 Prêt pour détection temps réel Winamax")
-    REAL_CAPTURE_ACTIVE = True
-except Exception as e:
-    print(f"❌ ERREUR CRITIQUE: Impossible d'activer la capture réelle")
-    print(f"❌ Détails: {e}")
-    print("🚨 RTPA nécessite une capture d'écran fonctionnelle")
-    raise RuntimeError(f"Capture d'écran requise pour RTPA: {e}")
+IS_REPLIT = bool(os.getenv('REPL_SLUG') or os.getenv('REPLIT_ENVIRONMENT'))
+IS_WINDOWS = platform.system() == 'Windows'
+
+if IS_REPLIT:
+    # Mode Replit - Fallback simulation temporaire pour développement
+    print("🎯 Mode développement Replit - Simulation temporaire")
+    from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
+    REAL_CAPTURE_ACTIVE = False
+elif IS_WINDOWS:
+    # Mode Windows - Capture réelle forcée
+    print("🔍 WINDOWS DÉTECTÉ - Activation capture d'écran réelle")
+    print("📹 Mode OCR temps réel pour Winamax")
+    try:
+        from ..ocr.screen_capture import ScreenCapture
+        print("✅ Capture d'écran réelle activée sur Windows")
+        print("🎯 Prêt pour détection temps réel Winamax")
+        REAL_CAPTURE_ACTIVE = True
+    except Exception as e:
+        print(f"❌ ERREUR Windows: {e}")
+        print("🔧 Vérifiez les dépendances: pip install mss opencv-python pytesseract")
+        raise RuntimeError(f"Capture d'écran Windows requise: {e}")
+else:
+    # Autres OS - Tentative capture réelle
+    try:
+        from ..ocr.screen_capture import ScreenCapture
+        print("✅ Capture d'écran réelle activée")
+        REAL_CAPTURE_ACTIVE = True
+    except Exception as e:
+        print(f"⚠️ Capture non disponible: {e}")
+        from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
+        REAL_CAPTURE_ACTIVE = False
 from ..algorithms.cfr_engine import CFREngine
 from ..utils.logger import get_logger
 from ..config.settings import Settings
