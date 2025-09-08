@@ -1158,6 +1158,76 @@ class RTAPGUIWindow:
                                                     font=ctk.CTkFont(size=11))
             self.pytorch_status_label.pack()
         
+        # === SECTION CFR RUST + GPU ===
+        rust_frame = ctk.CTkFrame(perf_container)
+        rust_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(rust_frame, text="🦀 CFR Rust Engine + GPU", 
+                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        
+        # Status du système Rust
+        rust_status_frame = ctk.CTkFrame(rust_frame)
+        rust_status_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        self.rust_status_label = ctk.CTkLabel(rust_status_frame, 
+                                             text="🔄 Vérification système Rust...",
+                                             font=ctk.CTkFont(size=12))
+        self.rust_status_label.pack(pady=10)
+        
+        # Configuration GPU
+        gpu_config_frame = ctk.CTkFrame(rust_frame)
+        gpu_config_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        ctk.CTkLabel(gpu_config_frame, text="GPU Configuration", 
+                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(10, 5))
+        
+        # GPU Enable switch
+        gpu_switch_frame = ctk.CTkFrame(gpu_config_frame)
+        gpu_switch_frame.pack(fill='x', padx=10, pady=5)
+        
+        ctk.CTkLabel(gpu_switch_frame, text="GPU Acceleration:", 
+                    font=ctk.CTkFont(size=12)).pack(side='left', padx=(10, 10))
+        
+        self.gpu_enabled_switch = ctk.CTkSwitch(gpu_switch_frame, text="Activé", 
+                                               command=self.on_gpu_enabled_changed)
+        self.gpu_enabled_switch.pack(side='left')
+        
+        # GPU Memory limit
+        gpu_mem_frame = ctk.CTkFrame(gpu_config_frame)
+        gpu_mem_frame.pack(fill='x', padx=10, pady=5)
+        
+        ctk.CTkLabel(gpu_mem_frame, text="Limite mémoire GPU:", 
+                    font=ctk.CTkFont(size=12)).pack(side='left', padx=(10, 10))
+        
+        self.gpu_memory_slider = ctk.CTkSlider(gpu_mem_frame, from_=0.1, to=0.9, 
+                                              number_of_steps=8,
+                                              command=self.on_gpu_memory_changed)
+        self.gpu_memory_slider.pack(side='left', padx=(10, 10), fill='x', expand=True)
+        self.gpu_memory_slider.set(0.6)  # 60% par défaut
+        
+        self.gpu_memory_label = ctk.CTkLabel(gpu_mem_frame, text="60%", 
+                                            font=ctk.CTkFont(size=11))
+        self.gpu_memory_label.pack(side='right', padx=(5, 10))
+        
+        # GPU Batch size
+        gpu_batch_frame = ctk.CTkFrame(gpu_config_frame)
+        gpu_batch_frame.pack(fill='x', padx=10, pady=5)
+        
+        ctk.CTkLabel(gpu_batch_frame, text="Taille batch GPU:", 
+                    font=ctk.CTkFont(size=12)).pack(side='left', padx=(10, 10))
+        
+        self.gpu_batch_entry = ctk.CTkEntry(gpu_batch_frame, width=100, 
+                                           placeholder_text="1000")
+        self.gpu_batch_entry.pack(side='left', padx=(10, 10))
+        self.gpu_batch_entry.insert(0, "1000")
+        
+        # Bouton test Rust
+        test_rust_button = ctk.CTkButton(rust_frame, text="🧪 Tester CFR Rust", 
+                                        command=self.test_rust_cfr_system,
+                                        font=ctk.CTkFont(size=12, weight="bold"),
+                                        fg_color="#8B4513", hover_color="#A0522D")
+        test_rust_button.pack(pady=10)
+
         # === PROFILS DE PERFORMANCE ===
         profiles_frame = ctk.CTkFrame(perf_container)
         profiles_frame.pack(fill='x', pady=(0, 20))
@@ -2987,6 +3057,96 @@ class RTAPGUIWindow:
         except Exception as e:
             print(f"❌ Erreur lors du test: {e}")
     
+    def on_gpu_enabled_changed(self):
+        """Gestion du changement d'état GPU"""
+        try:
+            enabled = self.gpu_enabled_switch.get()
+            memory_limit = self.gpu_memory_slider.get()
+            batch_size = int(self.gpu_batch_entry.get() or "1000")
+            
+            # Configurer le système Rust
+            if hasattr(self.app_manager, 'cfr_engine') and hasattr(self.app_manager.cfr_engine, 'trainer'):
+                self.app_manager.cfr_engine.trainer.configure_rust_gpu(enabled, memory_limit, batch_size)
+            
+            # Mettre à jour le statut
+            status = "✅ GPU activé" if enabled else "❌ GPU désactivé"
+            self.rust_status_label.configure(text=f"🦀 Rust CFR Engine: {status}")
+            
+            print(f"🔧 GPU Configuration: enabled={enabled}, memory={memory_limit:.1%}, batch={batch_size}")
+            
+        except Exception as e:
+            print(f"Erreur configuration GPU: {e}")
+    
+    def on_gpu_memory_changed(self, value):
+        """Gestion du changement de limite mémoire GPU"""
+        try:
+            percentage = int(value * 100)
+            self.gpu_memory_label.configure(text=f"{percentage}%")
+            
+            # Appliquer automatiquement si GPU activé
+            if hasattr(self, 'gpu_enabled_switch') and self.gpu_enabled_switch.get():
+                self.on_gpu_enabled_changed()
+                
+        except Exception as e:
+            print(f"Erreur changement mémoire GPU: {e}")
+    
+    def test_rust_cfr_system(self):
+        """Test du système CFR Rust"""
+        try:
+            print("\n" + "="*50)
+            print("🧪 TEST CFR RUST ENGINE")
+            print("="*50)
+            
+            # Vérifier disponibilité
+            if hasattr(self.app_manager, 'cfr_engine') and hasattr(self.app_manager.cfr_engine, 'trainer'):
+                trainer = self.app_manager.cfr_engine.trainer
+                rust_stats = trainer.get_rust_performance_stats()
+                
+                print(f"🦀 Rust Engine: {rust_stats.get('engine', 'Unknown')}")
+                print(f"🔥 GPU Available: {rust_stats.get('gpu_available', False)}")
+                
+                if rust_stats.get('error'):
+                    print(f"❌ Error: {rust_stats['error']}")
+                
+                # Test de performance simple
+                test_states = [
+                    {
+                        "hole_cards": [],
+                        "community_cards": [],
+                        "pot_size": 10.0,
+                        "stack_size": 100.0,
+                        "position": 0,
+                        "num_players": 2,
+                        "betting_round": "preflop"
+                    }
+                ] * 10  # 10 states de test
+                
+                import time
+                start_time = time.time()
+                convergence = trainer.rust_cfr_bridge.train_batch(test_states)
+                test_time = time.time() - start_time
+                
+                print(f"⚡ Test Performance:")
+                print(f"   • 10 états traités en {test_time*1000:.2f}ms")
+                print(f"   • Convergence: {convergence:.4f}")
+                print(f"   • Débit: {10/test_time:.1f} états/sec")
+                
+                # Mettre à jour le statut
+                if rust_stats.get('engine') == 'Rust + GPU':
+                    self.rust_status_label.configure(text="🚀 Rust + GPU: Performance optimale")
+                else:
+                    self.rust_status_label.configure(text="🐍 Python fallback: Fonctionnel")
+                    
+            else:
+                print("❌ Système CFR non initialisé")
+                self.rust_status_label.configure(text="❌ CFR Engine non disponible")
+                
+            print("="*50)
+            
+        except Exception as e:
+            print(f"❌ Erreur test Rust: {e}")
+            self.rust_status_label.configure(text=f"❌ Erreur: {str(e)[:30]}...")
+
     def on_closing(self):
         """Gestion propre de la fermeture"""
         self.running = False

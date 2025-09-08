@@ -16,6 +16,7 @@ from .hand_parser import ParsedHand
 from .hand_generator import HandGenerator, GenerationSettings
 from .cfr_engine import CFREngine, PokerState
 from ..utils.logger import get_logger
+from .rust_cfr_bridge import rust_cfr_bridge
 
 class CFRTrainer:
     """Entraîneur CFR avec génération massive de mains"""
@@ -23,6 +24,7 @@ class CFRTrainer:
     def __init__(self, cfr_engine: CFREngine):
         self.logger = get_logger(__name__)
         self.cfr_engine = cfr_engine
+        self.rust_cfr_bridge = rust_cfr_bridge  # Bridge Rust pour performance
         
         # ✅ CONFIGURATION ALLÉGÉE - Anti-freeze
         self.target_iterations = 5000      # Réduit de 25000 à 5000
@@ -657,8 +659,16 @@ class CFRTrainer:
                 # Sélection batch de mains pour cette itération
                 batch_hands = self._select_training_batch()
                 
-                # Entraînement CFR sur le batch
-                convergence = self._train_cfr_batch(batch_hands, iteration)
+                # 🚀 NOUVEAU: Utiliser Rust CFR Bridge si disponible
+                if self.rust_cfr_bridge.is_rust_available():
+                    # Conversion vers format Rust et training ultra-rapide
+                    rust_states = self._convert_hands_to_rust_states(batch_hands)
+                    convergence = self.rust_cfr_bridge.train_batch(rust_states)
+                    self.logger.debug(f"🦀 Rust CFR: iteration {iteration}, convergence {convergence:.4f}")
+                else:
+                    # Fallback Python standard
+                    convergence = self._train_cfr_batch(batch_hands, iteration)
+                    self.logger.debug(f"🐍 Python CFR: iteration {iteration}, convergence {convergence:.4f}")
                 
                 # Mise à jour métriques
                 iter_time = time.time() - iter_start
@@ -874,6 +884,54 @@ class CFRTrainer:
             table_type="cashgame"
         )
     
+    def _convert_hands_to_rust_states(self, hands: List[ParsedHand]) -> List[Dict[str, Any]]:
+        """Convertit les mains parsées vers le format Rust"""
+        rust_states = []
+        
+        for hand in hands:
+            try:
+                # Convertir ParsedHand vers format dict pour Rust
+                rust_state = {
+                    "hole_cards": [
+                        {"rank": card.rank, "suit": card.suit} 
+                        for card in hand.hero_cards if hasattr(card, 'rank')
+                    ],
+                    "community_cards": [
+                        {"rank": card.rank, "suit": card.suit}
+                        for card in hand.board_cards if hasattr(card, 'rank')
+                    ],
+                    "pot_size": float(hand.pot_size) if hasattr(hand, 'pot_size') else 10.0,
+                    "stack_size": float(hand.hero_stack) if hasattr(hand, 'hero_stack') else 100.0,
+                    "position": int(hand.hero_position) if hasattr(hand, 'hero_position') else 0,
+                    "num_players": int(hand.num_players) if hasattr(hand, 'num_players') else 2,
+                    "betting_round": getattr(hand, 'betting_round', 'preflop')
+                }
+                rust_states.append(rust_state)
+                
+            except Exception as e:
+                # State par défaut en cas d'erreur
+                self.logger.debug(f"Erreur conversion main: {e}")
+                rust_states.append({
+                    "hole_cards": [],
+                    "community_cards": [],
+                    "pot_size": 10.0,
+                    "stack_size": 100.0,
+                    "position": 0,
+                    "num_players": 2,
+                    "betting_round": "preflop"
+                })
+        
+        return rust_states
+    
+    def get_rust_performance_stats(self) -> Dict[str, Any]:
+        """Obtient les statistiques de performance du système Rust"""
+        return self.rust_cfr_bridge.get_performance_stats()
+    
+    def configure_rust_gpu(self, enabled: bool, memory_limit: float, batch_size: int):
+        """Configure les paramètres GPU pour le système Rust"""
+        self.rust_cfr_bridge.configure_gpu(enabled, memory_limit, batch_size)
+        self.logger.info(f"Configuration GPU Rust: enabled={enabled}, memory={memory_limit:.1%}, batch={batch_size}")
+
     def _evaluate_strategy_quality(self) -> float:
         """Évalue la qualité de la stratégie actuelle"""
         
