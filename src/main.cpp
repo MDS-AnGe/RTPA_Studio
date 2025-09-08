@@ -10,6 +10,8 @@
 #include <QStyleFactory>
 #include <QDir>
 #include <QStandardPaths>
+#include <QPalette>
+#include <QColor>
 #include <iostream>
 #include <memory>
 
