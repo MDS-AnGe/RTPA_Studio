@@ -1,5 +1,16 @@
 # RTPA Studio - Real-Time Poker Assistant
 
+## Recent Changes
+
+### 2025-09-08 - Améliorations CFR inspirées de l'analyse iciamyplant/Poker_CFR
+- **Analyse comparative complète** : Étude du repo éducatif iciamyplant/Poker_CFR (134⭐) vs RTPA Studio
+- **Confirmation supériorité technique** : RTPA dépasse largement le repo éducatif (CFR+ vs Vanilla CFR, GPU vs CPU, Texas Hold'em vs Kuhn Poker)
+- **Métriques CFR améliorées** : Ajout de calculs de convergence et qualité inspirés du style iciamyplant
+- **Fonction d'inspection CFR** : `inspect_cfr_strategies()` pour debug avancé des information sets
+- **Bouton Debug CFR** : Interface GUI `🔍 Debug CFR` pour visualiser métriques en temps réel
+- **Optimisation affichage** : Logs CFR détaillés toutes les 1000 itérations avec convergence/qualité
+- **Style educatif intégré** : Affichage des stratégies normalisées comme dans iciamyplant pour debug
+
 ## Overview
 RTPA Studio is an advanced poker analysis system designed for education and training. It combines traditional CFR algorithms with Deep CFR neural networks to provide optimal strategic recommendations in real-time. The system leverages Nash equilibrium to offer mathematically sound game advice, aiming to improve user poker skills through continuous learning and sophisticated analysis.
 
