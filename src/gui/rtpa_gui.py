@@ -2924,6 +2924,53 @@ class RTAPGUIWindow:
             # Reprogram même en cas d'erreur
             self.root.after(5000, self.update_system_metrics)
 
+    def test_winamax_detection(self):
+        """Test spécialisé pour la détection Winamax (lobby et tables)"""
+        try:
+            if not self.app_manager or not hasattr(self.app_manager, 'platform_detector'):
+                print("⚠️ Détecteur de plateforme non disponible")
+                return
+            
+            # Test de détection Winamax
+            winamax_info = self.app_manager.platform_detector.detect_winamax_tables()
+            
+            print("\n🎯 TEST DÉTECTION WINAMAX")
+            print("=" * 40)
+            
+            process_status = "✅ Détecté" if winamax_info['process_detected'] else "❌ Non détecté"
+            lobby_status = "✅ Détecté" if winamax_info['lobby_detected'] else "❌ Non détecté"
+            tables_count = len(winamax_info['tables_detected'])
+            
+            print(f"📊 Processus Winamax: {process_status}")
+            print(f"🏢 Lobby ouvert: {lobby_status}")
+            print(f"🃏 Tables détectées: {tables_count}")
+            
+            if winamax_info['all_winamax_windows']:
+                print(f"\n🪟 Fenêtres Winamax:")
+                for window in winamax_info['all_winamax_windows']:
+                    print(f"   • {window}")
+            
+            if winamax_info['tables_detected']:
+                print(f"\n🎯 Tables spécifiques:")
+                for table in winamax_info['tables_detected']:
+                    print(f"   • {table}")
+            
+            # Recommandations
+            print(f"\n💡 Recommandation:")
+            if not winamax_info['process_detected']:
+                print("   ⚠️ Ouvrez le client Winamax")
+            elif winamax_info['lobby_detected'] and not winamax_info['tables_detected']:
+                print("   ⚠️ Ouvrez une table de poker")
+            elif winamax_info['tables_detected']:
+                print("   ✅ Tables détectées - RTPA devrait fonctionner")
+            else:
+                print("   ❓ État incertain")
+                
+            print("=" * 40)
+            
+        except Exception as e:
+            print(f"❌ Erreur lors du test: {e}")
+    
     def on_closing(self):
         """Gestion propre de la fermeture"""
         self.running = False
