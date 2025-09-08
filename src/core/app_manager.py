@@ -178,26 +178,35 @@ class RTAPStudioManager:
         self.logger.info("Arrêt du système d'analyse")
     
     def _ocr_loop(self):
-        """Boucle de capture et d'analyse OCR"""
+        """Boucle de capture et d'analyse OCR (optimisée pour performance)"""
         ocr_iterations = 0
         while self.running:
             try:
+                # ✅ OPTIMISATION: Vérifier plateforme active AVANT capture
+                if not self.has_active_platform():
+                    # Pause OCR quand aucune plateforme poker détectée
+                    if ocr_iterations % 10 == 0:
+                        print("⏸️ OCR en pause - Aucune plateforme poker détectée")
+                    time.sleep(5.0)  # Attente 5 secondes avant re-vérification
+                    ocr_iterations += 1
+                    continue
+                
                 # Capture et analyse de l'écran
                 game_data = self.screen_capture.capture_and_analyze()
                 ocr_iterations += 1
                 
-                # Debug pour Windows
-                if REAL_CAPTURE_ACTIVE and ocr_iterations % 20 == 0:
+                # Debug pour Windows (réduit)
+                if REAL_CAPTURE_ACTIVE and ocr_iterations % 50 == 0:
                     print(f"🔍 OCR itération {ocr_iterations} - Données: {bool(game_data)}")
                 
                 if game_data:
-                    if REAL_CAPTURE_ACTIVE:
+                    if REAL_CAPTURE_ACTIVE and ocr_iterations % 20 == 0:
                         print(f"✅ Données OCR reçues: {list(game_data.keys())}")
                     self._update_game_state(game_data)
-                elif REAL_CAPTURE_ACTIVE and ocr_iterations % 50 == 0:
-                    print("⚠️ Aucune donnée OCR détectée - Vérifiez que Winamax est ouvert")
+                elif REAL_CAPTURE_ACTIVE and ocr_iterations % 100 == 0:
+                    print("⚠️ Aucune donnée OCR détectée - Vérifiez la table de poker")
                 
-                time.sleep(0.05)  # 50ms entre les captures pour réactivité maximale
+                time.sleep(0.5)  # 500ms entre captures (vs 50ms) pour réduire charge CPU
                 
             except Exception as e:
                 self.logger.error(f"Erreur dans la boucle OCR: {e}")

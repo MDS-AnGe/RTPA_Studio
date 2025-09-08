@@ -16,11 +16,11 @@ from ..utils.logger import get_logger
 
 @dataclass
 class ContinuousSettings:
-    """Configuration du générateur continu"""
-    batch_size: int = 50  # Petits batches pour éviter latence
-    generation_interval: float = 0.1  # 100ms entre générations
-    max_queue_size: int = 1000  # File d'attente limitée
-    cpu_usage_limit: float = 0.15  # Max 15% CPU
+    """Configuration du générateur continu (optimisée pour performance)"""
+    batch_size: int = 10  # Batches réduits pour éviter surcharge
+    generation_interval: float = 2.0  # 2 secondes entre générations (vs 0.1s)
+    max_queue_size: int = 200  # File d'attente réduite
+    cpu_usage_limit: float = 0.05  # Max 5% CPU (vs 15%)
     priority_scenarios: Optional[List[str]] = None  # Scénarios prioritaires
     
     def __post_init__(self):
