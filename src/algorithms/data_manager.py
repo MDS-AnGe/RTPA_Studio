@@ -124,7 +124,6 @@ class DataManager:
             }
             
             self.cfr_snapshots.append(snapshot)
-            self.logger.debug(f"Snapshot CFR ajouté ({len(self.cfr_snapshots)} total)")
             
         except Exception as e:
             self.logger.error(f"Erreur snapshot CFR: {e}")
@@ -297,7 +296,6 @@ class DataManager:
                     filepath = os.path.join(self.archive_directory, file)
                     if os.path.getmtime(filepath) < current_time - retention_seconds:
                         os.remove(filepath)
-                        self.logger.debug(f"Archive expirée supprimée: {file}")
             
             # Archivage automatique si mémoire pleine
             if len(self.active_hands) >= self.settings.max_memory_hands * 0.9:

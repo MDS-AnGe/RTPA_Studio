@@ -114,7 +114,6 @@ class CFRTrainer:
             
             # Mise à jour statistiques
             if len(hands) > 0:
-                self.logger.debug(f"Intégré {len(hands)} mains continues -> Total: {len(self.training_hands)}")
                 
         except Exception as e:
             self.logger.error(f"Erreur intégration mains continues: {e}")

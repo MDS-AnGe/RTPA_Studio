@@ -114,7 +114,6 @@ class CFREngine:
                 torch.set_num_interop_threads(max(1, self.cpu_threads // 2))
             except RuntimeError as e:
                 # Threads déjà configurés, ignorer l'erreur
-                self.logger.debug(f"Threads PyTorch déjà configurés: {e}")
         
         # Modèle Deep CFR (optionnel)
         self.deep_cfr_enabled = False
@@ -436,7 +435,6 @@ class CFREngine:
         except Exception as e:
             self.logger.error(f"Erreur inattendue calcul recommandation: {e}")
             import traceback
-            self.logger.debug(f"Traceback: {traceback.format_exc()}")
             return self._get_default_recommendation()
     
     def _convert_to_poker_state(self, game_state) -> PokerState:

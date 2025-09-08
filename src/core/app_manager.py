@@ -228,7 +228,6 @@ class RTAPStudioManager:
             except Exception as e:
                 self.logger.error(f"Erreur callback {i}: {e}")
                 import traceback
-                self.logger.debug(f"Traceback callback: {traceback.format_exc()}")
                 failed_callbacks.append(i)
         
         # Nettoyer les callbacks défaillants
@@ -275,7 +274,6 @@ class RTAPStudioManager:
         except Exception as e:
             self.logger.error(f"Erreur gestion changement statut plateforme: {e}")
             import traceback
-            self.logger.debug(f"Traceback: {traceback.format_exc()}")
     
     def _auto_start(self):
         """Démarrage automatique de l'analyse"""

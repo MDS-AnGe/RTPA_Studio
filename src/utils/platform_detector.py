@@ -162,7 +162,6 @@ class PlatformDetector:
                                     proc_name.lower().startswith(pattern_base) or
                                     pattern_base in proc_name.lower()):
                                     active_platforms.add(platform_id)
-                                    self.logger.debug(f"Processus détecté: {proc_name} -> {platform_id}")
                                     break
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
@@ -188,7 +187,6 @@ class PlatformDetector:
                 # pygetwindow non disponible, utiliser seulement les processus
                 pass
             except Exception as e:
-                self.logger.debug(f"Erreur détection fenêtres: {e}")
         
         except Exception as e:
             self.logger.error(f"Erreur détection plateformes: {e}")

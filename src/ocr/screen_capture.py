@@ -173,7 +173,6 @@ class ScreenCapture:
             
         except pytesseract.TesseractError as e:
             self.logger.error(f"Erreur Tesseract OCR: {e}")
-            self.logger.debug(f"Config OCR utilisée: {config if 'config' in locals() else 'non définie'}")
             return ""
         except cv2.error as e:
             self.logger.error(f"Erreur OpenCV: {e}")
@@ -181,7 +180,6 @@ class ScreenCapture:
         except Exception as e:
             self.logger.error(f"Erreur inattendue OCR: {e}")
             import traceback
-            self.logger.debug(f"Traceback OCR: {traceback.format_exc()}")
             return ""
     
     def detect_poker_client(self, img: np.ndarray) -> str:
