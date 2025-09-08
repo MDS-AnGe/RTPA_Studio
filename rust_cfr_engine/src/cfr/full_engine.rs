@@ -237,14 +237,16 @@ impl FullCfrEngine {
                 let pot_odds = call_amount / (state.pot_size + call_amount);
                 (win_prob - pot_odds) * state.pot_size
             },
-            Action::Raise(size) => {
-                let fold_equity = Self::estimate_fold_equity(state, *size);
+            Action::Raise(size_u32) => {
+                let size = *size_u32 as f64 / 100.0; // Conversion depuis centimes
+                let fold_equity = Self::estimate_fold_equity(state, size);
                 let win_when_called = win_prob * (state.pot_size + size);
                 fold_equity * state.pot_size + win_when_called
             },
             Action::Check => win_prob * state.pot_size * 0.8,
-            Action::Bet(size) => {
-                let fold_equity = Self::estimate_fold_equity(state, *size);
+            Action::Bet(size_u32) => {
+                let size = *size_u32 as f64 / 100.0; // Conversion depuis centimes
+                let fold_equity = Self::estimate_fold_equity(state, size);
                 fold_equity * state.pot_size + win_prob * size
             },
             Action::AllIn => {
@@ -318,7 +320,7 @@ impl FullCfrEngine {
         // Hash des cartes avec FNV-like algorithm (ultra rapide)
         for card in hole_cards.iter().chain(community.iter()) {
             hash = hash.wrapping_mul(1099511628211);
-            hash ^= (card.rank as u64) << 8 | (card.suit as u64);
+            hash ^= ((card.rank as u64) << 8) | (card.suit as u64);
         }
         
         hash
@@ -337,14 +339,14 @@ impl FullCfrEngine {
         actions.push(Action::Call);
         actions.push(Action::Check);
         
-        // Betting actions basées sur stack
+        // Betting actions basées sur stack (conversion en centimes pour u32)
         if state.stack_size > state.pot_size * 0.25 {
-            actions.push(Action::Bet(state.pot_size * 0.33));  // 1/3 pot
-            actions.push(Action::Bet(state.pot_size * 0.66));  // 2/3 pot
-            actions.push(Action::Bet(state.pot_size));         // Pot
+            actions.push(Action::Bet((state.pot_size * 33.0) as u32));  // 1/3 pot
+            actions.push(Action::Bet((state.pot_size * 66.0) as u32));  // 2/3 pot  
+            actions.push(Action::Bet((state.pot_size * 100.0) as u32)); // Pot
             
             if state.stack_size > state.pot_size * 1.5 {
-                actions.push(Action::Raise(state.pot_size * 1.5)); // Overbet
+                actions.push(Action::Raise((state.pot_size * 150.0) as u32)); // Overbet
                 actions.push(Action::AllIn);
             }
         }

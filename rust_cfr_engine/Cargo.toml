@@ -14,6 +14,7 @@ pyo3 = { version = "0.20", features = ["extension-module"] }
 # Performance et parallélisme
 rayon = "1.8"           # Parallélisme ultra-rapide
 rand = "0.8"            # Random optimisé
+num_cpus = "1.0"        # Detection CPU cores
 ahash = "0.8"           # Hash maps ultra-rapides
 dashmap = "5.5"         # Concurrent collections
 

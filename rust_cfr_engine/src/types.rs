@@ -23,7 +23,7 @@ pub struct PokerState {
 }
 
 /// Rounds de mise
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum BettingRound {
     Preflop = 0,
     Flop = 1,
@@ -32,13 +32,13 @@ pub enum BettingRound {
 }
 
 /// Actions possibles
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Action {
     Fold,
     Call,
-    Raise(f64),
+    Raise(u32), // Utiliser u32 au lieu de f64 pour Hash
     Check,
-    Bet(f64),
+    Bet(u32),   // Utiliser u32 au lieu de f64 pour Hash
     AllIn,
 }
 

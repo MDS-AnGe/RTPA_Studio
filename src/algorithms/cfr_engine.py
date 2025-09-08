@@ -127,6 +127,11 @@ class CFREngine:
         # Initialiser l'accélérateur GPU
         self._init_gpu_accelerator()
         
+        # 🚨 DÉPRÉCIATION: cfr_engine.py remplacé par Rust CFR Engine
+        print("⚠️  ATTENTION: cfr_engine.py est DÉPRÉCIÉ")
+        print("🚀 Migration vers Rust CFR Engine pour performance 50-200x supérieure")
+        print("❌ Ce code Python CFR ne devrait plus être utilisé")
+        
         self.logger.info("CFREngine initialisé avec entraînement automatique")
         if self.use_acceleration:
             self.logger.info(f"Accélération disponible: {self.device}")

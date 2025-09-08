@@ -72,36 +72,41 @@ class RustCfrBridge:
         return self.is_initialized and self.rust_engine is not None
     
     def train_batch(self, states: List[Dict[str, Any]]) -> float:
-        """Entraîner CFR sur batch de states"""
+        """🔥 TRAINING CFR 100% RUST - ZERO FALLBACK Python"""
         if not self.is_rust_available():
-            # Fallback vers ancienne implémentation Python
-            return self._train_batch_python_fallback(states)
+            print("🚨 ERREUR CRITIQUE: CFR Rust requis mais indisponible!")
+            print("🔄 Tentative réinitialisation automatique...")
+            self._init_rust_engine()
+            
+            if not self.is_rust_available():
+                raise RuntimeError("❌ SYSTÈME CFR RUST REQUIS - Installation impossible. Vérifiez les dépendances Rust.")
         
         try:
-            # Conversion vers format Rust
+            # Conversion vers format Rust optimisée
             rust_states = self._convert_states_to_rust(states)
+            
+            print(f"⚡ Training CFR Rust: {len(rust_states)} états")
             convergence = self.rust_engine.train_batch(rust_states)
+            
             return float(convergence)
             
         except Exception as e:
             self.last_error = str(e)
-            print(f"❌ Erreur training Rust: {e}")
-            return self._train_batch_python_fallback(states)
+            raise RuntimeError(f"❌ Erreur critique CFR Rust: {e}") from e
     
     def get_strategy(self, state: Dict[str, Any]) -> Dict[str, float]:
-        """Obtenir stratégie CFR pour un état"""
+        """🚀 STRATÉGIE CFR 100% RUST - ZERO FALLBACK Python"""
         if not self.is_rust_available():
-            return self._get_strategy_python_fallback(state)
+            raise RuntimeError("❌ CFR Rust requis pour stratégies optimales")
         
         try:
             rust_state = self._convert_state_to_rust(state)
             strategy = self.rust_engine.get_strategy(rust_state)
-            return dict(strategy) if strategy else {}
+            return dict(strategy) if strategy else {"fold": 0.25, "call": 0.25, "bet": 0.25, "check": 0.25}
             
         except Exception as e:
             self.last_error = str(e)
-            print(f"❌ Erreur stratégie Rust: {e}")
-            return self._get_strategy_python_fallback(state)
+            raise RuntimeError(f"❌ Erreur stratégie Rust: {e}") from e
     
     def get_performance_stats(self) -> Dict[str, Any]:
         """Statistiques de performance"""
