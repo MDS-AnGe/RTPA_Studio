@@ -225,29 +225,34 @@ class RTAPGUIWindow:
         self.notebook.add(self.dashboard_tab, text="📊 Tableau de Bord")
         self.create_dashboard_tab()
         
-        # OPTIMISATION PERFORMANCES : Autres onglets créés seulement quand nécessaire (lazy loading)
-        self.tabs_created = {'dashboard': True}  # Dashboard déjà créé
+        # ✅ CRÉATION IMMÉDIATE DE TOUS LES ONGLETS (plus de lazy loading)
+        print("✅ Création immédiate de tous les onglets pour fluidité maximale")
         
-        # Onglet 2: Options (lazy loading)
+        # Onglet 2: Options (création immédiate)
         self.options_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.options_tab, text="⚙️ Options")
-        self.tabs_created['options'] = False
+        self.create_options_tab()
         
-        # Onglet 3: Paramètres (lazy loading)
+        # Onglet 3: Paramètres (création immédiate)
         self.settings_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.settings_tab, text="🔧 Paramètres")
-        self.tabs_created['settings'] = False
+        self.create_settings_tab()
         
-        # Onglet 4: Performance (créé immédiatement car contient métriques système importantes)
+        # Onglet 4: Performance (déjà immédiat)
         self.performance_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.performance_tab, text="⚡ Performance")
-        self.create_performance_tab()  # Créer immédiatement pour les métriques système
-        self.tabs_created['performance'] = True
+        self.create_performance_tab()
         
-        # Onglet 5: Version (lazy loading)
+        # Onglet 5: Version (création immédiate)
         self.version_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.version_tab, text="📌 Version")
-        self.tabs_created['version'] = False
+        self.create_version_tab()
+        
+        # Plus besoin du système lazy loading
+        self.tabs_created = {
+            'dashboard': True, 'options': True, 'settings': True, 
+            'performance': True, 'version': True
+        }
         
         # Lier l'événement de changement d'onglet pour le lazy loading
         self.notebook.bind('<<NotebookTabChanged>>', self.on_tab_changed)
@@ -305,27 +310,16 @@ class RTAPGUIWindow:
                 self.root.after(1500, self.unified_update_loop)
     
     def on_tab_changed(self, event=None):
-        """Gestionnaire optimisé pour le changement d'onglet avec lazy loading"""
+        """Gestionnaire optimisé pour le changement d'onglet (plus de lazy loading)"""
         try:
             selected_tab_index = self.notebook.index(self.notebook.select())
             tab_names = ['dashboard', 'options', 'settings', 'performance', 'version']
             
             if selected_tab_index < len(tab_names):
                 tab_name = tab_names[selected_tab_index]
-                
-                # Créer l'onglet seulement si il n'a pas encore été créé (lazy loading)
-                if not self.tabs_created.get(tab_name, False):
-                    if tab_name == 'options':
-                        self.create_options_tab()
-                    elif tab_name == 'settings':
-                        self.create_settings_tab()
-                    elif tab_name == 'performance':
-                        self.create_performance_tab()
-                    elif tab_name == 'version':
-                        self.create_version_tab()
-                    
-                    self.tabs_created[tab_name] = True
-                    print(f"✅ Onglet {tab_name} créé dynamiquement")
+                # Plus de création dynamique - tous les onglets sont déjà créés !
+                # Navigation instantanée entre onglets
+                pass
                     
         except Exception as e:
             print(f"Erreur changement d'onglet: {e}")
