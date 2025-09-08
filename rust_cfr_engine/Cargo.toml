@@ -5,22 +5,14 @@ edition = "2021"
 
 [lib]
 name = "rust_cfr_engine" 
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib"]
 
 [dependencies]
-# PyO3 pour bindings Python
-pyo3 = { version = "0.20", features = ["extension-module"] }
+# PyO3 pour bindings Python - Version 0.21 pour compatibilité
+pyo3 = { version = "0.21", features = ["extension-module"] }
 
-# Performance et parallélisme
-rayon = "1.8"           # Parallélisme ultra-rapide
-rand = "0.8"            # Random optimisé
-num_cpus = "1.0"        # Detection CPU cores
-ahash = "0.8"           # Hash maps ultra-rapides
-dashmap = "5.5"         # Concurrent collections
-
-# Sérialisation
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+# Performance - Version simplifiée pour éviter conflits
+rand = "0.8"
 
 [features]
 default = ["gpu"]

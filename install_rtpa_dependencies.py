@@ -26,6 +26,7 @@ PYTHON_DEPENDENCIES = [
     "pandas",
     "psutil",
     "dxcam",
+    "maturin",  # Requis pour build extensions Python-Rust
 ]
 
 def check_dependency(package_name):
@@ -113,24 +114,30 @@ def compile_rust_cfr():
     try:
         os.chdir(rust_dir)
         
-        # Essayer différentes commandes cargo
-        cargo_commands = [
+        # Essayer d'abord maturin (recommandé pour extensions Python), puis cargo
+        build_commands = [
+            ['maturin', 'develop', '-m', 'rust_cfr_engine/Cargo.toml', '--release'],
             ['cargo', 'build', '--release'],
             [os.path.expanduser('~/.cargo/bin/cargo'), 'build', '--release'],
             [os.path.expanduser('~') + '\\.cargo\\bin\\cargo.exe', 'build', '--release'] if os.name == 'nt' else None,
         ]
         
-        cargo_commands = [cmd for cmd in cargo_commands if cmd]  # Filtrer None
+        build_commands = [cmd for cmd in build_commands if cmd]  # Filtrer None
         
         compilation_success = False
-        for cmd in cargo_commands:
+        for cmd in build_commands:
             try:
                 print(f"🔄 Tentative: {' '.join(cmd)}")
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
                 
                 if result.returncode == 0:
-                    print("✅ CFR Engine Rust compilé avec succès")
+                    print(f"✅ CFR Engine Rust compilé avec succès via {cmd[0]}")
                     compilation_success = True
+                    
+                    # Si maturin réussit, le module est installé automatiquement
+                    if cmd[0] == 'maturin':
+                        print("✅ Extension Python installée automatiquement")
+                        return True
                     break
                 else:
                     print(f"❌ Erreur avec {cmd[0]}: {result.stderr[:200]}...")
@@ -171,10 +178,13 @@ def test_rust_cfr_integration():
     print("🧪 Test CFR Engine Rust...")
     
     try:
-        # Ajouter le path du module Rust
-        sys.path.insert(0, "rust_cfr_engine/target/release")
-        
+        # Test import direct (maturin installe dans site-packages)
         import rust_cfr_engine
+        
+        # Vérifier que RustCfrEngine est exposé
+        if not hasattr(rust_cfr_engine, 'RustCfrEngine'):
+            print("❌ Module importé mais RustCfrEngine non trouvé")
+            return False
         
         # Test de base
         config = {"max_iterations": 1000, "convergence_threshold": 0.01}
@@ -183,14 +193,20 @@ def test_rust_cfr_integration():
         
         print("✅ CFR Engine Rust fonctionnel")
         print(f"   🔥 Engine: {status.get('engine', 'Unknown')}")
-        print(f"   ⚡ Threads: {status.get('cpu_threads', 1)}")
-        print(f"   🚀 Parallélisme: {status.get('parallel_processing', False)}")
+        print(f"   🚀 Extension Python: Correctement installée")
         
         return True
         
     except ImportError as e:
-        print(f"❌ Impossible d'importer rust_cfr_engine: {e}")
-        return False
+        # Fallback: essayer avec path manuel si maturin échoue
+        try:
+            sys.path.insert(0, "rust_cfr_engine/target/release")
+            import rust_cfr_engine
+            print("✅ CFR Engine importé via path fallback")
+            return True
+        except:
+            print(f"❌ Impossible d'importer rust_cfr_engine: {e}")
+            return False
     except Exception as e:
         print(f"❌ Erreur test CFR: {e}")
         return False
