@@ -114,6 +114,7 @@ class CFREngine:
                 torch.set_num_interop_threads(max(1, self.cpu_threads // 2))
             except RuntimeError as e:
                 # Threads déjà configurés, ignorer l'erreur
+                pass
         
         # Modèle Deep CFR (optionnel)
         self.deep_cfr_enabled = False
