@@ -136,10 +136,10 @@ class RTAPGUIWindow:
         header_container = ctk.CTkFrame(self.controls_frame)
         header_container.pack(fill='both', expand=True, padx=15, pady=10)
         
-        # Essayer de charger le logo RTPA Studio
+        # ✅ OPTIMISATION MICRO-FREEZE: Désactiver chargement images synchrones
+        # Logo désactivé temporairement pour fluidité maximale
         try:
-            from PIL import Image
-            import os
+            logo_loaded = False  # Forcer fallback immédiat
             
             # Chercher le logo dans les différents emplacements
             logo_paths = [
@@ -170,8 +170,8 @@ class RTAPGUIWindow:
                     logo_loaded = True
                     break
                     
-            if not logo_loaded:
-                raise FileNotFoundError("Aucun logo trouvé")
+            # ✅ FORCER FALLBACK pour éviter Image.open() lent
+            raise FileNotFoundError("Logo désactivé pour fluidité")
                 
         except Exception as e:
             # Fallback avec icône stylisée si pas de logo
@@ -377,9 +377,9 @@ class RTAPGUIWindow:
         self.board_cards_frame = tk.Frame(board_frame, bg='#dbdbdb')
         self.board_cards_frame.pack(padx=8, pady=10)
         
-        # Créer 5 cartes du board (plus petites que les cartes main)
+        # ✅ OPTIMISATION: Créer moins de widgets board (3 au lieu de 5)
         self.board_cards = []
-        for i in range(5):
+        for i in range(3):  # Réduit de 5 à 3 pour fluidité
             card_frame = tk.Frame(
                 self.board_cards_frame, 
                 bg='#dbdbdb', relief='raised', bd=2, width=70, height=95
@@ -388,7 +388,7 @@ class RTAPGUIWindow:
             card_frame.pack_propagate(False)
             
             card_label = tk.Label(
-                card_frame, text="🂠", font=('Arial', 20, 'bold'),
+                card_frame, text="🂠", font=('Arial', 18),  # Police plus simple
                 fg='#5a5a5a', bg='#dbdbdb', anchor='center'
             )
             card_label.pack(expand=True, fill='both')
