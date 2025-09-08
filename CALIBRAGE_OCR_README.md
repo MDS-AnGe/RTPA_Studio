@@ -4,7 +4,7 @@ Le système de calibrage OCR permet d'ajuster précisément la détection des é
 
 ## 📍 Accès au Calibrage
 
-1. **Lancez RTPA Studio** avec `python main_gui.py`
+1. **Lancez RTPA Studio** avec `python rtpa.py`
 2. **Cliquez sur l'onglet "🔧 Paramètres"**
 3. **Localisez la section "🔍 Calibrage OCR"**
 
@@ -49,6 +49,8 @@ Chaque zone a 4 paramètres ajustables :
 - **Fonction** : Détection automatique et application des réglages
 - **Intelligence** : Détecte votre plateforme active et applique le bon preset
 - **Rapidité** : Calibrage en un clic sans intervention manuelle
+- **Surveillance continue** : Détection automatique des nouvelles plateformes
+- **Multiplateforme** : Support PokerStars, Winamax, PMU, PartyPoker
 
 ### ✅ Appliquer
 - **Fonction** : Sauvegarde vos réglages personnalisés
@@ -57,8 +59,9 @@ Chaque zone a 4 paramètres ajustables :
 
 ### 🔍 Tester OCR
 - **Fonction** : Vérifie que la détection fonctionne
-- **Feedback** : Affiche les résultats dans la console
+- **Feedback** : Affiche les résultats dans la console et l'interface
 - **Validation** : Confirme que vos zones sont bien configurées
+- **Détection temps réel** : Capture et analyse l'état actuel du jeu
 
 ## 🎯 Guide d'Utilisation Étape par Étape
 
@@ -109,24 +112,28 @@ Chaque zone a 4 paramètres ajustables :
 ## 🎮 Plateformes Supportées
 
 ### PokerStars
-- **Résolution testée** : 1920x1080
+- **Résolution testée** : 1920x1080, 1366x768, 2560x1440
 - **Zones optimisées** : Table standard PokerStars
-- **Particularités** : Interface classique
+- **Détection automatique** : Processus PokerStars.exe
+- **Particularités** : Interface classique avec thèmes sombre/clair
 
 ### Winamax
-- **Résolution testée** : 1920x1080  
+- **Résolution testée** : 1920x1080, 1366x768, 2560x1440
 - **Zones optimisées** : Interface web/logiciel
-- **Particularités** : Légèrement différente de PokerStars
+- **Détection automatique** : Processus Winamax.exe, navigateurs (Firefox, Chrome)
+- **Particularités** : Interface moderne avec animations
 
 ### PMU Poker
-- **Résolution testée** : 1920x1080
-- **Zones optimisées** : Interface PMU
-- **Particularités** : Layout spécifique PMU
+- **Résolution testée** : 1920x1080, 1366x768
+- **Zones optimisées** : Interface PMU spécifique
+- **Détection automatique** : Processus PMUPoker.exe
+- **Particularités** : Layout et couleurs distinctifs
 
 ### PartyPoker
 - **Résolution testée** : 1920x1080
 - **Zones optimisées** : Interface PartyPoker
-- **Particularités** : Boutons d'action différents
+- **Détection automatique** : Processus PartyPoker.exe
+- **Particularités** : Boutons d'action et design spécifiques
 
 ## ⚡ Conseils d'Optimisation
 
