@@ -230,3 +230,10 @@ class PlatformDetector:
             'platform_names': [self.supported_platforms[p]['name'] for p in platforms],
             'count': len(platforms)
         }
+    
+    def simulate_winamax_detection(self):
+        """Simule la détection de Winamax pour tests"""
+        self.detected_platforms.add('winamax')
+        if self.status_callback:
+            self.status_callback('platform_detected', 'winamax')
+        self.logger.info("Simulation détection Winamax activée")
