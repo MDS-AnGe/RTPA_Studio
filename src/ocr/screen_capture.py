@@ -88,15 +88,31 @@ class ScreenCapture:
             with self.sct_lock:
                 if self.sct is None:
                     if self.is_windows:
-                        # Configuration spéciale pour Windows
-                        self.sct = mss.mss()
-                        print("🔧 MSS initialisé pour Windows")
+                        # ✅ CORRECTION: Configuration MSS Windows avec gestion thread-local
+                        try:
+                            self.sct = mss.mss()
+                            print("🔧 MSS initialisé pour Windows")
+                        except Exception as mss_error:
+                            print(f"⚠️ Erreur MSS Windows: {mss_error}")
+                            # Fallback: réinitialisation complète
+                            import gc
+                            gc.collect()
+                            self.sct = mss.mss()
+                            print("🔄 MSS réinitialisé après erreur thread-local")
                     else:
                         self.sct = mss.mss()
                         print("🔧 MSS initialisé")
         except Exception as e:
             self.logger.error(f"Erreur initialisation MSS: {e}")
-            raise
+            # Réinitialisation forcée en cas d'erreur thread-local
+            try:
+                self.sct = None
+                import gc
+                gc.collect()
+                self.sct = mss.mss()
+                print("🔄 MSS forcé après erreur thread-local")
+            except:
+                raise
     
     def _get_screen_capture_instance(self):
         """Obtient une instance thread-safe de MSS"""

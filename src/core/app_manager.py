@@ -215,15 +215,20 @@ class RTAPStudioManager:
                 time.sleep(1)
     
     def _analysis_loop(self):
-        """Boucle de calcul CFR/Nash en continu"""
+        """Boucle de calcul CFR/Nash en continu (optimisée pour performance)"""
         while self.running:
             try:
+                # ✅ OPTIMISATION: Pause analyse quand pas de plateforme active
+                if not self.has_active_platform():
+                    time.sleep(2.0)  # Attente 2 secondes si aucune plateforme
+                    continue
+                    
                 if self.game_state.action_to_hero:
                     # Calcul des recommandations
                     recommendation = self.cfr_engine.get_recommendation(self.game_state)
                     self._update_recommendation(recommendation)
                 
-                time.sleep(0.025)  # 25ms entre les calculs pour temps réel
+                time.sleep(0.1)  # 100ms entre les calculs (vs 25ms) pour réduire charge
                 
             except Exception as e:
                 self.logger.error(f"Erreur dans la boucle d'analyse: {e}")
