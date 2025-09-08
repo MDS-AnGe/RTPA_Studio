@@ -652,119 +652,104 @@ class RTAPGUIWindow:
         settings_container = ctk.CTkScrollableFrame(self.settings_tab)
         settings_container.pack(fill='both', expand=True, padx=20, pady=20)
         
-        # === SECTION CALIBRAGE OCR ===
+        # === DÉTECTION AUTOMATIQUE DE PLATEFORME ===
         ocr_calibration_frame = ctk.CTkFrame(settings_container)
         ocr_calibration_frame.pack(fill='x', pady=(0, 20))
         
-        ctk.CTkLabel(ocr_calibration_frame, text="🔍 Calibrage OCR", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(20, 15))
+        ctk.CTkLabel(ocr_calibration_frame, text="🎯 Détection Automatique", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(20, 15))
         
-        # Sélection plateforme
-        platform_frame = ctk.CTkFrame(ocr_calibration_frame)
-        platform_frame.pack(fill='x', padx=20, pady=(0, 15))
-        
-        ctk.CTkLabel(platform_frame, text="Plateforme:", font=ctk.CTkFont(size=12, weight="bold")).pack(side='left', padx=(10, 10))
-        
-        self.platform_selector = ctk.CTkComboBox(
-            platform_frame,
-            values=["PokerStars", "Winamax", "PMU", "PartyPoker"],
-            command=self.change_ocr_platform,
-            width=150
-        )
-        self.platform_selector.pack(side='left', padx=(0, 10))
-        self.platform_selector.set("PokerStars")  # Défaut
-        
-        # Instructions
-        instruction_text = ctk.CTkLabel(
+        # Information explicative
+        info_label = ctk.CTkLabel(
             ocr_calibration_frame,
-            text="Ajustez les coordonnées pour optimiser la détection OCR selon votre résolution d'écran",
-            font=ctk.CTkFont(size=11),
-            text_color="gray"
+            text="RTPA détecte automatiquement votre plateforme poker et applique le calibrage optimal",
+            font=ctk.CTkFont(size=12),
+            text_color="#888888"
         )
-        instruction_text.pack(pady=(0, 15))
+        info_label.pack(pady=(0, 20))
         
-        # Zones OCR configurables
-        zones_frame = ctk.CTkFrame(ocr_calibration_frame)
-        zones_frame.pack(fill='x', padx=20, pady=(0, 20))
+        # Statut de détection principal
+        main_status_frame = ctk.CTkFrame(ocr_calibration_frame)
+        main_status_frame.pack(fill='x', padx=20, pady=(0, 20))
         
-        # Créer les champs pour chaque zone
-        self.ocr_zone_entries = {}
-        zones_config = [
-            ("Cartes Héros", "hero_cards"),
-            ("Board", "board_cards"),
-            ("Pot", "pot_size"),
-            ("Stack Héros", "hero_stack"),
-            ("Blinds", "blinds"),
-            ("Boutons Action", "action_buttons")
-        ]
+        # Plateforme détectée - Gros affichage
+        platform_display_frame = ctk.CTkFrame(main_status_frame)
+        platform_display_frame.pack(fill='x', pady=15, padx=20)
         
-        for i, (zone_name, zone_key) in enumerate(zones_config):
-            zone_row = ctk.CTkFrame(zones_frame)
-            zone_row.pack(fill='x', pady=5, padx=10)
-            
-            # Label de la zone
-            ctk.CTkLabel(zone_row, text=f"{zone_name}:", width=120, font=ctk.CTkFont(size=11, weight="bold")).pack(side='left', padx=(5, 10))
-            
-            # Champs pour les coordonnées
-            coords_frame = ctk.CTkFrame(zone_row)
-            coords_frame.pack(side='left', padx=(0, 10))
-            
-            self.ocr_zone_entries[zone_key] = {}
-            
-            # Top
-            ctk.CTkLabel(coords_frame, text="Y:", width=20).pack(side='left', padx=(5, 2))
-            self.ocr_zone_entries[zone_key]['top'] = ctk.CTkEntry(coords_frame, width=60, placeholder_text="580")
-            self.ocr_zone_entries[zone_key]['top'].pack(side='left', padx=(0, 5))
-            
-            # Left
-            ctk.CTkLabel(coords_frame, text="X:", width=20).pack(side='left', padx=(5, 2))
-            self.ocr_zone_entries[zone_key]['left'] = ctk.CTkEntry(coords_frame, width=60, placeholder_text="440")
-            self.ocr_zone_entries[zone_key]['left'].pack(side='left', padx=(0, 5))
-            
-            # Width
-            ctk.CTkLabel(coords_frame, text="L:", width=20).pack(side='left', padx=(5, 2))
-            self.ocr_zone_entries[zone_key]['width'] = ctk.CTkEntry(coords_frame, width=60, placeholder_text="140")
-            self.ocr_zone_entries[zone_key]['width'].pack(side='left', padx=(0, 5))
-            
-            # Height
-            ctk.CTkLabel(coords_frame, text="H:", width=20).pack(side='left', padx=(5, 2))
-            self.ocr_zone_entries[zone_key]['height'] = ctk.CTkEntry(coords_frame, width=60, placeholder_text="50")
-            self.ocr_zone_entries[zone_key]['height'].pack(side='left', padx=(0, 5))
+        ctk.CTkLabel(
+            platform_display_frame, 
+            text="🔍 Plateforme détectée:", 
+            font=ctk.CTkFont(size=16, weight="bold")
+        ).pack(pady=(15, 5))
         
-        # Boutons de contrôle
+        self.detected_platform_label = ctk.CTkLabel(
+            platform_display_frame,
+            text="En attente de détection...",
+            font=ctk.CTkFont(size=20, weight="bold"),
+            text_color="#ff6b35"
+        )
+        self.detected_platform_label.pack(pady=(5, 15))
+        
+        # Statut calibrage 
+        calibration_display_frame = ctk.CTkFrame(main_status_frame)
+        calibration_display_frame.pack(fill='x', pady=15, padx=20)
+        
+        ctk.CTkLabel(
+            calibration_display_frame, 
+            text="⚙️ Statut calibrage OCR:", 
+            font=ctk.CTkFont(size=14, weight="bold")
+        ).pack(pady=(10, 5))
+        
+        self.calibration_status_label = ctk.CTkLabel(
+            calibration_display_frame,
+            text="Non configuré",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            text_color="#888888"
+        )
+        self.calibration_status_label.pack(pady=(5, 10))
+        
+        # Boutons de contrôle simplifiés
         ocr_buttons_frame = ctk.CTkFrame(ocr_calibration_frame)
         ocr_buttons_frame.pack(fill='x', padx=20, pady=(0, 20))
         
-        self.load_preset_btn = ctk.CTkButton(
-            ocr_buttons_frame,
-            text="📋 Charger Preset",
-            command=self.load_ocr_preset,
-            width=150
-        )
-        self.load_preset_btn.pack(side='left', padx=(10, 5))
+        # Boutons principaux
+        main_buttons_frame = ctk.CTkFrame(ocr_buttons_frame)
+        main_buttons_frame.pack(fill='x', pady=10)
         
-        self.apply_calibration_btn = ctk.CTkButton(
-            ocr_buttons_frame,
-            text="✅ Appliquer",
-            command=self.apply_ocr_calibration,
-            width=150
+        self.force_detection_btn = ctk.CTkButton(
+            main_buttons_frame,
+            text="🔄 Re-détecter Plateforme",
+            command=self.force_platform_detection,
+            width=220,
+            height=45,
+            font=ctk.CTkFont(size=14, weight="bold")
         )
-        self.apply_calibration_btn.pack(side='left', padx=(5, 5))
-        
-        self.auto_calibrate_btn = ctk.CTkButton(
-            ocr_buttons_frame,
-            text="🤖 Auto-Calibrage",
-            command=self.auto_calibrate_ocr,
-            width=150
-        )
-        self.auto_calibrate_btn.pack(side='left', padx=(5, 5))
+        self.force_detection_btn.pack(side='left', padx=(20, 10))
         
         self.test_ocr_btn = ctk.CTkButton(
-            ocr_buttons_frame,
+            main_buttons_frame,
             text="🔍 Tester OCR",
             command=self.test_ocr_zones,
-            width=150
+            width=180,
+            height=45,
+            font=ctk.CTkFont(size=14, weight="bold")
         )
-        self.test_ocr_btn.pack(side='left', padx=(5, 10))
+        self.test_ocr_btn.pack(side='left', padx=(10, 20))
+        
+        # Bouton avancé (plus discret)
+        advanced_frame = ctk.CTkFrame(ocr_buttons_frame)
+        advanced_frame.pack(fill='x', pady=(5, 10))
+        
+        self.manual_override_btn = ctk.CTkButton(
+            advanced_frame,
+            text="⚙️ Configuration Manuelle (Avancé)",
+            command=self.show_manual_override,
+            width=300,
+            height=35,
+            fg_color="#666666",
+            hover_color="#777777",
+            font=ctk.CTkFont(size=12)
+        )
+        self.manual_override_btn.pack(pady=10)
         
         # === SECTION CFR BASE DE DONNÉES ===
         cfr_db_frame = ctk.CTkFrame(settings_container)
@@ -1454,21 +1439,45 @@ class RTAPGUIWindow:
     def on_platform_detected(self, platform_name):
         """Callback quand une plateforme poker est détectée"""
         try:
+            # Mapping des noms de plateformes pour affichage
+            platform_names = {
+                'winamax': 'Winamax',
+                'pokerstars': 'PokerStars', 
+                'pmu': 'PMU Poker',
+                'partypoker': 'PartyPoker',
+                'unibet': 'Unibet Poker'
+            }
+            display_name = platform_names.get(platform_name.lower(), platform_name)
+            
+            # Mettre à jour l'ancien statut d'activité
             if hasattr(self, 'activity_status_label'):
-                # Mapping des noms de plateformes pour affichage
-                platform_names = {
-                    'winamax': 'Winamax',
-                    'pokerstars': 'PokerStars', 
-                    'pmu': 'PMU Poker',
-                    'partypoker': 'PartyPoker',
-                    'unibet': 'Unibet Poker'
-                }
-                display_name = platform_names.get(platform_name.lower(), platform_name)
-                
                 self.activity_status_label.configure(
                     text=f"🟢 Connecté à {display_name}",
                     text_color="#00b300"
                 )
+            
+            # Mettre à jour la nouvelle interface de détection automatique
+            if hasattr(self, 'detected_platform_label'):
+                self.detected_platform_label.configure(
+                    text=display_name,
+                    text_color="#00b300"
+                )
+            
+            # Mettre à jour le statut de calibrage
+            if hasattr(self, 'calibration_status_label'):
+                self.calibration_status_label.configure(
+                    text=f"✅ Calibré pour {display_name}",
+                    text_color="#00b300"
+                )
+                
+            # Charger automatiquement le preset pour cette plateforme
+            if platform_name in ['pokerstars', 'winamax', 'pmu', 'partypoker']:
+                try:
+                    self.load_ocr_preset_for_platform(platform_name)
+                    print(f"✅ Preset OCR {platform_name} chargé automatiquement")
+                except Exception as preset_error:
+                    print(f"⚠️ Erreur chargement preset {platform_name}: {preset_error}")
+                    
         except Exception as e:
             print(f"Erreur callback platform detected: {e}")
     
@@ -1777,6 +1786,143 @@ class RTAPGUIWindow:
                 
         except Exception as e:
             print(f"Erreur chargement preset: {e}")
+    
+    def force_platform_detection(self):
+        """Force une nouvelle détection de plateforme"""
+        try:
+            print("🔄 Forcing platform re-detection...")
+            
+            # Réinitialiser l'affichage
+            if hasattr(self, 'detected_platform_label'):
+                self.detected_platform_label.configure(
+                    text="🔍 Détection en cours...",
+                    text_color="#ff6b35"
+                )
+            
+            if hasattr(self, 'calibration_status_label'):
+                self.calibration_status_label.configure(
+                    text="En attente...",
+                    text_color="#888888"
+                )
+            
+            # Forcer la détection via l'app manager
+            if hasattr(self, 'app_manager') and self.app_manager:
+                if hasattr(self.app_manager, 'platform_detector'):
+                    detector = self.app_manager.platform_detector
+                    
+                    # Forcer une nouvelle détection
+                    detection_result = detector.force_detection()
+                    
+                    if detection_result and detection_result.get('count', 0) > 0:
+                        detected_platforms = detection_result.get('platforms', [])
+                        if detected_platforms:
+                            platform_name = detected_platforms[0]
+                            print(f"✅ Platform re-detected: {platform_name}")
+                            
+                            # Déclencher le callback automatique
+                            self.on_platform_detected(platform_name)
+                            return
+                    
+                    # Aucune plateforme détectée
+                    print("⚠️ No platform detected")
+                    if hasattr(self, 'detected_platform_label'):
+                        self.detected_platform_label.configure(
+                            text="Aucune plateforme détectée",
+                            text_color="#ff6b35"
+                        )
+                
+        except Exception as e:
+            print(f"Erreur force detection: {e}")
+            if hasattr(self, 'detected_platform_label'):
+                self.detected_platform_label.configure(
+                    text="Erreur de détection",
+                    text_color="#ff0000"
+                )
+    
+    def show_manual_override(self):
+        """Affiche une interface de configuration manuelle"""
+        try:
+            print("⚙️ Opening manual configuration...")
+            
+            # Créer une fenêtre popup pour la configuration manuelle
+            override_window = ctk.CTkToplevel(self)
+            override_window.title("Configuration Manuelle OCR")
+            override_window.geometry("800x600")
+            override_window.transient(self)
+            override_window.grab_set()
+            
+            # Titre
+            title_label = ctk.CTkLabel(
+                override_window,
+                text="⚙️ Configuration Manuelle OCR",
+                font=ctk.CTkFont(size=20, weight="bold")
+            )
+            title_label.pack(pady=20)
+            
+            # Avertissement
+            warning_label = ctk.CTkLabel(
+                override_window,
+                text="⚠️ Configuration avancée - Utilisez uniquement si la détection automatique échoue",
+                font=ctk.CTkFont(size=12),
+                text_color="#ff6b35"
+            )
+            warning_label.pack(pady=(0, 20))
+            
+            # Sélecteur de plateforme manuel
+            platform_frame = ctk.CTkFrame(override_window)
+            platform_frame.pack(fill='x', padx=20, pady=10)
+            
+            ctk.CTkLabel(platform_frame, text="Plateforme:", font=ctk.CTkFont(size=14, weight="bold")).pack(side='left', padx=20)
+            
+            manual_platform_selector = ctk.CTkComboBox(
+                platform_frame,
+                values=["PokerStars", "Winamax", "PMU", "PartyPoker"],
+                width=200
+            )
+            manual_platform_selector.pack(side='left', padx=10)
+            manual_platform_selector.set("PokerStars")
+            
+            # Boutons d'action
+            button_frame = ctk.CTkFrame(override_window)
+            button_frame.pack(fill='x', padx=20, pady=20)
+            
+            def apply_manual_config():
+                selected = manual_platform_selector.get()
+                platform_mapping = {
+                    "PokerStars": "pokerstars",
+                    "Winamax": "winamax",
+                    "PMU": "pmu",
+                    "PartyPoker": "partypoker"
+                }
+                
+                internal_name = platform_mapping.get(selected, "pokerstars")
+                print(f"🔧 Manual override applied: {selected}")
+                
+                # Déclencher la détection manuelle
+                self.on_platform_detected(internal_name)
+                override_window.destroy()
+            
+            apply_btn = ctk.CTkButton(
+                button_frame,
+                text="✅ Appliquer Configuration",
+                command=apply_manual_config,
+                width=200,
+                height=40
+            )
+            apply_btn.pack(side='left', padx=20)
+            
+            cancel_btn = ctk.CTkButton(
+                button_frame,
+                text="❌ Annuler",
+                command=override_window.destroy,
+                width=150,
+                height=40,
+                fg_color="#666666"
+            )
+            cancel_btn.pack(side='right', padx=20)
+            
+        except Exception as e:
+            print(f"Erreur configuration manuelle: {e}")
     
     def load_ocr_preset(self):
         """Charge le preset pour la plateforme sélectionnée"""
