@@ -330,6 +330,9 @@ python rtpa.py --help
 
 ## 🎯 Calibrage OCR pour Clients Poker
 
+### 📋 Guide Complet de Calibrage
+**📖 Consultez le [Guide Détaillé de Calibrage OCR](CALIBRAGE_OCR_README.md)** pour des instructions complètes avec captures d'écran et exemples détaillés.
+
 ### Calibrage Automatique (Recommandé)
 1. **Client ouvert** avec une table active  
 2. **Onglet "🔧 Paramètres" > Section "🔍 Calibrage OCR"**
