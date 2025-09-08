@@ -30,14 +30,19 @@ class ScreenCapture:
         # Initialiser MSS de manière thread-safe
         self._init_screen_capture()
         
-        # Configuration OCR avancée
+        # Configuration OCR avancée - optimisée avec les meilleures pratiques PokerGPT
         self.tesseract_configs = {
             'cards': r'--oem 3 --psm 8 -c tessedit_char_whitelist=AKQJT98765432shdc',
             'numbers': r'--oem 3 --psm 8 -c tessedit_char_whitelist=0123456789$.,k',
             'pot': r'--oem 3 --psm 7 -c tessedit_char_whitelist=0123456789$.,k ',
+            'buttons': r'--oem 3 --psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-',
             'default': r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789AKQJ$.,/'
         }
         self.tesseract_config = self.tesseract_configs['default']
+        
+        # Cache d'images pour éviter re-calculs OCR (inspiration PokerGPT)
+        self.image_cache = {}
+        self.cache_timeout = 0.5  # Secondes
         
         # Zones d'intérêt adaptatives pour différents clients poker
         self.roi_presets = {
@@ -212,7 +217,7 @@ class ScreenCapture:
             self.logger.warning(f"Client poker non supporté: {client}")
     
     def preprocess_image_advanced(self, img: np.ndarray, zone_type: str = 'default') -> np.ndarray:
-        """Préprocessing de l'image pour améliorer l'OCR"""
+        """Préprocessing de l'image pour améliorer l'OCR (optimisé avec techniques PokerGPT)"""
         try:
             # Conversion en niveaux de gris
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -221,20 +226,28 @@ class ScreenCapture:
             clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
             enhanced = clahe.apply(gray)
             
-            # Débruitage
-            denoised = cv2.medianBlur(enhanced, 3)
+            # Débruitage adaptatif selon zone (inspiration PokerGPT)
+            if zone_type == 'cards':
+                # Pour les cartes, débruitage léger pour préserver les détails
+                denoised = cv2.bilateralFilter(enhanced, 9, 75, 75)
+            else:
+                # Pour le reste, débruitage standard
+                denoised = cv2.medianBlur(enhanced, 3)
             
             # Seuillage adaptatif selon le type de zone
             if zone_type in ['cards', 'blinds']:
                 # Pour les cartes et blinds, seuillage plus agressif
                 thresh = cv2.threshold(denoised, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+            elif zone_type == 'buttons':
+                # Pour les boutons, seuillage plus conservateur
+                thresh = cv2.threshold(denoised, 127, 255, cv2.THRESH_BINARY)[1]
             else:
                 # Seuillage adaptatif pour le reste
                 thresh = cv2.adaptiveThreshold(denoised, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
                                              cv2.THRESH_BINARY, 11, 2)
             
-            # Redimensionnement pour améliorer l'OCR
-            scale_factor = 2
+            # Redimensionnement pour améliorer l'OCR (optimisé selon zone)
+            scale_factor = 3 if zone_type == 'cards' else 2
             resized = cv2.resize(thresh, None, fx=scale_factor, fy=scale_factor, 
                                interpolation=cv2.INTER_CUBIC)
             
@@ -245,21 +258,40 @@ class ScreenCapture:
             return img
     
     def extract_text_from_image(self, img: np.ndarray, zone_type: str = 'default') -> str:
-        """Extraction de texte avec OCR optimisé"""
+        """Extraction de texte avec OCR optimisé + cache intelligent (inspiré PokerGPT)"""
         try:
+            # Calcul hash de l'image pour cache (optimisation PokerGPT)
+            img_hash = hash(img.tobytes())
+            cache_key = f"{zone_type}_{img_hash}"
+            
+            # Vérification cache
+            current_time = time.time()
+            if cache_key in self.image_cache:
+                cached_data = self.image_cache[cache_key]
+                if current_time - cached_data['timestamp'] < self.cache_timeout:
+                    return cached_data['text']
+            
             # Préprocessing
             processed_img = self.preprocess_image_advanced(img, zone_type)
             
-            # Configuration OCR spécialisée selon le type
-            config = self.tesseract_config  # Configuration par défaut
-            if zone_type == 'cards':
-                config = r'--oem 3 --psm 8 -c tessedit_char_whitelist=AKQJT98765432shdc'
-            elif zone_type == 'numbers':
-                config = r'--oem 3 --psm 8 -c tessedit_char_whitelist=0123456789$.,k'
+            # Configuration OCR spécialisée selon le type (optimisée)
+            config = self.tesseract_configs.get(zone_type, self.tesseract_config)
             
-            # OCR
+            # OCR avec gestion d'erreurs robuste
             text = pytesseract.image_to_string(processed_img, config=config)
-            return text.strip()
+            text = text.strip()
+            
+            # Mise en cache du résultat
+            self.image_cache[cache_key] = {
+                'text': text,
+                'timestamp': current_time
+            }
+            
+            # Nettoyage périodique du cache
+            if len(self.image_cache) > 100:
+                self._cleanup_cache()
+            
+            return text
             
         except pytesseract.TesseractError as e:
             self.logger.error(f"Erreur Tesseract OCR: {e}")
@@ -269,7 +301,6 @@ class ScreenCapture:
             return ""
         except Exception as e:
             self.logger.error(f"Erreur inattendue OCR: {e}")
-            import traceback
             return ""
     
     def detect_poker_client(self, img: np.ndarray) -> str:
@@ -391,7 +422,7 @@ class ScreenCapture:
                         game_data.update(blinds)
                     
                     elif zone_name == 'action_buttons':
-                        text = self.extract_text_from_image(zone_img)
+                        text = self.extract_text_from_image(zone_img, 'buttons')
                         game_data['action_to_hero'] = self._detect_action_buttons(text)
                     
                 except Exception as e:
@@ -407,6 +438,24 @@ class ScreenCapture:
         except Exception as e:
             self.logger.error(f"Erreur analyse état jeu: {e}")
             return {}
+    
+    def _cleanup_cache(self):
+        """Nettoie le cache des images expirées (optimisation PokerGPT)"""
+        try:
+            current_time = time.time()
+            expired_keys = []
+            
+            for key, data in self.image_cache.items():
+                if current_time - data['timestamp'] > self.cache_timeout * 2:
+                    expired_keys.append(key)
+            
+            for key in expired_keys:
+                del self.image_cache[key]
+            
+            self.logger.debug(f"Cache nettoyé: {len(expired_keys)} entrées supprimées")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur nettoyage cache: {e}")
     
     def _parse_blinds(self, text: str) -> Dict[str, float]:
         """Parse les blinds"""
