@@ -99,11 +99,14 @@
 
 ### Démarrage Rapide
 ```bash
-# Lancement principal (recommandé)
+# Lancement principal (interface graphique)
 python rtpa.py
 
-# Démonstration console temps réel
-python main_headless.py
+# Mode démonstration console (sans interface)
+python rtpa.py --headless
+
+# Afficher la version
+python rtpa.py --version
 ```
 
 ### Interface Principale
@@ -200,23 +203,17 @@ git clone https://github.com/MDS-AnGe/RTPA_Studio.git
 cd RTPA_Studio
 ```
 
-### Étape 2 : Installation Automatique
+### Étape 2 : Lancement Direct
 ```bash
-# Auto-installation des dépendances au premier lancement
+# Auto-installation des dépendances et lancement de l'interface
 python rtpa.py
 ```
 
-L'auto-installation va automatiquement :
-- ✅ Vérifier Python 3.8+
-- ✅ Installer toutes les dépendances Python  
-- ✅ Configurer l'environnement
-- ✅ Lancer l'interface moderne
-
-### Étape 3 : Utilisation
-```bash
-# Lancement principal (unique)
-python rtpa.py
-```
+**Un seul point d'entrée pour tout :**
+- ✅ Auto-installation automatique des dépendances au premier lancement
+- ✅ Interface graphique moderne avec calibrage OCR intégré
+- ✅ Mode console pour démonstration : `python rtpa.py --headless`
+- ✅ Options disponibles : `python rtpa.py --help`
 
 ---
 
@@ -317,15 +314,16 @@ pip install torch>=2.8.0 torchvision>=0.23.0
 
 ### Modes de Lancement
 
-#### Mode Interface Graphique
+#### Lancement Principal
 ```bash
-# Lancement unique et principal
+# Interface graphique complète (par défaut)
 python rtpa.py
-```
 
-#### Mode Console/Démo
-```bash
-python main_headless.py   # Démonstration temps réel en console
+# Mode console pour démonstration
+python rtpa.py --headless
+
+# Aide et options disponibles
+python rtpa.py --help
 ```
 
 ---
@@ -432,8 +430,7 @@ RTPA_Studio/
 │   └── utils/              # Utilitaires et optimisations
 ├── config/                 # Fichiers configuration
 ├── logs/                   # Logs d'activité  
-├── rtpa.py                # Point d'entrée principal
-├── main_headless.py       # Mode console
+├── rtpa.py                # Point d'entrée unique (GUI + console)
 ├── CALIBRAGE_OCR_README.md # Guide calibrage OCR
 └── README.md              # Documentation complète
 ```
