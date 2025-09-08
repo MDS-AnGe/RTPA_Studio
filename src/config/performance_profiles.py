@@ -120,17 +120,17 @@ class PerformanceProfileManager:
             
             # CFR - Modéré
             auto_training_enabled=True,
-            cfr_iterations=5000,
-            cfr_batch_size=500,
+            cfr_iterations=15000,
+            cfr_batch_size=1000,
             cfr_discount_factor=0.95,
             cfr_exploration_rate=0.1,
             background_training=True,
             
             # Génération - Modérée
             continuous_generation=True,
-            generation_interval=0.5,  # 500ms
-            generation_batch_size=25,
-            cpu_usage_limit=0.15,  # 15% CPU max
+            generation_interval=0.3,  # 300ms
+            generation_batch_size=50,
+            cpu_usage_limit=0.25,  # 25% CPU max
             
             # Interface - Standard
             gui_update_interval=0.5,  # 500ms
@@ -154,8 +154,8 @@ class PerformanceProfileManager:
             
             # CFR - Maximum
             auto_training_enabled=True,
-            cfr_iterations=20000,
-            cfr_batch_size=2000,
+            cfr_iterations=50000,
+            cfr_batch_size=3000,
             cfr_discount_factor=0.98,
             cfr_exploration_rate=0.15,
             background_training=True,
@@ -163,8 +163,8 @@ class PerformanceProfileManager:
             # Génération - Intensive
             continuous_generation=True,
             generation_interval=0.1,  # 100ms
-            generation_batch_size=50,
-            cpu_usage_limit=0.30,  # 30% CPU max
+            generation_batch_size=100,
+            cpu_usage_limit=0.50,  # 50% CPU max
             
             # Interface - Temps réel
             gui_update_interval=0.2,  # 200ms

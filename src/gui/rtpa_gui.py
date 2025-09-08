@@ -2542,7 +2542,7 @@ class RTAPGUIWindow:
             current_profile = profile_manager.get_current_profile()
             
             # Appliquer les paramètres aux sliders si l'interface est créée
-            self.after(1000, lambda: self._apply_profile_to_interface(current_profile))
+            self.root.after(1000, lambda: self._apply_profile_to_interface(current_profile))
             
         except Exception as e:
             print(f"Erreur chargement profil: {e}")
@@ -2620,7 +2620,7 @@ class RTAPGUIWindow:
                     )
                     
                     # Effacer le message après 3 secondes
-                    self.after(3000, lambda: self.profile_status_label.configure(text=""))
+                    self.root.after(3000, lambda: self.profile_status_label.configure(text=""))
                 
             else:
                 if hasattr(self, 'profile_status_label') and self.profile_status_label:
