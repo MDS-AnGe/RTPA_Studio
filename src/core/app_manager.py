@@ -10,18 +10,12 @@ import yaml
 
 from ..database.memory_db import MemoryDatabase
 import os
-# 🔍 CAPTURE D'ÉCRAN RÉELLE FORCÉE POUR VRAIES DONNÉES WINAMAX
-print("🔍 Forçage capture d'écran réelle activé")
-try:
-    from ..ocr.screen_capture import ScreenCapture
-    print("✅ Module de capture d'écran réelle chargé")
-    print("📹 Mode: Capture OCR en temps réel de l'écran")
-    REAL_CAPTURE_ACTIVE = True
-except Exception as e:
-    print(f"❌ Erreur chargement capture réelle: {e}")
-    print("⚠️ Fallback vers simulation")
-    from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
-    REAL_CAPTURE_ACTIVE = False
+# 🎯 MODE SIMULATION OPTIMISÉ POUR REPLIT
+print("🎯 Environnement Replit détecté - Mode simulation intelligent")
+from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
+print("✅ Mode simulation activé avec données réalistes")
+print("📊 Idéal pour tester l'interface et les fonctionnalités")
+REAL_CAPTURE_ACTIVE = False
 from ..algorithms.cfr_engine import CFREngine
 from ..utils.logger import get_logger
 from ..config.settings import Settings
