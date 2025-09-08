@@ -1,0 +1,29 @@
+2025-09-08 12:40:30,788 - src.algorithms.cfr_trainer - INFO - Entraînement terminé:
+2025-09-08 12:40:30,788 - src.algorithms.cfr_trainer - INFO -   - Itérations: 10000
+2025-09-08 12:40:30,788 - src.algorithms.cfr_trainer - INFO -   - Convergence finale: 845.0722
+2025-09-08 12:40:30,788 - src.algorithms.cfr_trainer - INFO -   - Qualité finale: 0.0000
+2025-09-08 12:40:30,788 - src.algorithms.cfr_trainer - INFO -   - Temps total: 79.66s
+2025-09-08 12:40:39,043 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:40:40,046 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:40:41,048 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:40:42,051 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:40:43,053 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:40:48,357 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:40:49,359 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:40:50,362 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:40:51,365 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:40:52,367 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:40:59,773 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:41:00,776 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:41:01,778 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:41:02,780 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:41:02,780 - src.algorithms.cfr_trainer - INFO - Génération continue: 1000 mains, rate: 9.0/s, CPU: 9.3%
+2025-09-08 12:41:03,782 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:41:09,088 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:41:10,089 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:41:11,092 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:41:12,094 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:41:13,097 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:41:14,200 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:41:15,202 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
+2025-09-08 12:41:16,204 - src.algorithms.hand_generator - INFO - Généré 25 mains en 0.00s
