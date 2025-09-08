@@ -4,7 +4,7 @@ auto_resource_management: true
 # ✅ PARAMÈTRES CFR OPTIMISÉS - Anti-freeze
 cfr_iterations: 1000            # Réduit pour éviter surcharge
 cfr_sampling_enabled: true
-cpu_usage_limit: 25.0           # Plus conservateur (était 50%)
+cpu_usage_limit: 15.0           # Ultra conservateur (25→15%)
 default_table_type: cashgame
 gpu_enabled: 1
 gpu_memory_limit: 60.0          # Réduit de 75% à 60%

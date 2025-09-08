@@ -617,7 +617,14 @@ class CFRTrainer:
         # Démarrage training en arrière-plan
         self.is_training = True
         self.start_time = time.time()
+        # ✅ THREAD CFR avec priorité basse pour éviter interférence GUI
         self.training_thread = threading.Thread(target=self._training_loop, daemon=True)
+        # Priorité la plus basse possible pour ce thread
+        import os
+        if hasattr(os, 'nice'): # Linux/Mac
+            try:
+                os.nice(19)  # Priorité minimale
+            except: pass
         self.training_thread.start()
         
         return True
@@ -641,6 +648,9 @@ class CFRTrainer:
         self.training_start_time = time.time()
         
         while self.is_training and iteration < self.target_iterations:
+            # ✅ YIELD CPU pour GUI thread toutes les 5 itérations
+            if iteration % 5 == 0:
+                time.sleep(0.01)  # 10ms pause pour libérer GUI thread
             try:
                 iter_start = time.time()
                 
