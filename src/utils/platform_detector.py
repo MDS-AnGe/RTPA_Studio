@@ -28,8 +28,8 @@ class PlatformDetector:
                 'name': 'PokerStars'
             },
             'winamax': {
-                'processes': ['Winamax.exe', 'winamax', 'WinamaxPoker.exe', 'firefox', 'chrome', 'chromium'],
-                'window_titles': ['Winamax', 'Winamax Poker', 'Mozilla Firefox', 'Google Chrome'],
+                'processes': ['Winamax.exe', 'winamax', 'WinamaxPoker.exe'],
+                'window_titles': ['Winamax Poker', 'Winamax - '],
                 'name': 'Winamax'
             },
             'pmu': {

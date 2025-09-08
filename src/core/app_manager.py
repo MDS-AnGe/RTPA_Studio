@@ -193,8 +193,17 @@ class RTAPStudioManager:
         """Met à jour les recommandations de jeu"""
         self.database.store_recommendation(recommendation)
     
+    def has_active_platform(self) -> bool:
+        """Vérifie si une plateforme poker est active"""
+        if hasattr(self, 'platform_detector') and self.platform_detector:
+            return self.platform_detector.is_any_platform_active()
+        return False
+    
     def get_current_state(self) -> GameState:
         """Retourne l'état actuel du jeu"""
+        # Retourner état vide si aucune plateforme active
+        if not self.has_active_platform():
+            return GameState()  # État vide par défaut
         return self.game_state
     
     def get_recommendation(self) -> Optional[Dict[str, Any]]:
