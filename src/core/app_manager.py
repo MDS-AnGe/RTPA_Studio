@@ -10,8 +10,18 @@ import yaml
 
 from ..database.memory_db import MemoryDatabase
 import os
-# Force mode headless pour Replit
-if os.getenv('REPLIT_ENVIRONMENT') or not (os.getenv('DISPLAY') and os.name != 'nt'):
+# Option pour forcer la vraie capture d'écran
+FORCE_REAL_CAPTURE = os.getenv('RTPA_FORCE_REAL_CAPTURE', 'false').lower() == 'true'
+
+if FORCE_REAL_CAPTURE:
+    print("🔍 Mode capture d'écran réelle forcé")
+    try:
+        from ..ocr.screen_capture import ScreenCapture
+        print("✅ Capture d'écran réelle activée")
+    except Exception as e:
+        print(f"❌ Erreur capture réelle: {e} - Fallback simulation")
+        from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
+elif os.getenv('REPLIT_ENVIRONMENT') or not (os.getenv('DISPLAY') and os.name != 'nt'):
     from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
 else:
     try:
