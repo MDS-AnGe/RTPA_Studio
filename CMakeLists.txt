@@ -70,17 +70,9 @@ set(RTPA_SOURCES
     src/core/AppManager.cpp
     src/core/ConfigManager.cpp
     src/algorithms/CfrEngine.cpp
-    src/algorithms/MonteCarloSimulator.cpp
-    src/ocr/ScreenCapture.cpp
-    src/ocr/TesseractOCR.cpp
-    src/ocr/GameStateExtractor.cpp
     src/gui/MainWindow.cpp
-    src/gui/GameTable.cpp
-    src/gui/ConfigDialog.cpp
-    src/gui/StatsWidget.cpp
-    src/database/DatabaseManager.cpp
-    src/utils/Logger.cpp
-    src/utils/PlatformDetector.cpp
+    src/utils/HardwareDetector.cpp
+    src/types/PokerTypes.cpp
 )
 
 # Headers
@@ -114,17 +106,20 @@ endif()
 
 # Création de l'exécutable principal
 qt6_standard_project_setup()
-qt6_add_executable(rtpa-studio ${RTPA_SOURCES} ${RTPA_HEADERS})
+qt6_add_executable(rtpa_studio ${RTPA_SOURCES} ${RTPA_HEADERS})
 
 # Linking des bibliothèques
-target_link_libraries(rtpa-studio 
-    Qt6::Core Qt6::Widgets Qt6::Gui Qt6::Charts Qt6::Network
+target_link_libraries(rtpa_studio 
+    Qt6::Core Qt6::Widgets Qt6::Gui
     ${OpenCV_LIBS}
     ${TESSERACT_LIBRARIES}
-    SQLite::SQLite3
-    ${YAMLCPP_LIBRARIES}
     pthread
 )
+
+# Librairies system pour Windows
+if(WIN32)
+    target_link_libraries(rtpa_studio PRIVATE wbemuuid)
+endif()
 
 # CUDA linking si disponible
 if(ENABLE_CUDA AND CUDAToolkit_FOUND)
@@ -132,14 +127,14 @@ if(ENABLE_CUDA AND CUDAToolkit_FOUND)
 endif()
 
 # Propriétés spécifiques
-set_target_properties(rtpa-studio PROPERTIES
+set_target_properties(rtpa_studio PROPERTIES
     WIN32_EXECUTABLE TRUE
     MACOSX_BUNDLE TRUE
-    OUTPUT_NAME "RTPA-Studio"
+    OUTPUT_NAME "rtpa_studio"
 )
 
 # Installation
-install(TARGETS rtpa-studio
+install(TARGETS rtpa_studio
     BUNDLE DESTINATION .
     RUNTIME DESTINATION bin
 )
