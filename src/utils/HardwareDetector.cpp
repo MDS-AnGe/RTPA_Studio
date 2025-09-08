@@ -11,6 +11,8 @@
 #include <thread>
 #include <filesystem>
 #include <regex>
+#include <chrono>
+#include <cmath>
 
 #ifdef _WIN32
 #include <windows.h>
