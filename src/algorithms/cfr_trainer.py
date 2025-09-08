@@ -24,19 +24,19 @@ class CFRTrainer:
         self.logger = get_logger(__name__)
         self.cfr_engine = cfr_engine
         
-        # Configuration d'entraînement
-        self.target_iterations = 25000
-        self.convergence_threshold = 0.005
-        self.quality_threshold = 0.85
+        # ✅ CONFIGURATION ALLÉGÉE - Anti-freeze
+        self.target_iterations = 5000      # Réduit de 25000 à 5000
+        self.convergence_threshold = 0.01   # Moins strict (0.005 → 0.01) 
+        self.quality_threshold = 0.80       # Moins strict (0.85 → 0.80)
         
-        # Générateur de mains
+        # ✅ GÉNÉRATEUR DE MAINS ALLÉGÉ
         generation_settings = GenerationSettings(
-            hands_per_batch=2000,
-            max_hands=100000,
-            preflop_ratio=0.3,
+            hands_per_batch=500,            # Réduit de 2000 à 500
+            max_hands=25000,                # Réduit de 100000 à 25000
+            preflop_ratio=0.4,              # Plus de preflop (moins CPU)
             flop_ratio=0.3,
-            turn_ratio=0.25,
-            river_ratio=0.15
+            turn_ratio=0.2,                 # Moins de turn/river (très CPU)
+            river_ratio=0.1
         )
         self.hand_generator = HandGenerator(generation_settings)
         
@@ -117,7 +117,7 @@ class CFRTrainer:
                 # Machine MOYENNE - Profil optimisé
                 self.logger.info(f"🟠 Machine moyenne détectée: {cpu_count} CPU, {ram_gb:.1f}GB RAM - Profil optimisé")
                 return ContinuousSettings(
-                    batch_size=10,              # Batch modéré
+                    batch_size=5,               # Batch réduit (10→5)
                     generation_interval=2.0,    # 2 secondes entre générations
                     max_queue_size=200,         # Queue modérée
                     cpu_usage_limit=0.05        # Max 5% CPU
@@ -126,7 +126,7 @@ class CFRTrainer:
                 # Machine PUISSANTE - Profil équilibré
                 self.logger.info(f"🟢 Machine puissante détectée: {cpu_count} CPU, {ram_gb:.1f}GB RAM - Profil équilibré")
                 return ContinuousSettings(
-                    batch_size=25,              # Batch plus gros
+                    batch_size=10,              # Batch réduit (25→10)
                     generation_interval=1.0,    # 1 seconde entre générations
                     max_queue_size=500,         # Queue plus importante
                     cpu_usage_limit=0.10        # Max 10% CPU

@@ -1,12 +1,13 @@
 abstraction_buckets: 64
 auto_hand_target: true
 auto_resource_management: true
-cfr_iterations: 2000
+# ✅ PARAMÈTRES CFR OPTIMISÉS - Anti-freeze
+cfr_iterations: 1000            # Réduit pour éviter surcharge
 cfr_sampling_enabled: true
-cpu_usage_limit: 50.0
+cpu_usage_limit: 25.0           # Plus conservateur (était 50%)
 default_table_type: cashgame
 gpu_enabled: 1
-gpu_memory_limit: 75.0
+gpu_memory_limit: 60.0          # Réduit de 75% à 60%
 language: en
 manual_risk_override: false
 max_players: 9

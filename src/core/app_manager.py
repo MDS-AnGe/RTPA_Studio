@@ -145,20 +145,20 @@ class RTAPStudioManager:
             # Délai selon le profil
             time.sleep(profile.startup_delay)
             
-            print("🚨 CFR TRAINING DÉSACTIVÉ - Mode debug GUI freeze")
-            # DÉSACTIVATION COMPLÈTE du CFR training pour debug
-            # if profile.auto_training_enabled:
-            #     self.cfr_engine.init_trainer()
-            #     self.logger.info(f"Entraînement CFR initialisé (profil {profile.name}, délai {profile.startup_delay}s)")
-            # else:
-            #     self.logger.info(f"Entraînement CFR désactivé (profil {profile.name})")
+            print("🔄 CFR TRAINING RÉACTIVÉ - Paramètres conservateurs")
+            # RÉACTIVATION PROGRESSIVE du CFR training avec paramètres optimisés
+            if profile.auto_training_enabled:
+                self.cfr_engine.init_trainer()
+                self.logger.info(f"✅ Entraînement CFR réactivé (profil {profile.name}, délai {profile.startup_delay}s)")
+            else:
+                self.logger.info(f"Entraînement CFR désactivé (profil {profile.name})")
                 
         except Exception as e:
             self.logger.error(f"Erreur initialisation différée CFR: {e}")
         
-        # 🚨 SURVEILLANCE DÉSACTIVÉE - Mode ultra minimal  
-        print("🚨 SURVEILLANCE PLATEFORME DÉSACTIVÉE - Mode ultra minimal")
-        # self.platform_detector.start_monitoring()  # DÉSACTIVÉ COMPLÈTEMENT
+        # ✅ SURVEILLANCE PLATEFORME RÉACTIVÉE - Mode prudent  
+        print("🔄 SURVEILLANCE PLATEFORME RÉACTIVÉE - Mode prudent")
+        self.platform_detector.start_monitoring()  # RÉACTIVÉ avec monitoring allégé
     
     def start(self):
         """Démarre le système d'analyse (OCR DÉSACTIVÉ pour test interface pure)"""
