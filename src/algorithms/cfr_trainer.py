@@ -70,7 +70,11 @@ class CFRTrainer:
         self.logger.info("CFRTrainer initialisé avec génération continue adaptative")
     
     def _init_continuous_generator(self):
-        """Initialise le générateur continu de mains"""
+        """Initialise le générateur continu de mains (DÉSACTIVÉ POUR DEBUG)"""
+        print("🚨 GÉNÉRATION CONTINUE DÉSACTIVÉE - Mode debug GUI freeze")
+        self.continuous_generator = None
+        return  # DÉSACTIVATION COMPLÈTE pour debug GUI freeze
+        
         try:
             from .continuous_generator import ContinuousHandGenerator, ContinuousSettings
             

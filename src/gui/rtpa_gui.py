@@ -271,7 +271,9 @@ class RTAPGUIWindow:
         
         # OPTIMISATION PERFORMANCES : Centraliser les mises à jour en une seule boucle
         self.update_counter = 0
-        self.root.after(3000, self.unified_update_loop)  # Démarrer après 3 secondes avec intervalle plus long
+        # 🚨 GUI UPDATE LOOP DÉSACTIVÉE - Mode debug GUI freeze
+        print("🚨 GUI UPDATE LOOP DÉSACTIVÉE - Mode debug GUI freeze")
+        # self.root.after(3000, self.unified_update_loop)  # Démarrer après 3 secondes avec intervalle plus long
         
         # Initialiser l'affichage de la tâche
         if hasattr(self, 'main_task_label'):
