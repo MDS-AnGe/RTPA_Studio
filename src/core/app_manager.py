@@ -82,22 +82,47 @@ class RTAPStudioManager:
         self.gui_window = gui_window
     
     def _init_cfr_training(self):
-        """Initialise l'entraînement CFR automatique"""
+        """Initialise l'entraînement CFR selon le profil de performance"""
         try:
-            # Initialisation du trainer CFR avec délai pour éviter problèmes import
-            import threading
-            init_thread = threading.Thread(target=self._delayed_cfr_init, daemon=True)
-            init_thread.start()
+            from ..config.performance_profiles import get_performance_manager
+            
+            # Récupération du profil actuel
+            profile_manager = get_performance_manager()
+            profile = profile_manager.get_current_profile()
+            
+            if profile.delayed_start:
+                # Initialisation différée selon le profil
+                import threading
+                init_thread = threading.Thread(target=self._delayed_cfr_init, daemon=True)
+                init_thread.start()
+            else:
+                # Initialisation immédiate pour profil Éco
+                if profile.auto_training_enabled:
+                    self.cfr_engine.init_trainer()
+                    self.logger.info("Entraînement CFR initialisé (mode immédiat)")
+                else:
+                    self.logger.info("Entraînement CFR désactivé (profil Éco)")
             
         except Exception as e:
             self.logger.error(f"Erreur initialisation CFR training: {e}")
     
     def _delayed_cfr_init(self):
-        """Initialisation différée du CFR pour éviter conflits"""
+        """Initialisation différée du CFR selon le profil"""
         try:
-            time.sleep(2)  # Petit délai pour s'assurer que tout est chargé
-            self.cfr_engine.init_trainer()
-            self.logger.info("Entraînement CFR automatique initialisé")
+            from ..config.performance_profiles import get_performance_manager
+            
+            profile_manager = get_performance_manager()
+            profile = profile_manager.get_current_profile()
+            
+            # Délai selon le profil
+            time.sleep(profile.startup_delay)
+            
+            if profile.auto_training_enabled:
+                self.cfr_engine.init_trainer()
+                self.logger.info(f"Entraînement CFR initialisé (profil {profile.name}, délai {profile.startup_delay}s)")
+            else:
+                self.logger.info(f"Entraînement CFR désactivé (profil {profile.name})")
+                
         except Exception as e:
             self.logger.error(f"Erreur initialisation différée CFR: {e}")
         
