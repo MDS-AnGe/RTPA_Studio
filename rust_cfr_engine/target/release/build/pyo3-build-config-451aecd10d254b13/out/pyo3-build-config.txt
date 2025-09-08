@@ -1,0 +1,10 @@
+implementation=CPython
+version=3.11
+shared=true
+abi3=false
+lib_name=python3.11
+lib_dir=/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib
+executable=/home/runner/workspace/.pythonlibs/bin/python
+pointer_width=64
+build_flags=
+suppress_build_script_link_lines=false
