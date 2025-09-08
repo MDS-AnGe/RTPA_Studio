@@ -12,15 +12,23 @@ import psutil
 import mss
 import re
 from PIL import Image
+import platform
 
 from ..utils.logger import get_logger
 
 class ScreenCapture:
-    """Gestionnaire de capture d'écran et OCR optimisé"""
+    """Gestionnaire de capture d'écran et OCR optimisé pour Windows"""
     
     def __init__(self):
         self.logger = get_logger(__name__)
-        self.sct = mss.mss()
+        
+        # Gestion thread-safe pour Windows MSS
+        self.sct = None
+        self.sct_lock = threading.Lock()
+        self.is_windows = platform.system() == 'Windows'
+        
+        # Initialiser MSS de manière thread-safe
+        self._init_screen_capture()
         
         # Configuration OCR avancée
         self.tesseract_configs = {
@@ -69,20 +77,54 @@ class ScreenCapture:
         print("✅ VRAIE CAPTURE D'ÉCRAN ACTIVÉE - Lecture OCR en temps réel")
         self.logger.info("ScreenCapture initialisé - Mode capture réelle")
     
-    def capture_screen_region(self, region: Optional[Dict[str, int]] = None) -> Optional[np.ndarray]:
-        """Capture une région spécifique de l'écran"""
+    def _init_screen_capture(self):
+        """Initialise la capture d'écran de manière thread-safe"""
         try:
-            # Debug pour Windows
+            with self.sct_lock:
+                if self.sct is None:
+                    if self.is_windows:
+                        # Configuration spéciale pour Windows
+                        self.sct = mss.mss()
+                        print("🔧 MSS initialisé pour Windows")
+                    else:
+                        self.sct = mss.mss()
+                        print("🔧 MSS initialisé")
+        except Exception as e:
+            self.logger.error(f"Erreur initialisation MSS: {e}")
+            raise
+    
+    def _get_screen_capture_instance(self):
+        """Obtient une instance thread-safe de MSS"""
+        if self.is_windows:
+            # Sur Windows, créer une nouvelle instance MSS pour chaque thread si nécessaire
+            try:
+                if self.sct is None:
+                    with self.sct_lock:
+                        if self.sct is None:
+                            self.sct = mss.mss()
+                return self.sct
+            except Exception as e:
+                # En cas d'erreur thread-local, créer une nouvelle instance
+                try:
+                    return mss.mss()
+                except Exception as e2:
+                    self.logger.error(f"Erreur création instance MSS: {e2}")
+                    raise
+        else:
+            return self.sct
+    
+    def capture_screen_region(self, region: Optional[Dict[str, int]] = None) -> Optional[np.ndarray]:
+        """Capture une région spécifique de l'écran (thread-safe)"""
+        try:
             if region is None:
-                print("🔍 Capture écran complet...")
-            else:
-                print(f"🔍 Capture région: {region}")
-                
-            if region is None:
-                # Capture écran complet
-                region = {'top': 0, 'left': 0, 'width': 1920, 'height': 1080}
+                # Capture écran complet - détection auto résolution
+                region = self._get_screen_region()
             
-            screenshot = self.sct.grab(region)
+            # Obtenir instance MSS thread-safe
+            sct_instance = self._get_screen_capture_instance()
+            
+            # Capture avec gestion d'erreur Windows
+            screenshot = sct_instance.grab(region)
             img = np.array(screenshot)
             
             # Conversion BGR (pour OpenCV)
@@ -92,7 +134,48 @@ class ScreenCapture:
             
         except Exception as e:
             self.logger.error(f"Erreur capture écran: {e}")
+            
+            # Sur Windows, tenter récupération avec nouvelle instance MSS
+            if self.is_windows and "'_thread._local'" in str(e):
+                try:
+                    self.logger.info("Tentative récupération MSS Windows...")
+                    new_sct = mss.mss()
+                    screenshot = new_sct.grab(region)
+                    img = np.array(screenshot)
+                    
+                    # Remplacer l'instance défaillante
+                    with self.sct_lock:
+                        self.sct = new_sct
+                        
+                    print("✅ Récupération MSS réussie")
+                    return img
+                except Exception as e2:
+                    self.logger.error(f"Échec récupération MSS: {e2}")
+            
             return None
+    
+    def _get_screen_region(self) -> Dict[str, int]:
+        """Détecte automatiquement la résolution d'écran"""
+        try:
+            sct_instance = self._get_screen_capture_instance()
+            monitors = sct_instance.monitors
+            
+            if len(monitors) > 1:
+                # Utiliser le premier écran (index 1, 0 = tous les écrans)
+                monitor = monitors[1]
+                return {
+                    'top': monitor['top'],
+                    'left': monitor['left'], 
+                    'width': monitor['width'],
+                    'height': monitor['height']
+                }
+            else:
+                # Fallback résolution standard
+                return {'top': 0, 'left': 0, 'width': 1920, 'height': 1080}
+                
+        except Exception as e:
+            self.logger.error(f"Erreur détection résolution: {e}")
+            return {'top': 0, 'left': 0, 'width': 1920, 'height': 1080}
     
     def auto_detect_poker_client(self, img: np.ndarray) -> str:
         """Détecte automatiquement le client poker utilisé"""
