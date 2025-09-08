@@ -75,20 +75,18 @@ int main(int argc, char *argv[])
         // Configuration taille et position
         mainWindow.resize(1400, 900);
         mainWindow.show();
-
+        
         std::cout << "✅ RTPA Studio initialisé avec succès" << std::endl;
-        std::cout << "🎯 Prêt pour analyse poker temps réel" << std::endl;
+        std::cout << "🎯 Interface utilisateur prête" << std::endl;
 
-        // Démarrage event loop Qt
-        int result = app.exec();
+        // Boucle d'événements Qt
+        return app.exec();
         
-        // Cleanup
-        appManager->shutdown();
-        
-        return result;
-
     } catch (const std::exception& e) {
-        std::cerr << "💥 Erreur critique: " << e.what() << std::endl;
-        return -1;
+        std::cerr << "💥 Exception fatale: " << e.what() << std::endl;
+        return -2;
+    } catch (...) {
+        std::cerr << "💥 Exception inconnue" << std::endl;
+        return -3;
     }
 }
