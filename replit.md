@@ -29,7 +29,7 @@ RTPA Studio features an intelligent auto-installation system that automatically 
 ### Feature Specifications
 - **Hybrid AI**: Combines CFR and Deep CFR Neural Networks (PyTorch) for strategic analysis.
 - **Automatic Detection**: Monitors and automatically launches/pauses with poker platforms (PokerStars, Winamax, PMU).
-- **Advanced OCR**: Captures screenshots and recognizes game states automatically.
+- **Advanced OCR with Auto-Calibration**: Captures screenshots and recognizes game states with automatic platform detection and calibration.
 - **Continuous Learning**: Perpetually improves strategies 24/7 by generating and integrating 450 hands/minute.
 - **Nash Recommendations**: Provides optimal actions based on game theory.
 - **GPU Acceleration**: Utilizes CUDA for massive parallel computations.
@@ -42,6 +42,32 @@ RTPA Studio features an intelligent auto-installation system that automatically 
 - **PyTorch/GPU Management**: Automatic detection, installation, and dynamic CPU/GPU switching with configurable memory limits.
 - **CFR Base Export/Import**: Allows saving and restoring complete CFR data, learning, and statistics in JSON format.
 - **Customizable Interface**: Adjustable accent colors, opacity, fonts, themes (dark/light), and adaptive layouts.
+
+### OCR Automatic Calibration System
+RTPA Studio features an intelligent OCR calibration system that eliminates manual configuration:
+
+- **Automatic Platform Detection**: Real-time monitoring of poker platforms (PokerStars, Winamax, PMU, PartyPoker)
+- **Intelligent Recognition**: Analysis of active processes and window titles every 2 seconds  
+- **Zero-Configuration Setup**: Automatic application of optimal OCR presets when platforms are detected
+- **Smart Presets**: Pre-configured zones for hero cards, board, pot, stack, blinds, and action buttons
+- **Platform Switching**: Seamless transition between different poker clients without recalibration
+- **Manual Override**: Optional fine-tuning through GUI interface for custom screen configurations
+- **Persistent Settings**: Automatic saving and restoration of calibration preferences
+- **Multi-Resolution Support**: Optimized presets for common screen resolutions (1920x1080, 1366x768, 2560x1440)
+
+The system monitors:
+```
+PokerStars: PokerStars.exe, "PokerStars" windows
+Winamax:    Winamax.exe, "Winamax Poker" windows + web browsers
+PMU:        PMUPoker.exe, "PMU Poker" windows  
+PartyPoker: PartyPoker.exe, "PartyPoker" windows
+```
+
+Technical Implementation:
+- **Detection Engine**: `src/utils/platform_detector.py` - Continuous platform monitoring
+- **Preset Management**: `src/ocr/screen_capture.py` - Pre-configured OCR zones
+- **Auto-Application**: `src/core/app_manager.py` - Automatic preset application on detection
+- **Configuration**: `CALIBRAGE_OCR_README.md` - Complete setup and troubleshooting guide
 
 ## External Dependencies
 
@@ -118,6 +144,7 @@ python main_gui.py
 **🔴 Performance lente** : Activez GPU dans Configuration, augmentez limite mémoire
 **🔴 Erreurs mémoire GPU** : Réduisez `gpu_memory_limit` à 0.6 et `batch_size` à 1000
 **🔴 Détection échoue** : Vérifiez plateforme ouverte, redémarrez RTPA
+**🔴 OCR imprécis** : Le calibrage automatique s'applique dès la détection de plateforme. Consultez `CALIBRAGE_OCR_README.md` pour ajustements manuels
 
 ### 🛠️ Commandes de Test et Lancement
 ```bash
