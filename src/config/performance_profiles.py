@@ -72,7 +72,7 @@ class PerformanceProfileManager:
     
     def __init__(self):
         self.profiles = self._create_default_profiles()
-        self.current_profile = "eco"
+        self.current_profile = "equilibre"
         self.config_file = "config/performance_profile.json"
         self.load_config()
     
@@ -86,20 +86,20 @@ class PerformanceProfileManager:
             
             # CFR - Minimum
             auto_training_enabled=False,  # Pas d'auto-training
-            cfr_iterations=1000,
-            cfr_batch_size=100,
+            cfr_iterations=3000,
+            cfr_batch_size=300,
             cfr_discount_factor=0.90,
             cfr_exploration_rate=0.05,
             background_training=False,  # Pas de calculs en arrière-plan
             
             # Génération - Très limitée
             continuous_generation=False,  # Pas de génération continue
-            generation_interval=5.0,  # 5 secondes
-            generation_batch_size=5,
-            cpu_usage_limit=0.02,  # 2% CPU max
+            generation_interval=3.0,  # 3 secondes
+            generation_batch_size=20,
+            cpu_usage_limit=0.10,  # 10% CPU max
             
             # Interface - Allégée
-            gui_update_interval=2.0,  # 2 secondes
+            gui_update_interval=1.0,  # 1 seconde
             show_detailed_stats=False,
             enable_real_time_charts=False,
             

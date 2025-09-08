@@ -25,14 +25,14 @@ class CFRTrainer:
         self.cfr_engine = cfr_engine
         
         # Configuration d'entraînement
-        self.target_iterations = 5000
+        self.target_iterations = 25000
         self.convergence_threshold = 0.005
         self.quality_threshold = 0.85
         
         # Générateur de mains
         generation_settings = GenerationSettings(
-            hands_per_batch=500,
-            max_hands=20000,
+            hands_per_batch=2000,
+            max_hands=100000,
             preflop_ratio=0.3,
             flop_ratio=0.3,
             turn_ratio=0.25,

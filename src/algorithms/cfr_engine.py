@@ -361,14 +361,14 @@ class CFREngine:
         try:
             if self.cfr_trainer:
                 # Génération de dataset supplémentaire si nécessaire
-                if len(self.cfr_trainer.training_hands) < 3000:
+                if len(self.cfr_trainer.training_hands) < 15000:
                     self.logger.info("Génération de mains supplémentaires pour entraînement...")
-                    self.cfr_trainer.generate_training_dataset(5000)
+                    self.cfr_trainer.generate_training_dataset(25000)
                 
                 # Démarrage entraînement intensif
                 self.logger.info("Démarrage entraînement CFR automatique...")
                 success = self.cfr_trainer.start_intensive_training(
-                    target_iterations=2000,
+                    target_iterations=10000,
                     target_convergence=0.01
                 )
                 
