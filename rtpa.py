@@ -7,11 +7,31 @@ Point d'entrée unique avec interface graphique et mode console
 import sys
 import time
 import argparse
+import os
 from pathlib import Path
 
 # Configuration du projet
 PROJECT_ROOT = Path(__file__).parent
 sys.path.append(str(PROJECT_ROOT))
+
+# Configuration automatique du PATH Tesseract pour Windows
+if sys.platform == "win32":
+    tesseract_paths = [
+        r"C:\Program Files\Tesseract-OCR",
+        r"C:\Program Files (x86)\Tesseract-OCR",
+        r"C:\Users\%s\AppData\Local\Tesseract-OCR" % os.getenv('USERNAME', '')
+    ]
+    
+    for tesseract_path in tesseract_paths:
+        if os.path.exists(tesseract_path):
+            current_path = os.environ.get('PATH', '')
+            if tesseract_path not in current_path:
+                os.environ['PATH'] = f"{current_path};{tesseract_path}"
+                print(f"✅ PATH Tesseract ajouté: {tesseract_path}")
+            break
+    else:
+        print("⚠️  Tesseract-OCR non trouvé dans les emplacements standards")
+        print("   Veuillez installer Tesseract ou vérifier le chemin d'installation")
 
 # Configuration Windows pour nom d'application
 if sys.platform == "win32":
@@ -66,15 +86,15 @@ def main_headless():
                 print()
                 
                 print("🧠 Recommandation Nash:")
-                print(f"   Action: {recommendation.action}")
-                print(f"   Probabilité victoire: {recommendation.win_probability:.1f}%")
-                print(f"   Niveau risque: {recommendation.risk_level:.1f}%")
+                print(f"   Action: {recommendation.get('action', 'N/A')}")
+                print(f"   Probabilité victoire: {recommendation.get('win_probability', 0):.1f}%")
+                print(f"   Niveau risque: {recommendation.get('risk_level', 0):.1f}%")
                 print()
                 
                 print("📈 Statistiques:")
-                print(f"   Mains jouées: {stats.hands_played}")
-                print(f"   Taux victoire: {stats.win_rate:.1f}%")
-                print(f"   Performance vs Pro: {stats.performance_vs_pro:.1f}%")
+                print(f"   Mains jouées: {stats.get('hands_played', 0)}")
+                print(f"   Taux victoire: {stats.get('win_rate', 0):.1f}%")
+                print(f"   Performance vs Pro: {stats.get('performance_vs_pro', 0):.1f}%")
                 print()
                 
                 time.sleep(2)

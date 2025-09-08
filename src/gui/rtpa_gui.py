@@ -97,11 +97,8 @@ class RTAPGUIWindow:
         # Configuration de l'événement de fermeture
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
-        # Démarrer la mise à jour des tâches
-        self.root.after(1000, self._update_task_display_loop)
-        
-        # Charger les paramètres d'affichage
-        self.root.after(2000, self.load_display_settings)
+        # OPTIMISATION : Charger les paramètres d'affichage plus tard pour améliorer le démarrage
+        self.root.after(5000, self.load_display_settings)  # 5 secondes au lieu de 2
     
     def _set_windows_properties(self):
         """Configure les propriétés Windows pour une meilleure identification"""
@@ -224,25 +221,31 @@ class RTAPGUIWindow:
         self.notebook.add(self.dashboard_tab, text="📊 Tableau de Bord")
         self.create_dashboard_tab()
         
-        # Onglet 2: Options
+        # OPTIMISATION PERFORMANCES : Autres onglets créés seulement quand nécessaire (lazy loading)
+        self.tabs_created = {'dashboard': True}  # Dashboard déjà créé
+        
+        # Onglet 2: Options (lazy loading)
         self.options_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.options_tab, text="⚙️ Options")
-        self.create_options_tab()
+        self.tabs_created['options'] = False
         
-        # Onglet 3: Paramètres
+        # Onglet 3: Paramètres (lazy loading)
         self.settings_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.settings_tab, text="🔧 Paramètres")
-        self.create_settings_tab()
+        self.tabs_created['settings'] = False
         
-        # Onglet 4: Performance
+        # Onglet 4: Performance (lazy loading)
         self.performance_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.performance_tab, text="⚡ Performance")
-        self.create_performance_tab()
+        self.tabs_created['performance'] = False
         
-        # Onglet 5: Version (dernier à droite)
+        # Onglet 5: Version (lazy loading)
         self.version_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.version_tab, text="📌 Version")
-        self.create_version_tab()
+        self.tabs_created['version'] = False
+        
+        # Lier l'événement de changement d'onglet pour le lazy loading
+        self.notebook.bind('<<NotebookTabChanged>>', self.on_tab_changed)
         
         # Initialiser l'optimiseur système
         try:
@@ -262,13 +265,63 @@ class RTAPGUIWindow:
         if self.ocr_zone_entries:
             self.load_ocr_configuration()
         
-        # Démarrer les mises à jour
-        self.root.after(1000, self.update_cfr_progress)  # Démarrer après 1 seconde
-        self.root.after(2000, self.update_system_metrics)  # Métriques système
+        # OPTIMISATION PERFORMANCES : Centraliser les mises à jour en une seule boucle
+        self.update_counter = 0
+        self.root.after(3000, self.unified_update_loop)  # Démarrer après 3 secondes avec intervalle plus long
         
         # Initialiser l'affichage de la tâche
         if hasattr(self, 'main_task_label'):
             self.main_task_label.configure(text="Démarrage du système...", text_color="#ff8c00")
+    
+    def unified_update_loop(self):
+        """Boucle unifiée pour toutes les mises à jour GUI (optimisée pour performances)"""
+        try:
+            self.update_counter += 1
+            
+            # Mise à jour CFR toutes les 2 itérations (6 secondes)
+            if self.update_counter % 2 == 0:
+                self.update_cfr_progress()
+            
+            # Mise à jour des métriques système toutes les 3 itérations (9 secondes)
+            if self.update_counter % 3 == 0:
+                self.update_system_metrics()
+            
+            # Mise à jour des tâches toutes les itérations (3 secondes)
+            if hasattr(self, '_update_task_display_loop'):
+                self._update_task_display_loop()
+                
+        except Exception as e:
+            print(f"Erreur mise à jour unifiée: {e}")
+        finally:
+            # Programmer la prochaine mise à jour (3 secondes au lieu de 1)
+            if self.running:
+                self.root.after(3000, self.unified_update_loop)
+    
+    def on_tab_changed(self, event=None):
+        """Gestionnaire optimisé pour le changement d'onglet avec lazy loading"""
+        try:
+            selected_tab_index = self.notebook.index(self.notebook.select())
+            tab_names = ['dashboard', 'options', 'settings', 'performance', 'version']
+            
+            if selected_tab_index < len(tab_names):
+                tab_name = tab_names[selected_tab_index]
+                
+                # Créer l'onglet seulement si il n'a pas encore été créé (lazy loading)
+                if not self.tabs_created.get(tab_name, False):
+                    if tab_name == 'options':
+                        self.create_options_tab()
+                    elif tab_name == 'settings':
+                        self.create_settings_tab()
+                    elif tab_name == 'performance':
+                        self.create_performance_tab()
+                    elif tab_name == 'version':
+                        self.create_version_tab()
+                    
+                    self.tabs_created[tab_name] = True
+                    print(f"✅ Onglet {tab_name} créé dynamiquement")
+                    
+        except Exception as e:
+            print(f"Erreur changement d'onglet: {e}")
     
     def create_dashboard_tab(self):
         """Création de l'onglet Tableau de Bord complet (état du jeu + recommandations + statistiques)"""
