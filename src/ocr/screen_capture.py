@@ -410,7 +410,9 @@ class ScreenCapture:
                 return float(clean_number)
                 
         except (ValueError, TypeError) as e:
-            self.logger.error(f"Erreur parse valeur: could not convert string to float: '{text}' -> '{cleaned if 'cleaned' in locals() else 'N/A'}'")
+            # 'cleaned' peut être non défini si l'erreur survient avant son assignment
+            cleaned_value = locals().get('cleaned', 'N/A')
+            self.logger.error(f"Erreur parse valeur: could not convert string to float: '{text}' -> '{cleaned_value}'")
             return 0.0
         except Exception as e:
             self.logger.error(f"Erreur parse valeur: {e}")
