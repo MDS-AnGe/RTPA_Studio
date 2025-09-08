@@ -77,6 +77,12 @@ class CFRTrainer:
             # ✅ Configuration ADAPTATIVE selon performance machine
             settings = self._get_adaptive_continuous_settings()
             
+            # Si settings = None, on désactive la génération continue
+            if settings is None:
+                self.logger.info("Génération continue désactivée pour optimiser les performances")
+                self.continuous_generator = None
+                return
+            
             self.continuous_generator = ContinuousHandGenerator(settings)
             
             # Configuration des callbacks
@@ -98,14 +104,11 @@ class CFRTrainer:
             
             # Détection profil automatique
             if cpu_count <= 2 or ram_gb <= 4:
-                # Machine FAIBLE - Profil ECO
-                self.logger.info(f"🟡 Machine faible détectée: {cpu_count} CPU, {ram_gb:.1f}GB RAM - Profil ECO")
-                return ContinuousSettings(
-                    batch_size=5,               # Très petit batch
-                    generation_interval=5.0,    # 5 secondes entre générations
-                    max_queue_size=100,         # Queue réduite
-                    cpu_usage_limit=0.03        # Max 3% CPU
-                )
+                # Machine FAIBLE - DÉSACTIVATION génération continue
+                self.logger.info(f"🔴 Machine faible détectée: {cpu_count} CPU, {ram_gb:.1f}GB RAM - Génération continue DÉSACTIVÉE")
+                print(f"⚠️ PERFORMANCE: Machine faible détectée - Génération continue désactivée pour fluidité")
+                print(f"💡 Vous pouvez l'activer manuellement dans les paramètres si nécessaire")
+                return None  # Pas de générateur continu sur machines faibles
             elif cpu_count <= 4 or ram_gb <= 8:
                 # Machine MOYENNE - Profil optimisé
                 self.logger.info(f"🟠 Machine moyenne détectée: {cpu_count} CPU, {ram_gb:.1f}GB RAM - Profil optimisé")
