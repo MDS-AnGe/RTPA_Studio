@@ -741,6 +741,14 @@ class RTAPGUIWindow:
         )
         self.apply_calibration_btn.pack(side='left', padx=(5, 5))
         
+        self.auto_calibrate_btn = ctk.CTkButton(
+            ocr_buttons_frame,
+            text="🤖 Auto-Calibrage",
+            command=self.auto_calibrate_ocr,
+            width=150
+        )
+        self.auto_calibrate_btn.pack(side='left', padx=(5, 5))
+        
         self.test_ocr_btn = ctk.CTkButton(
             ocr_buttons_frame,
             text="🔍 Tester OCR",
@@ -1708,6 +1716,72 @@ class RTAPGUIWindow:
                 
         except Exception as e:
             print(f"Erreur test OCR: {e}")
+    
+    def auto_calibrate_ocr(self):
+        """Recalibrage automatique basé sur la détection de plateforme"""
+        try:
+            print("🤖 Démarrage du recalibrage automatique...")
+            
+            # Vérifier si une plateforme est détectée
+            if hasattr(self, 'app_manager') and self.app_manager:
+                if hasattr(self.app_manager, 'platform_detector') and self.app_manager.platform_detector:
+                    detector = self.app_manager.platform_detector
+                    
+                    # Forcer une détection
+                    detection_result = detector.force_detection()
+                    
+                    if detection_result and detection_result.get('count', 0) > 0:
+                        # Plateforme détectée - utiliser le preset correspondant
+                        detected_platforms = detection_result.get('platforms', [])
+                        if detected_platforms:
+                            platform_name = detected_platforms[0]  # Première plateforme détectée
+                            
+                            # Mapper vers nos noms internes
+                            platform_mapping = {
+                                'pokerstars': 'PokerStars',
+                                'winamax': 'Winamax',
+                                'pmu': 'PMU',
+                                'partypoker': 'PartyPoker'
+                            }
+                            
+                            display_name = platform_mapping.get(platform_name, 'PokerStars')
+                            
+                            # Mettre à jour le sélecteur
+                            self.platform_selector.set(display_name)
+                            
+                            # Charger automatiquement le preset
+                            self.load_ocr_preset_for_platform(platform_name)
+                            
+                            # Appliquer automatiquement
+                            self.apply_ocr_calibration()
+                            
+                            print(f"✅ Recalibrage automatique terminé pour {display_name}")
+                            return
+                
+                # Aucune plateforme détectée - utiliser la plateforme sélectionnée
+                selected_platform = self.platform_selector.get()
+                platform_mapping = {
+                    "PokerStars": "pokerstars",
+                    "Winamax": "winamax", 
+                    "PMU": "pmu",
+                    "PartyPoker": "partypoker"
+                }
+                
+                internal_name = platform_mapping.get(selected_platform, "pokerstars")
+                
+                # Charger le preset de base
+                self.load_ocr_preset_for_platform(internal_name)
+                
+                # Appliquer automatiquement
+                self.apply_ocr_calibration()
+                
+                print(f"✅ Recalibrage automatique appliqué pour {selected_platform}")
+            
+            else:
+                print("⚠️ Gestionnaire d'application non disponible pour auto-calibrage")
+                
+        except Exception as e:
+            print(f"Erreur auto-calibrage: {e}")
     
     def load_ocr_configuration(self):
         """Charge la configuration OCR sauvegardée"""
