@@ -16,37 +16,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "RTPA_Demo"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "RTPA_Final_Test"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "RTPA_GUI"
-
-[[workflows.workflow]]
-name = "RTPA_Demo"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main_headless.py"
-
-[workflows.workflow.metadata]
-outputType = "console"
-
-[[workflows.workflow]]
-name = "RTPA_Final_Test"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python test_final.py"
-
-[workflows.workflow.metadata]
-outputType = "console"
 
 [[workflows.workflow]]
 name = "RTPA_GUI"
