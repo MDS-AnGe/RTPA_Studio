@@ -2982,8 +2982,11 @@ class RTAPGUIWindow:
             
             # Sauvegarder le paramètre de manière persistante
             if hasattr(self, 'app_manager') and self.app_manager:
-                # Convertir GB en pourcentage approximatif (pour 16GB total)
-                ram_percentage = (ram_value / 16.0) * 100
+                # Convertir GB en pourcentage en utilisant la RAM réelle du système
+                total_ram_gb = 16.0  # Valeur par défaut
+                if hasattr(self.app_manager, 'system_optimizer') and self.app_manager.system_optimizer:
+                    total_ram_gb = self.app_manager.system_optimizer.capabilities.ram_total_gb
+                ram_percentage = (ram_value / total_ram_gb) * 100
                 # Sauvegarder dans settings.yaml
                 self.app_manager.update_settings({'ram_usage_limit': ram_percentage})
                 
@@ -3039,11 +3042,14 @@ class RTAPGUIWindow:
                     if hasattr(self, 'cpu_value_label') and self.cpu_value_label:
                         self.cpu_value_label.configure(text=f"{int(cpu_value)}%")
                 
-                # Charger RAM (convertir pourcentage en GB approximatif)
+                # Charger RAM (convertir pourcentage en GB en utilisant la RAM réelle)
                 if hasattr(self, 'ram_limit') and self.ram_limit:
                     ram_percentage = getattr(settings, 'ram_usage_limit', 70.0)
-                    # Convertir pourcentage en GB (assumant 16GB total)
-                    ram_gb = (ram_percentage / 100.0) * 16.0
+                    # Convertir pourcentage en GB en utilisant la RAM réelle du système
+                    total_ram_gb = 16.0  # Valeur par défaut
+                    if hasattr(self.app_manager, 'system_optimizer') and self.app_manager.system_optimizer:
+                        total_ram_gb = self.app_manager.system_optimizer.capabilities.ram_total_gb
+                    ram_gb = (ram_percentage / 100.0) * total_ram_gb
                     self.ram_limit.set(ram_gb)
                     if hasattr(self, 'ram_value_label') and self.ram_value_label:
                         self.ram_value_label.configure(text=f"{ram_gb:.1f} GB")
