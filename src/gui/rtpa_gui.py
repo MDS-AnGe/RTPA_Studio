@@ -590,9 +590,9 @@ class RTAPGUIWindow:
         confidence_frame.pack(fill='x', padx=20, pady=(0, 15))
         
         ctk.CTkLabel(confidence_frame, text="Confiance minimale:", font=ctk.CTkFont(weight="bold")).pack(side='left', padx=(10, 20))
-        self.ocr_confidence = ctk.CTkSlider(confidence_frame, from_=0.1, to=1.0, command=self.update_ocr_confidence)
+        self.ocr_confidence = ctk.CTkSlider(confidence_frame, from_=10, to=100, command=self.update_ocr_confidence)
         self.ocr_confidence.pack(side='left', padx=10, fill='x', expand=True)
-        self.ocr_confidence.set(0.8)
+        self.ocr_confidence.set(80)
         
         self.ocr_confidence_label = ctk.CTkLabel(confidence_frame, text="80%", font=ctk.CTkFont(weight="bold"))
         self.ocr_confidence_label.pack(side='left', padx=10)
@@ -1863,7 +1863,7 @@ class RTAPGUIWindow:
             override_window = ctk.CTkToplevel(self)
             override_window.title("Configuration Manuelle OCR")
             override_window.geometry("800x600")
-            override_window.transient(self)
+            override_window.transient(self.root)
             override_window.grab_set()
             
             # Titre
@@ -2249,7 +2249,7 @@ class RTAPGUIWindow:
             gpu_memory_percent = self.gpu_memory_slider.get()
             
             success = self.system_optimizer.set_custom_limits(
-                cpu_percent, ram_percent, gpu_enabled, gpu_memory_percent
+                cpu_percent, ram_percent, bool(gpu_enabled), gpu_memory_percent
             )
             
             if success:
@@ -2850,47 +2850,6 @@ class RTAPGUIWindow:
         except Exception as e:
             print(f"Erreur redémarrage CFR: {e}")
     
-    def update_system_metrics(self):
-        """Met à jour les métriques système en temps réel (CPU/RAM/GPU)"""
-        try:
-            import psutil
-            
-            # CPU Usage
-            cpu_percent = psutil.cpu_percent(interval=0.1)
-            if hasattr(self, 'cpu_usage_bar'):
-                self.cpu_usage_bar.set(cpu_percent / 100.0)
-            if hasattr(self, 'cpu_usage_label'):
-                self.cpu_usage_label.configure(text=f"{cpu_percent:.1f}%")
-            
-            # RAM Usage
-            memory = psutil.virtual_memory()
-            ram_percent = memory.percent
-            if hasattr(self, 'ram_usage_bar'):
-                self.ram_usage_bar.set(ram_percent / 100.0)
-            if hasattr(self, 'ram_usage_label'):
-                self.ram_usage_label.configure(text=f"{ram_percent:.1f}%")
-            
-            # GPU Usage (si PyTorch disponible)
-            gpu_usage = 0.0
-            gpu_text = "N/A"
-            try:
-                import torch
-                if torch.cuda.is_available():
-                    gpu_memory_used = torch.cuda.memory_allocated(0)
-                    gpu_memory_total = torch.cuda.get_device_properties(0).total_memory
-                    gpu_percent = (gpu_memory_used / gpu_memory_total) * 100
-                    gpu_usage = gpu_percent / 100.0
-                    gpu_text = f"{gpu_percent:.1f}%"
-            except Exception:
-                pass
-            
-            if hasattr(self, 'gpu_usage_bar'):
-                self.gpu_usage_bar.set(gpu_usage)
-            if hasattr(self, 'gpu_usage_label'):
-                self.gpu_usage_label.configure(text=gpu_text)
-            
-            # Programmer la prochaine mise à jour
-            self.root.after(2000, self.update_system_metrics)  # Toutes les 2 secondes
             
         except Exception as e:
             print(f"Erreur update system metrics: {e}")
@@ -3161,12 +3120,6 @@ class RTAPGUIWindow:
         if hasattr(self, 'app_manager') and self.app_manager:
             self.app_manager.update_settings({'gpu_enabled': gpu_enabled})
     
-    def update_gpu_memory(self, value):
-        """Met à jour la limite mémoire GPU"""
-        gpu_mem = int(float(value))
-        self.gpu_mem_label.configure(text=f"{gpu_mem}%")
-        if hasattr(self, 'app_manager') and self.app_manager:
-            self.app_manager.update_settings({'gpu_memory_limit': float(gpu_mem)})
     
     def toggle_auto_resource_mgmt(self):
         """Active/désactive la gestion automatique des ressources"""
@@ -3174,15 +3127,6 @@ class RTAPGUIWindow:
         if hasattr(self, 'app_manager') and self.app_manager:
             self.app_manager.update_settings({'auto_resource_management': auto_mgmt})
     
-    def check_for_updates(self):
-        """Vérifie les mises à jour"""
-        self.update_status_label.configure(text="Vérification en cours...", text_color="orange")
-        self.check_update_btn.configure(state="disabled")
-        
-        # Thread de vérification
-        import threading
-        thread = threading.Thread(target=self._check_github_updates, daemon=True)
-        thread.start()
     
     def _check_github_updates(self):
         """Thread pour vérifier GitHub - temporairement désactivé"""
@@ -3230,7 +3174,7 @@ class RTAPGUIWindow:
                 title="Exporter la base CFR/Nash",
                 defaultextension=".json.gz",
                 filetypes=[("Fichiers CFR compressés", "*.json.gz"), ("Tous les fichiers", "*.*")],
-                initialname=default_name
+                initialdir=os.getcwd()
             )
             
             if file_path:
