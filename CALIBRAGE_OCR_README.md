@@ -45,12 +45,14 @@ Chaque zone a 4 paramètres ajustables :
 - **Usage** : Cliquez pour remplir automatiquement tous les champs
 - **Conseil** : Utilisez ceci comme point de départ avant ajustements
 
-### 🤖 Auto-Calibrage
-- **Fonction** : Détection automatique et application des réglages
-- **Intelligence** : Détecte votre plateforme active et applique le bon preset
-- **Rapidité** : Calibrage en un clic sans intervention manuelle
-- **Surveillance continue** : Détection automatique des nouvelles plateformes
-- **Multiplateforme** : Support PokerStars, Winamax, PMU, PartyPoker
+### 🤖 Auto-Calibrage (NOUVEAU)
+- **Fonction** : Détection automatique et application des réglages OCR
+- **Intelligence IA** : Détecte votre plateforme poker active en temps réel
+- **Surveillance continue** : Détection automatique des nouvelles plateformes (toutes les 2 secondes)
+- **Activation instantanée** : Calibrage en un clic sans intervention manuelle
+- **Support total** : PokerStars, Winamax, PMU, PartyPoker
+- **Technologie** : Analyse des processus système + titres de fenêtres
+- **Persistance** : Les réglages sont automatiquement sauvegardés et rechargés
 
 ### ✅ Appliquer
 - **Fonction** : Sauvegarde vos réglages personnalisés
@@ -65,7 +67,15 @@ Chaque zone a 4 paramètres ajustables :
 
 ## 🎯 Guide d'Utilisation Étape par Étape
 
-### Méthode Rapide (Recommandée)
+### 🚀 Méthode Ultra-Rapide (Recommandée)
+1. **Ouvrez votre plateforme poker** (PokerStars, Winamax, PMU, PartyPoker)
+2. **Lancez RTPA Studio** 
+3. ✅ **Le calibrage se fait automatiquement !**
+4. **Optionnel** : Cliquez "🔍 Tester OCR" pour vérifier
+
+⚡ **Détection automatique** : RTPA détecte la plateforme et applique le bon calibrage sans intervention.
+
+### 🎯 Méthode Manuelle (Si besoin)
 1. **Sélectionnez votre plateforme** dans le menu déroulant
 2. **Cliquez "🤖 Auto-Calibrage"**
 3. **Cliquez "🔍 Tester OCR"** pour vérifier
@@ -149,6 +159,48 @@ Chaque zone a 4 paramètres ajustables :
 - **Testez** après chaque modification
 - **Sauvegardez** dès que c'est optimal
 
+## 🔧 Fonctionnement Technique du Système Automatique
+
+### 🎯 Détection des Plateformes
+Le système surveille automatiquement :
+- **Processus actifs** : PokerStars.exe, Winamax.exe, PMUPoker.exe, PartyPoker.exe
+- **Titres de fenêtres** : "PokerStars", "Winamax Poker", "PMU Poker", etc.
+- **Navigation web** : Détection dans Chrome/Firefox pour Winamax web
+
+### ⚙️ Application Automatique
+Quand une plateforme est détectée :
+1. **Chargement du preset** correspondant depuis `src/ocr/screen_capture.py`
+2. **Application des zones OCR** : hero_cards, board_cards, pot_size, etc.
+3. **Notification GUI** : Mise à jour de l'interface utilisateur
+4. **Sauvegarde automatique** : Configuration persistante
+
+### 📋 Presets Intégrés
+Zones préconfigurees pour chaque plateforme :
+```yaml
+PokerStars: hero_cards: {top: 580, left: 440, width: 140, height: 50}
+Winamax:   hero_cards: {top: 590, left: 460, width: 130, height: 45}
+PMU:       hero_cards: {top: 575, left: 450, width: 135, height: 48}
+```
+
+### 🔄 Surveillance Continue
+- **Fréquence** : Vérification toutes les 2 secondes
+- **Thread dédié** : Surveillance en arrière-plan sans impact performance
+- **Multi-plateforme** : Support simultané de plusieurs clients
+- **Callbacks** : Notifications instantanées des changements d'état
+
+### 🛠️ Fichiers de Configuration
+- **Presets** : `src/ocr/screen_capture.py` (zones par défaut)
+- **Détection** : `src/utils/platform_detector.py` (logique de surveillance)
+- **Auto-application** : `src/core/app_manager.py` (orchestration)
+- **Sauvegarde** : `config/ocr_calibration.json` (paramètres utilisateur)
+
+### 🎮 Ajustement Manuel (Si Nécessaire)
+Si les presets ne conviennent pas à votre configuration :
+1. **Utilisez l'interface de calibrage** pour ajuster les zones
+2. **Les réglages remplacent** automatiquement les presets
+3. **Sauvegarde permanente** : Vos ajustements sont conservés
+4. **Reset possible** : Supprimez `config/ocr_calibration.json` pour revenir aux presets
+
 ---
 
-**🚀 Le calibrage OCR assure une détection précise et fiable pour des recommandations optimales !**
+**🚀 Le calibrage OCR automatique assure une détection précise et fiable pour des recommandations optimales sans configuration manuelle !**
