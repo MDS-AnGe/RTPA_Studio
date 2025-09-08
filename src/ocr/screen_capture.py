@@ -128,6 +128,11 @@ class ScreenCapture:
             # Obtenir instance MSS thread-safe
             sct_instance = self._get_screen_capture_instance()
             
+            # Validation de l'instance MSS
+            if sct_instance is None:
+                self.logger.error("Instance MSS non disponible")
+                return None
+            
             # Capture avec gestion d'erreur Windows
             screenshot = sct_instance.grab(region)
             img = np.array(screenshot)
@@ -141,18 +146,27 @@ class ScreenCapture:
             self.logger.error(f"Erreur capture écran: {e}")
             
             # Sur Windows, tenter récupération avec nouvelle instance MSS
-            if self.is_windows and "'_thread._local'" in str(e):
+            if self.is_windows and ("'_thread._local'" in str(e) or "srcdc" in str(e)):
                 try:
-                    self.logger.info("Tentative récupération MSS Windows...")
+                    self.logger.info("Tentative récupération MSS Windows pour erreur thread-local...")
                     new_sct = mss.mss()
+                    
+                    # Validation de la région avant grab
+                    if region is None:
+                        region = {'top': 0, 'left': 0, 'width': 1920, 'height': 1080}
+                        
                     screenshot = new_sct.grab(region)
                     img = np.array(screenshot)
+                    
+                    # Conversion BGR si nécessaire
+                    if len(img.shape) == 3 and img.shape[2] == 4:
+                        img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
                     
                     # Remplacer l'instance défaillante
                     with self.sct_lock:
                         self.sct = new_sct
                         
-                    print("✅ Récupération MSS réussie")
+                    print("✅ Récupération MSS réussie (thread-local)")
                     return img
                 except Exception as e2:
                     self.logger.error(f"Échec récupération MSS: {e2}")
@@ -163,6 +177,12 @@ class ScreenCapture:
         """Détecte automatiquement la résolution d'écran"""
         try:
             sct_instance = self._get_screen_capture_instance()
+            
+            # Validation de l'instance MSS
+            if sct_instance is None:
+                self.logger.warning("Instance MSS non disponible, utilisation résolution par défaut")
+                return {'top': 0, 'left': 0, 'width': 1920, 'height': 1080}
+                
             monitors = sct_instance.monitors
             
             if len(monitors) > 1:
@@ -366,19 +386,32 @@ class ScreenCapture:
             return []
     
     def parse_monetary_value(self, text: str) -> float:
-        """Parse une valeur monétaire"""
+        """Parse une valeur monétaire avec validation renforcée"""
         try:
             # Nettoyage du texte
             cleaned = re.sub(r'[^\d.,k]', '', text.lower())
             
+            # Validation : vérifier si cleaned n'est pas vide
+            if not cleaned or cleaned.strip() == '':
+                return 0.0
+            
             if 'k' in cleaned:
                 # Gestion des milliers (ex: "1.5k" = 1500)
-                number = float(cleaned.replace('k', '').replace(',', '.'))
+                number_str = cleaned.replace('k', '').replace(',', '.')
+                if not number_str or number_str == '.':
+                    return 0.0
+                number = float(number_str)
                 return number * 1000
             else:
                 # Valeur normale
-                return float(cleaned.replace(',', '.'))
+                clean_number = cleaned.replace(',', '.')
+                if not clean_number or clean_number == '.':
+                    return 0.0
+                return float(clean_number)
                 
+        except (ValueError, TypeError) as e:
+            self.logger.error(f"Erreur parse valeur: could not convert string to float: '{text}' -> '{cleaned if 'cleaned' in locals() else 'N/A'}'")
+            return 0.0
         except Exception as e:
             self.logger.error(f"Erreur parse valeur: {e}")
             return 0.0
@@ -402,7 +435,7 @@ class ScreenCapture:
                     if zone_img.size == 0:
                         continue
                     
-                            # OCR selon le type de zone
+                    # OCR selon le type de zone
                     if zone_name == 'hero_cards':
                         text = self.extract_text_from_image(zone_img, 'cards')
                         game_data['hero_cards'] = self.parse_hero_cards(text)
