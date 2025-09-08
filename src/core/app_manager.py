@@ -78,6 +78,7 @@ class RTAPStudioManager:
         self.screen_capture = ScreenCapture()
         self.cfr_engine = CFREngine()
         self.platform_detector = PlatformDetector()
+        self.current_platform = None  # Plateforme actuellement détectée
         
         # Initialisation de l'entraînement CFR automatique
         self._init_cfr_training()
@@ -319,6 +320,12 @@ class RTAPStudioManager:
             
             if event_type == 'platform_detected':
                 self.logger.info(f"Plateforme détectée: {data}")
+                
+                # 🎯 AUTO-CALIBRAGE OCR AUTOMATIQUE
+                if data != self.current_platform:
+                    self.current_platform = data
+                    self._auto_apply_ocr_profile(data)
+                
                 # Notifier la GUI
                 if self.gui_window:
                     self.gui_window.on_platform_detected(data)
@@ -348,6 +355,42 @@ class RTAPStudioManager:
         except Exception as e:
             self.logger.error(f"Erreur gestion changement statut plateforme: {e}")
             import traceback
+    
+    def _auto_apply_ocr_profile(self, platform_name):
+        """Applique automatiquement le profil OCR pour la plateforme détectée"""
+        try:
+            print(f"🎯 AUTO-CALIBRAGE: Application profil OCR pour {platform_name}")
+            
+            # Charger les zones OCR prédéfinies pour cette plateforme
+            if hasattr(self.screen_capture, 'roi_presets'):
+                if platform_name in self.screen_capture.roi_presets:
+                    
+                    # Appliquer le preset
+                    preset = self.screen_capture.roi_presets[platform_name]
+                    self.screen_capture.roi_zones = preset.copy()
+                    self.screen_capture.current_client = platform_name
+                    
+                    print(f"✅ Profil OCR {platform_name} appliqué automatiquement")
+                    print(f"📋 Zones configurées: {list(preset.keys())}")
+                    
+                    # Notifier la GUI pour mise à jour interface
+                    if self.gui_window:
+                        self.gui_window.load_ocr_preset_for_platform(platform_name)
+                        # Auto-appliquer le calibrage
+                        if hasattr(self.gui_window, 'apply_ocr_calibration'):
+                            self.gui_window.apply_ocr_calibration()
+                            print(f"🔧 Calibrage {platform_name} appliqué à l'interface")
+                    
+                    self.logger.info(f"Profil OCR {platform_name} appliqué automatiquement")
+                    
+                else:
+                    print(f"⚠️ Aucun preset OCR trouvé pour {platform_name}")
+            else:
+                print("⚠️ Presets OCR non disponibles")
+                
+        except Exception as e:
+            self.logger.error(f"Erreur application profil OCR automatique: {e}")
+            print(f"❌ Échec auto-calibrage: {e}")
     
     def _auto_start(self):
         """Démarrage automatique de l'analyse"""
