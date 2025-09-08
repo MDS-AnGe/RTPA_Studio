@@ -1616,10 +1616,10 @@ class RTAPGUIWindow:
                         if progress_info.get('training_active', False):
                             iterations = progress_info.get('iterations', 0)
                             target = progress_info.get('target_iterations', 100000)
-                        
-                        if target > 0:
-                            progress = min(100.0, (iterations / target) * 100)
-                            task_text = f"⚡ Calculs Nash/CFR en cours ({iterations:,}/{target:,} itérations)"
+                            
+                            if target > 0:
+                                progress = min(100.0, (iterations / target) * 100)
+                                task_text = f"⚡ Calculs Nash/CFR en cours ({iterations:,}/{target:,} itérations)"
                             
                             # Calculer le temps restant
                             time_str = "Calcul..."
@@ -1661,14 +1661,14 @@ class RTAPGUIWindow:
                                     detail_text += f" | Temps écoulé: {int(elapsed//60)}m{int(elapsed%60):02d}s"
                                 self.task_detail_label.configure(text=detail_text)
                             
-                            # Programmer la prochaine mise à jour
-                            self.root.after(1000, self.update_cfr_progress)  # Mise à jour chaque seconde
-                            return
+                                # Programmer la prochaine mise à jour
+                                self.root.after(1000, self.update_cfr_progress)  # Mise à jour chaque seconde
+                                return
                     except Exception as e:
                         print(f"Erreur récupération training progress: {e}")
                     
                     # Vérifier s'il y a une génération de mains en cours
-                    elif hasattr(trainer, 'is_generating') and getattr(trainer, 'is_generating', False):
+                    if hasattr(trainer, 'is_generating') and getattr(trainer, 'is_generating', False):
                         # Génération en cours
                         generated = getattr(trainer, 'hands_generated', 0)
                         target_gen = getattr(trainer, 'target_hands', 200000)
