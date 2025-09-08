@@ -97,6 +97,9 @@ class RTAPGUIWindow:
         # Configuration de l'événement de fermeture
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
+        # OPTIMISATION : Marquer comme en cours d'exécution pour les boucles de mise à jour
+        self.running = True
+        
         # OPTIMISATION : Charger les paramètres d'affichage plus tard pour améliorer le démarrage
         self.root.after(5000, self.load_display_settings)  # 5 secondes au lieu de 2
     
