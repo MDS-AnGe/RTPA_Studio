@@ -1624,7 +1624,6 @@ class RTAPGUIWindow:
                             # Calculer le temps restant
                             time_str = "Calcul..."
                             if hasattr(trainer, 'training_start_time') and iterations > 50:
-                                import time
                                 elapsed = time.time() - trainer.training_start_time
                                 if elapsed > 0 and iterations > 0:
                                     rate = iterations / elapsed  # itérations par seconde
@@ -1656,14 +1655,13 @@ class RTAPGUIWindow:
                             if hasattr(self, 'task_detail_label'):
                                 detail_text = f"Progression: {progress:.1f}% - Convergence Nash en cours"
                                 if hasattr(trainer, 'training_start_time'):
-                                    import time
                                     elapsed = time.time() - trainer.training_start_time
                                     detail_text += f" | Temps écoulé: {int(elapsed//60)}m{int(elapsed%60):02d}s"
                                 self.task_detail_label.configure(text=detail_text)
                             
-                                # Programmer la prochaine mise à jour
-                                self.root.after(1000, self.update_cfr_progress)  # Mise à jour chaque seconde
-                                return
+                            # Programmer la prochaine mise à jour
+                            self.root.after(5000, self.update_cfr_progress)  # Mise à jour chaque 5 secondes
+                            return
                     except Exception as e:
                         print(f"Erreur récupération training progress: {e}")
                     
@@ -1687,7 +1685,7 @@ class RTAPGUIWindow:
                             if hasattr(self, 'task_detail_label'):
                                 self.task_detail_label.configure(text=f"Mains générées: {generated:,} sur {target_gen:,}")
                             
-                            self.root.after(1000, self.update_cfr_progress)
+                            self.root.after(5000, self.update_cfr_progress)
                             return
             
             # Aucune tâche en cours - affichage par défaut
@@ -1702,14 +1700,13 @@ class RTAPGUIWindow:
                     
                     if hasattr(self, 'task_progress_bar'):
                         # Animation pour génération continue
-                        current_time = time.time() if 'time' in globals() else 0
-                        animation_progress = (current_time % 2) / 2  # Animation de 2 secondes
+                        animation_progress = 0.5  # Animation statique pour éviter les problèmes
                         self.task_progress_bar.set(animation_progress)
                     
                     if hasattr(self, 'task_detail_label'):
                         self.task_detail_label.configure(text="Amélioration continue des stratégies Nash")
                     
-                    self.root.after(1000, self.update_cfr_progress)
+                    self.root.after(10000, self.update_cfr_progress)  # Très lent pour éviter freeze
                     return
             
             # Aucune tâche active
@@ -1723,12 +1720,12 @@ class RTAPGUIWindow:
                 self.task_detail_label.configure(text="En attente de détection de plateforme poker")
             
             # Programmer la prochaine vérification
-            self.root.after(2000, self.update_cfr_progress)
+            self.root.after(10000, self.update_cfr_progress)  # Très lent pour éviter freeze
             
         except Exception as e:
             print(f"Erreur update progress: {e}")
             # Reprogram même en cas d'erreur
-            self.root.after(5000, self.update_cfr_progress)
+            self.root.after(15000, self.update_cfr_progress)  # Très lent pour éviter freeze
     
     def change_ocr_platform(self, selected_platform):
         """Change la plateforme OCR et charge les préréglages correspondants"""
@@ -2796,7 +2793,7 @@ class RTAPGUIWindow:
                         
                         self.root.after(0, lambda: self._perform_stable_update(data, update_complete))
                 
-                time.sleep(1.5)  # Mise à jour moins fréquente pour stabilité
+                time.sleep(3.0)  # Mise à jour moins fréquente pour stabilité
                 
             except Exception as e:
                 print(f"Erreur dans la boucle de mise à jour: {e}")
