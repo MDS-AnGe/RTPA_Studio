@@ -67,20 +67,15 @@ class CFRTrainer:
         self._init_continuous_generator()
         self._init_data_manager()
         
-        self.logger.info("CFRTrainer initialisé avec génération continue")
+        self.logger.info("CFRTrainer initialisé avec génération continue adaptative")
     
     def _init_continuous_generator(self):
         """Initialise le générateur continu de mains"""
         try:
             from .continuous_generator import ContinuousHandGenerator, ContinuousSettings
             
-            # Configuration optimisée pour performance maximale
-            settings = ContinuousSettings(
-                batch_size=50,  # Batches plus gros pour efficacité
-                generation_interval=0.1,  # 100ms entre générations
-                max_queue_size=1000,  # Queue plus importante
-                cpu_usage_limit=0.2  # Max 20% CPU pour plus de puissance
-            )
+            # ✅ Configuration ADAPTATIVE selon performance machine
+            settings = self._get_adaptive_continuous_settings()
             
             self.continuous_generator = ContinuousHandGenerator(settings)
             
@@ -90,6 +85,55 @@ class CFRTrainer:
             
         except Exception as e:
             self.logger.error(f"Erreur init générateur continu: {e}")
+    
+    def _get_adaptive_continuous_settings(self):
+        """Génère des paramètres adaptatifs selon les performances de la machine"""
+        try:
+            import psutil
+            from .continuous_generator import ContinuousSettings
+            
+            # Détection performance machine
+            cpu_count = psutil.cpu_count()
+            ram_gb = psutil.virtual_memory().total / (1024**3)
+            
+            # Détection profil automatique
+            if cpu_count <= 2 or ram_gb <= 4:
+                # Machine FAIBLE - Profil ECO
+                self.logger.info(f"🟡 Machine faible détectée: {cpu_count} CPU, {ram_gb:.1f}GB RAM - Profil ECO")
+                return ContinuousSettings(
+                    batch_size=5,               # Très petit batch
+                    generation_interval=5.0,    # 5 secondes entre générations
+                    max_queue_size=100,         # Queue réduite
+                    cpu_usage_limit=0.03        # Max 3% CPU
+                )
+            elif cpu_count <= 4 or ram_gb <= 8:
+                # Machine MOYENNE - Profil optimisé
+                self.logger.info(f"🟠 Machine moyenne détectée: {cpu_count} CPU, {ram_gb:.1f}GB RAM - Profil optimisé")
+                return ContinuousSettings(
+                    batch_size=10,              # Batch modéré
+                    generation_interval=2.0,    # 2 secondes entre générations
+                    max_queue_size=200,         # Queue modérée
+                    cpu_usage_limit=0.05        # Max 5% CPU
+                )
+            else:
+                # Machine PUISSANTE - Profil équilibré
+                self.logger.info(f"🟢 Machine puissante détectée: {cpu_count} CPU, {ram_gb:.1f}GB RAM - Profil équilibré")
+                return ContinuousSettings(
+                    batch_size=25,              # Batch plus gros
+                    generation_interval=1.0,    # 1 seconde entre générations
+                    max_queue_size=500,         # Queue plus importante
+                    cpu_usage_limit=0.10        # Max 10% CPU
+                )
+                
+        except Exception as e:
+            self.logger.warning(f"Erreur détection performance: {e} - Utilisation profil sécurisé")
+            # Fallback sécurisé pour machines inconnues
+            return ContinuousSettings(
+                batch_size=5,                # Très conservateur
+                generation_interval=3.0,     # 3 secondes entre générations
+                max_queue_size=100,          # Queue minimale
+                cpu_usage_limit=0.02         # Max 2% CPU
+            )
     
     def _integrate_continuous_hands(self, hands):
         """Intègre les mains générées en continu dans l'entraînement CFR"""
