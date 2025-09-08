@@ -275,3 +275,60 @@ class PlatformDetector:
         if self.status_callback:
             self.status_callback('platform_detected', 'winamax')
         self.logger.info("Simulation détection Winamax activée")
+    
+    def detect_winamax_tables(self) -> dict:
+        """Détection spécialisée des tables Winamax pour debug"""
+        result = {
+            'lobby_detected': False,
+            'tables_detected': [],
+            'all_winamax_windows': [],
+            'process_detected': False
+        }
+        
+        try:
+            # Vérifier les processus Winamax
+            for proc in psutil.process_iter(['pid', 'name']):
+                try:
+                    if 'winamax' in proc.info['name'].lower():
+                        result['process_detected'] = True
+                        break
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+            
+            # Analyser les fenêtres Winamax
+            try:
+                import importlib.util
+                spec = importlib.util.find_spec('pygetwindow')
+                if spec is not None:
+                    gw = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(gw)
+                    windows = gw.getAllTitles()
+                    
+                    for window_title in windows:
+                        if window_title.strip():
+                            # Fenêtres contenant "Winamax"
+                            if 'winamax' in window_title.lower():
+                                result['all_winamax_windows'].append(window_title)
+                                
+                                # Lobby Winamax
+                                if ('poker' in window_title.lower() or 
+                                    window_title.lower() == 'winamax'):
+                                    result['lobby_detected'] = True
+                                else:
+                                    result['tables_detected'].append(window_title)
+                            
+                            # Tables sans "Winamax" dans le titre (juste mots-clés poker)
+                            elif any(keyword in window_title.lower() 
+                                   for keyword in ['table', 'nl', 'pl', 'fl', 'sng', 'mtt', 'freeroll']):
+                                # Vérifier si au moins une fenêtre Winamax existe
+                                if len([w for w in windows if 'winamax' in w.lower()]) > 0:
+                                    result['tables_detected'].append(f"[TABLE POSSIBLE] {window_title}")
+                                    
+            except Exception as e:
+                result['error'] = str(e)
+                
+        except Exception as e:
+            self.logger.error(f"Erreur detect_winamax_tables: {e}")
+            result['error'] = str(e)
+        
+        return result
