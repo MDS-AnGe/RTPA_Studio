@@ -67,8 +67,17 @@ class RTAPGUIWindow:
         self.cpu_value_label = None
         self.ram_value_label = None
         
+        # Variables pour les profils de performance
+        self.performance_profile_dropdown = None
+        self.profile_description_label = None
+        self.profile_status_label = None
+        self.apply_profile_button = None
+        
         # Interface utilisateur
         self.create_interface()
+        
+        # Initialisation des profils de performance
+        self._load_current_profile()
         
         # Configuration de l'événement de fermeture
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -882,14 +891,68 @@ class RTAPGUIWindow:
         self.gen_rate_label.pack(side='left', padx=10)
 
     def create_performance_tab(self):
-        """Création de l'onglet Performance avec métriques système"""
+        """Création de l'onglet Performance avec profils et métriques système"""
         
         # Container principal
         perf_container = ctk.CTkFrame(self.performance_tab)
         perf_container.pack(fill='both', expand=True, padx=20, pady=20)
         
-        ctk.CTkLabel(perf_container, text="⚡ Monitoring des performances", 
+        ctk.CTkLabel(perf_container, text="⚡ Performance & Profils", 
                     font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 15))
+        
+        # === SECTION PROFILS DE PERFORMANCE ===
+        profiles_frame = ctk.CTkFrame(perf_container)
+        profiles_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(profiles_frame, text="🚀 Profils de Performance", 
+                    font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(15, 10))
+        
+        # Description du profil actuel
+        self.profile_description_label = ctk.CTkLabel(profiles_frame, 
+                                                     text="", 
+                                                     font=ctk.CTkFont(size=12),
+                                                     text_color="gray",
+                                                     wraplength=600)
+        self.profile_description_label.pack(pady=(0, 10))
+        
+        # Sélecteur de profils
+        profiles_selector_frame = ctk.CTkFrame(profiles_frame)
+        profiles_selector_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        ctk.CTkLabel(profiles_selector_frame, text="Profil actuel:", 
+                    font=ctk.CTkFont(size=14, weight="bold")).pack(side='left', padx=(10, 10))
+        
+        # Menu déroulant des profils
+        self.performance_profile_dropdown = ctk.CTkOptionMenu(
+            profiles_selector_frame,
+            values=["💚 Éco", "⚖️ Équilibré", "🚀 Performance"],
+            command=self.on_profile_changed,
+            width=150,
+            font=ctk.CTkFont(size=12, weight="bold")
+        )
+        self.performance_profile_dropdown.pack(side='left', padx=(0, 20))
+        
+        # Bouton d'application 
+        self.apply_profile_button = ctk.CTkButton(
+            profiles_selector_frame,
+            text="✅ Appliquer",
+            command=self.apply_selected_profile,
+            width=100,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            fg_color="#2b7a0b",
+            hover_color="#22631f"
+        )
+        self.apply_profile_button.pack(side='left', padx=(0, 10))
+        
+        # Status d'application
+        self.profile_status_label = ctk.CTkLabel(profiles_selector_frame, 
+                                               text="",
+                                               font=ctk.CTkFont(size=11),
+                                               text_color="#00b300")
+        self.profile_status_label.pack(side='left', padx=(10, 10))
+        
+        # Initialiser le profil par défaut
+        self._init_performance_profiles()
         
         # === AFFICHAGE TÂCHE EN COURS UNIFIÉ ===
         task_frame = ctk.CTkFrame(perf_container)
@@ -2348,6 +2411,183 @@ class RTAPGUIWindow:
         """Configuration de la barre de menu"""
         pass  # Implémentation future si nécessaire
     
+    def _init_performance_profiles(self):
+        """Initialise les profils de performance"""
+        try:
+            from src.config.performance_profiles import get_performance_manager
+            
+            self.profile_manager = get_performance_manager()
+            current_profile_name = self.profile_manager.current_profile
+            
+            # Mapping des noms de profils
+            profile_display_names = {
+                "eco": "💚 Éco",
+                "equilibre": "⚖️ Équilibré", 
+                "performance": "🚀 Performance"
+            }
+            
+            # Définir la valeur par défaut
+            display_name = profile_display_names.get(current_profile_name, "⚖️ Équilibré")
+            self.performance_profile_dropdown.set(display_name)
+            
+            # Mettre à jour la description
+            self._update_profile_description(current_profile_name)
+            
+        except Exception as e:
+            print(f"Erreur initialisation profils: {e}")
+    
+    def _load_current_profile(self):
+        """Charge le profil actuel au démarrage"""
+        try:
+            from src.config.performance_profiles import get_performance_manager
+            
+            profile_manager = get_performance_manager()
+            current_profile = profile_manager.get_current_profile()
+            
+            # Appliquer les paramètres aux sliders si l'interface est créée
+            self.after(1000, lambda: self._apply_profile_to_interface(current_profile))
+            
+        except Exception as e:
+            print(f"Erreur chargement profil: {e}")
+    
+    def on_profile_changed(self, selected_value):
+        """Appelé quand l'utilisateur change de profil"""
+        try:
+            # Mapping inverse
+            profile_names = {
+                "💚 Éco": "eco",
+                "⚖️ Équilibré": "equilibre",
+                "🚀 Performance": "performance"
+            }
+            
+            profile_name = profile_names.get(selected_value, "equilibre")
+            self._update_profile_description(profile_name)
+            
+            # Indiquer qu'un changement est en attente
+            if hasattr(self, 'profile_status_label') and self.profile_status_label:
+                self.profile_status_label.configure(text="⏳ Changement en attente...", text_color="orange")
+            
+        except Exception as e:
+            print(f"Erreur changement profil: {e}")
+    
+    def _update_profile_description(self, profile_name):
+        """Met à jour la description du profil sélectionné"""
+        try:
+            from src.config.performance_profiles import get_performance_manager
+            
+            profile_manager = get_performance_manager()
+            profile = profile_manager.get_profile(profile_name)
+            
+            if hasattr(self, 'profile_description_label') and self.profile_description_label:
+                self.profile_description_label.configure(text=profile.description)
+            
+        except Exception as e:
+            print(f"Erreur description profil: {e}")
+    
+    def apply_selected_profile(self):
+        """Applique le profil sélectionné"""
+        try:
+            from src.config.performance_profiles import get_performance_manager
+            
+            # Récupérer le profil sélectionné
+            selected_display = self.performance_profile_dropdown.get()
+            profile_names = {
+                "💚 Éco": "eco",
+                "⚖️ Équilibré": "equilibre", 
+                "🚀 Performance": "performance"
+            }
+            
+            profile_name = profile_names.get(selected_display, "equilibre")
+            
+            # Appliquer le profil
+            profile_manager = get_performance_manager()
+            success = profile_manager.set_current_profile(profile_name)
+            
+            if success:
+                profile = profile_manager.get_current_profile()
+                
+                # Appliquer à l'interface
+                self._apply_profile_to_interface(profile)
+                
+                # Appliquer au moteur CFR si disponible
+                if hasattr(self, 'app_manager') and self.app_manager:
+                    self.app_manager.cfr_engine._apply_performance_profile(profile)
+                
+                # Redémarrer les processus selon le nouveau profil
+                self._restart_cfr_with_profile(profile)
+                
+                if hasattr(self, 'profile_status_label') and self.profile_status_label:
+                    self.profile_status_label.configure(
+                        text=f"✅ Profil {profile.name} appliqué", 
+                        text_color="#00b300"
+                    )
+                    
+                    # Effacer le message après 3 secondes
+                    self.after(3000, lambda: self.profile_status_label.configure(text=""))
+                
+            else:
+                if hasattr(self, 'profile_status_label') and self.profile_status_label:
+                    self.profile_status_label.configure(
+                        text="❌ Erreur application", 
+                        text_color="red"
+                    )
+        
+        except Exception as e:
+            print(f"Erreur application profil: {e}")
+            if hasattr(self, 'profile_status_label') and self.profile_status_label:
+                self.profile_status_label.configure(
+                    text="❌ Erreur application", 
+                    text_color="red"
+                )
+    
+    def _apply_profile_to_interface(self, profile):
+        """Applique les paramètres du profil aux éléments de l'interface"""
+        try:
+            # Appliquer aux sliders CPU/RAM si ils existent
+            if hasattr(self, 'cpu_limit_slider') and self.cpu_limit_slider:
+                cpu_percent = int(profile.cpu_usage_limit * 100)
+                self.cpu_limit_slider.set(cpu_percent)
+                if hasattr(self, 'cpu_limit_label'):
+                    self.cpu_limit_label.configure(text=f"{cpu_percent}%")
+            
+            # Appliquer aux paramètres GPU si ils existent
+            if hasattr(self, 'gpu_enabled_checkbox') and self.gpu_enabled_checkbox:
+                if profile.prefer_gpu:
+                    self.gpu_enabled_checkbox.select()
+                else:
+                    self.gpu_enabled_checkbox.deselect()
+            
+            # Appliquer d'autres paramètres selon le profil
+            if hasattr(self, 'system_optimizer') and self.system_optimizer:
+                # Convertir le profil RTPA vers le système existant
+                self.system_optimizer.set_custom_limits(
+                    profile.cpu_usage_limit * 100,
+                    70.0,  # RAM par défaut
+                    profile.prefer_gpu,
+                    60.0   # GPU memory par défaut
+                )
+            
+        except Exception as e:
+            print(f"Erreur application interface: {e}")
+    
+    def _restart_cfr_with_profile(self, profile):
+        """Redémarre les processus CFR avec le nouveau profil"""
+        try:
+            if hasattr(self, 'app_manager') and self.app_manager:
+                cfr_engine = self.app_manager.cfr_engine
+                
+                # Arrêter les processus actuels si nécessaire
+                if hasattr(cfr_engine, 'cfr_trainer') and cfr_engine.cfr_trainer:
+                    if not profile.continuous_generation:
+                        cfr_engine.cfr_trainer.stop_continuous_generation()
+                    
+                    if profile.continuous_generation and hasattr(cfr_engine.cfr_trainer, 'continuous_generator'):
+                        if not cfr_engine.cfr_trainer.continuous_generator.running:
+                            cfr_engine.cfr_trainer.start_continuous_generation()
+                
+        except Exception as e:
+            print(f"Erreur redémarrage CFR: {e}")
+
     def on_closing(self):
         """Gestion propre de la fermeture"""
         self.running = False

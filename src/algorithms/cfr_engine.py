@@ -281,23 +281,59 @@ class CFREngine:
         return {}
     
     def init_trainer(self):
-        """Initialise l'entraîneur CFR (séparé pour éviter import circulaire)"""
+        """Initialise l'entraîneur CFR selon le profil de performance"""
         try:
             from .cfr_trainer import CFRTrainer
+            from ..config.performance_profiles import get_performance_manager
+            
+            # Récupération du profil actuel
+            profile_manager = get_performance_manager()
+            profile = profile_manager.get_current_profile()
+            
+            # Application du profil aux paramètres
+            self._apply_performance_profile(profile)
+            
+            # Initialisation du trainer
             self.cfr_trainer = CFRTrainer(self)
             
-            # Chargement automatique des mains historiques
-            self._load_historical_hands()
+            # Chargement des mains historiques seulement si nécessaire
+            if profile.auto_training_enabled:
+                self._load_historical_hands()
             
-            # Démarrage de l'entraînement automatique
-            if self.auto_training_enabled and not self.training_target_reached:
+            # Démarrage selon le profil
+            if profile.auto_training_enabled and profile.background_training:
                 self._start_auto_training()
                 
-            # Démarrage de la génération continue
-            self._start_continuous_generation()
+            # Génération continue selon le profil
+            if profile.continuous_generation:
+                self._start_continuous_generation()
+            else:
+                self.logger.info("Génération continue désactivée (profil)")
                 
         except Exception as e:
             self.logger.error(f"Erreur initialisation trainer: {e}")
+    
+    def _apply_performance_profile(self, profile):
+        """Applique les paramètres du profil de performance"""
+        try:
+            # Paramètres CFR
+            self.iterations_target = profile.cfr_iterations
+            self.discount_factor = profile.cfr_discount_factor
+            self.exploration_rate = profile.cfr_exploration_rate
+            self.gpu_batch_size = profile.cfr_batch_size
+            
+            # Paramètres de ressources
+            if profile.max_cpu_threads != self.cpu_threads:
+                self.cpu_threads = min(profile.max_cpu_threads, self.cpu_threads)
+            
+            # GPU selon le profil
+            if hasattr(self, 'config'):
+                self.config.gpu_enabled = profile.prefer_gpu
+                
+            self.logger.info(f"Profil {profile.name} appliqué - CPU: {self.cpu_threads}, GPU: {profile.prefer_gpu}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur application profil: {e}")
     
     def _load_historical_hands(self):
         """Charge automatiquement les mains historiques disponibles"""
