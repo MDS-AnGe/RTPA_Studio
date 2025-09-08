@@ -187,6 +187,7 @@ class PlatformDetector:
                 # pygetwindow non disponible, utiliser seulement les processus
                 pass
             except Exception as e:
+                pass
         
         except Exception as e:
             self.logger.error(f"Erreur détection plateformes: {e}")
