@@ -271,9 +271,9 @@ class RTAPGUIWindow:
         
         # OPTIMISATION PERFORMANCES : Centraliser les mises à jour en une seule boucle
         self.update_counter = 0
-        # 🚨 GUI UPDATE LOOP DÉSACTIVÉE - Mode debug GUI freeze
-        print("🚨 GUI UPDATE LOOP DÉSACTIVÉE - Mode debug GUI freeze")
-        # self.root.after(3000, self.unified_update_loop)  # Démarrer après 3 secondes avec intervalle plus long
+        # ✅ RÉACTIVATION GUI UPDATE LOOP pour test OCR
+        print("✅ GUI UPDATE LOOP réactivée - Test réactivité avec OCR")
+        self.root.after(1000, self.unified_update_loop)  # 1 seconde pour réactivité
         
         # Initialiser l'affichage de la tâche
         if hasattr(self, 'main_task_label'):
@@ -299,9 +299,9 @@ class RTAPGUIWindow:
         except Exception as e:
             print(f"Erreur mise à jour unifiée: {e}")
         finally:
-            # Programmer la prochaine mise à jour (3 secondes au lieu de 1)
+            # Programmer la prochaine mise à jour (1.5 secondes pour plus de réactivité)
             if self.running:
-                self.root.after(3000, self.unified_update_loop)
+                self.root.after(1500, self.unified_update_loop)
     
     def on_tab_changed(self, event=None):
         """Gestionnaire optimisé pour le changement d'onglet avec lazy loading"""
