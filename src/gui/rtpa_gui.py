@@ -234,6 +234,10 @@ class RTAPGUIWindow:
         # Charger les paramètres sauvegardés après création des éléments
         self.load_saved_settings()
         
+        # Charger la configuration OCR si elle existe (avec vérification)
+        if hasattr(self, 'ocr_zone_entries'):
+            self.load_ocr_configuration()
+        
         # Démarrer les mises à jour
         self.root.after(1000, self.update_cfr_progress)  # Démarrer après 1 seconde
         self.root.after(2000, self.update_system_metrics)  # Métriques système
@@ -638,6 +642,112 @@ class RTAPGUIWindow:
         # Container principal avec scroll
         settings_container = ctk.CTkScrollableFrame(self.settings_tab)
         settings_container.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        # === SECTION CALIBRAGE OCR ===
+        ocr_calibration_frame = ctk.CTkFrame(settings_container)
+        ocr_calibration_frame.pack(fill='x', pady=(0, 20))
+        
+        ctk.CTkLabel(ocr_calibration_frame, text="🔍 Calibrage OCR", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=(20, 15))
+        
+        # Sélection plateforme
+        platform_frame = ctk.CTkFrame(ocr_calibration_frame)
+        platform_frame.pack(fill='x', padx=20, pady=(0, 15))
+        
+        ctk.CTkLabel(platform_frame, text="Plateforme:", font=ctk.CTkFont(size=12, weight="bold")).pack(side='left', padx=(10, 10))
+        
+        self.platform_selector = ctk.CTkComboBox(
+            platform_frame,
+            values=["PokerStars", "Winamax", "PMU", "PartyPoker"],
+            command=self.change_ocr_platform,
+            width=150
+        )
+        self.platform_selector.pack(side='left', padx=(0, 10))
+        self.platform_selector.set("PokerStars")  # Défaut
+        
+        # Instructions
+        instruction_text = ctk.CTkLabel(
+            ocr_calibration_frame,
+            text="Ajustez les coordonnées pour optimiser la détection OCR selon votre résolution d'écran",
+            font=ctk.CTkFont(size=11),
+            text_color="gray"
+        )
+        instruction_text.pack(pady=(0, 15))
+        
+        # Zones OCR configurables
+        zones_frame = ctk.CTkFrame(ocr_calibration_frame)
+        zones_frame.pack(fill='x', padx=20, pady=(0, 20))
+        
+        # Créer les champs pour chaque zone
+        self.ocr_zone_entries = {}
+        zones_config = [
+            ("Cartes Héros", "hero_cards"),
+            ("Board", "board_cards"),
+            ("Pot", "pot_size"),
+            ("Stack Héros", "hero_stack"),
+            ("Blinds", "blinds"),
+            ("Boutons Action", "action_buttons")
+        ]
+        
+        for i, (zone_name, zone_key) in enumerate(zones_config):
+            zone_row = ctk.CTkFrame(zones_frame)
+            zone_row.pack(fill='x', pady=5, padx=10)
+            
+            # Label de la zone
+            ctk.CTkLabel(zone_row, text=f"{zone_name}:", width=120, font=ctk.CTkFont(size=11, weight="bold")).pack(side='left', padx=(5, 10))
+            
+            # Champs pour les coordonnées
+            coords_frame = ctk.CTkFrame(zone_row)
+            coords_frame.pack(side='left', padx=(0, 10))
+            
+            self.ocr_zone_entries[zone_key] = {}
+            
+            # Top
+            ctk.CTkLabel(coords_frame, text="Y:", width=20).pack(side='left', padx=(5, 2))
+            self.ocr_zone_entries[zone_key]['top'] = ctk.CTkEntry(coords_frame, width=60, placeholder_text="580")
+            self.ocr_zone_entries[zone_key]['top'].pack(side='left', padx=(0, 5))
+            
+            # Left
+            ctk.CTkLabel(coords_frame, text="X:", width=20).pack(side='left', padx=(5, 2))
+            self.ocr_zone_entries[zone_key]['left'] = ctk.CTkEntry(coords_frame, width=60, placeholder_text="440")
+            self.ocr_zone_entries[zone_key]['left'].pack(side='left', padx=(0, 5))
+            
+            # Width
+            ctk.CTkLabel(coords_frame, text="L:", width=20).pack(side='left', padx=(5, 2))
+            self.ocr_zone_entries[zone_key]['width'] = ctk.CTkEntry(coords_frame, width=60, placeholder_text="140")
+            self.ocr_zone_entries[zone_key]['width'].pack(side='left', padx=(0, 5))
+            
+            # Height
+            ctk.CTkLabel(coords_frame, text="H:", width=20).pack(side='left', padx=(5, 2))
+            self.ocr_zone_entries[zone_key]['height'] = ctk.CTkEntry(coords_frame, width=60, placeholder_text="50")
+            self.ocr_zone_entries[zone_key]['height'].pack(side='left', padx=(0, 5))
+        
+        # Boutons de contrôle
+        ocr_buttons_frame = ctk.CTkFrame(ocr_calibration_frame)
+        ocr_buttons_frame.pack(fill='x', padx=20, pady=(0, 20))
+        
+        self.load_preset_btn = ctk.CTkButton(
+            ocr_buttons_frame,
+            text="📋 Charger Preset",
+            command=self.load_ocr_preset,
+            width=150
+        )
+        self.load_preset_btn.pack(side='left', padx=(10, 5))
+        
+        self.apply_calibration_btn = ctk.CTkButton(
+            ocr_buttons_frame,
+            text="✅ Appliquer",
+            command=self.apply_ocr_calibration,
+            width=150
+        )
+        self.apply_calibration_btn.pack(side='left', padx=(5, 5))
+        
+        self.test_ocr_btn = ctk.CTkButton(
+            ocr_buttons_frame,
+            text="🔍 Tester OCR",
+            command=self.test_ocr_zones,
+            width=150
+        )
+        self.test_ocr_btn.pack(side='left', padx=(5, 10))
         
         # === SECTION CFR BASE DE DONNÉES ===
         cfr_db_frame = ctk.CTkFrame(settings_container)
@@ -1448,6 +1558,187 @@ class RTAPGUIWindow:
             print(f"Erreur update progress: {e}")
             # Reprogram même en cas d'erreur
             self.root.after(5000, self.update_cfr_progress)
+    
+    def change_ocr_platform(self, selected_platform):
+        """Change la plateforme OCR et charge les préréglages correspondants"""
+        try:
+            platform_mapping = {
+                "PokerStars": "pokerstars",
+                "Winamax": "winamax", 
+                "PMU": "pmu",
+                "PartyPoker": "partypoker"
+            }
+            
+            internal_name = platform_mapping.get(selected_platform, "pokerstars")
+            
+            # Charger automatiquement le preset
+            self.load_ocr_preset_for_platform(internal_name)
+            print(f"✅ Plateforme OCR changée: {selected_platform}")
+            
+        except Exception as e:
+            print(f"Erreur changement plateforme OCR: {e}")
+    
+    def load_ocr_preset_for_platform(self, platform_name):
+        """Charge les préréglages OCR pour une plateforme donnée"""
+        try:
+            # Importer les préréglages depuis screen_capture
+            from src.ocr.screen_capture import ScreenCapture
+            ocr = ScreenCapture()
+            
+            if platform_name in ocr.roi_presets:
+                preset = ocr.roi_presets[platform_name]
+                
+                # Remplir tous les champs avec les valeurs du preset
+                for zone_key, coords in preset.items():
+                    if zone_key in self.ocr_zone_entries:
+                        self.ocr_zone_entries[zone_key]['top'].delete(0, 'end')
+                        self.ocr_zone_entries[zone_key]['top'].insert(0, str(coords['top']))
+                        
+                        self.ocr_zone_entries[zone_key]['left'].delete(0, 'end')
+                        self.ocr_zone_entries[zone_key]['left'].insert(0, str(coords['left']))
+                        
+                        self.ocr_zone_entries[zone_key]['width'].delete(0, 'end')
+                        self.ocr_zone_entries[zone_key]['width'].insert(0, str(coords['width']))
+                        
+                        self.ocr_zone_entries[zone_key]['height'].delete(0, 'end')
+                        self.ocr_zone_entries[zone_key]['height'].insert(0, str(coords['height']))
+                
+                print(f"✅ Preset {platform_name} chargé dans l'interface")
+            else:
+                print(f"⚠️ Aucun preset trouvé pour {platform_name}")
+                
+        except Exception as e:
+            print(f"Erreur chargement preset: {e}")
+    
+    def load_ocr_preset(self):
+        """Charge le preset pour la plateforme sélectionnée"""
+        try:
+            selected_platform = self.platform_selector.get()
+            platform_mapping = {
+                "PokerStars": "pokerstars",
+                "Winamax": "winamax", 
+                "PMU": "pmu",
+                "PartyPoker": "partypoker"
+            }
+            
+            internal_name = platform_mapping.get(selected_platform, "pokerstars")
+            self.load_ocr_preset_for_platform(internal_name)
+            
+        except Exception as e:
+            print(f"Erreur load preset: {e}")
+    
+    def apply_ocr_calibration(self):
+        """Applique la calibration OCR avec les nouvelles coordonnées"""
+        try:
+            # Récupérer toutes les valeurs des champs
+            new_zones = {}
+            
+            for zone_key, entries in self.ocr_zone_entries.items():
+                try:
+                    new_zones[zone_key] = {
+                        'top': int(entries['top'].get() or 0),
+                        'left': int(entries['left'].get() or 0),
+                        'width': int(entries['width'].get() or 0),
+                        'height': int(entries['height'].get() or 0)
+                    }
+                except ValueError:
+                    print(f"⚠️ Valeur invalide pour {zone_key}, utilisation des défauts")
+                    continue
+            
+            # Appliquer au système OCR si disponible
+            if hasattr(self, 'app_manager') and self.app_manager:
+                if hasattr(self.app_manager, 'screen_capture') and self.app_manager.screen_capture:
+                    # Mettre à jour les zones OCR
+                    self.app_manager.screen_capture.roi_zones.update(new_zones)
+                    print(f"✅ Calibration OCR appliquée: {len(new_zones)} zones mises à jour")
+                else:
+                    print("⚠️ Module de capture d'écran non disponible")
+            
+            # Sauvegarder la configuration
+            self.save_ocr_configuration(new_zones)
+            
+        except Exception as e:
+            print(f"Erreur application calibration: {e}")
+    
+    def save_ocr_configuration(self, zones_config):
+        """Sauvegarde la configuration OCR"""
+        try:
+            import json
+            import os
+            
+            config_path = "config/ocr_calibration.json"
+            os.makedirs("config", exist_ok=True)
+            
+            with open(config_path, 'w') as f:
+                json.dump(zones_config, f, indent=2)
+                
+            print(f"✅ Configuration OCR sauvegardée: {config_path}")
+            
+        except Exception as e:
+            print(f"Erreur sauvegarde configuration OCR: {e}")
+    
+    def test_ocr_zones(self):
+        """Teste les zones OCR configurées"""
+        try:
+            if hasattr(self, 'app_manager') and self.app_manager:
+                if hasattr(self.app_manager, 'screen_capture') and self.app_manager.screen_capture:
+                    # Test simple des zones
+                    capture = self.app_manager.screen_capture
+                    
+                    # Capturer une image test
+                    test_img = capture.capture_screen_region()
+                    
+                    if test_img is not None:
+                        print("✅ Test OCR réussi - Capture d'écran fonctionnelle")
+                        
+                        # Tester quelques zones
+                        test_zones = ['hero_cards', 'board_cards', 'pot_size']
+                        for zone in test_zones:
+                            if zone in capture.roi_zones:
+                                coords = capture.roi_zones[zone]
+                                print(f"  • {zone}: {coords['width']}x{coords['height']} à ({coords['left']}, {coords['top']})")
+                        
+                        print("🔍 Test terminé - Vérifiez la console pour les détails")
+                    else:
+                        print("❌ Échec capture d'écran - Vérifiez la configuration")
+                else:
+                    print("⚠️ Module OCR non disponible pour test")
+            else:
+                print("⚠️ Gestionnaire d'application non disponible")
+                
+        except Exception as e:
+            print(f"Erreur test OCR: {e}")
+    
+    def load_ocr_configuration(self):
+        """Charge la configuration OCR sauvegardée"""
+        try:
+            import json
+            import os
+            
+            config_path = "config/ocr_calibration.json"
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    zones_config = json.load(f)
+                
+                # Appliquer la configuration aux champs de l'interface
+                for zone_key, coords in zones_config.items():
+                    if hasattr(self, 'ocr_zone_entries') and zone_key in self.ocr_zone_entries:
+                        self.ocr_zone_entries[zone_key]['top'].delete(0, 'end')
+                        self.ocr_zone_entries[zone_key]['top'].insert(0, str(coords['top']))
+                        
+                        self.ocr_zone_entries[zone_key]['left'].delete(0, 'end')
+                        self.ocr_zone_entries[zone_key]['left'].insert(0, str(coords['left']))
+                        
+                        self.ocr_zone_entries[zone_key]['width'].delete(0, 'end')
+                        self.ocr_zone_entries[zone_key]['width'].insert(0, str(coords['width']))
+                        
+                        self.ocr_zone_entries[zone_key]['height'].delete(0, 'end')
+                        self.ocr_zone_entries[zone_key]['height'].insert(0, str(coords['height']))
+                
+                print(f"✅ Configuration OCR chargée: {config_path}")
+                
+        except Exception as e:
+            print(f"Info: Aucune configuration OCR sauvegardée ({e})")
     
     def change_performance_profile(self, profile_name):
         """Change le profil de performance"""
