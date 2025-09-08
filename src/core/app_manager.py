@@ -145,11 +145,13 @@ class RTAPStudioManager:
             # Délai selon le profil
             time.sleep(profile.startup_delay)
             
-            if profile.auto_training_enabled:
-                self.cfr_engine.init_trainer()
-                self.logger.info(f"Entraînement CFR initialisé (profil {profile.name}, délai {profile.startup_delay}s)")
-            else:
-                self.logger.info(f"Entraînement CFR désactivé (profil {profile.name})")
+            print("🚨 CFR TRAINING DÉSACTIVÉ - Mode debug GUI freeze")
+            # DÉSACTIVATION COMPLÈTE du CFR training pour debug
+            # if profile.auto_training_enabled:
+            #     self.cfr_engine.init_trainer()
+            #     self.logger.info(f"Entraînement CFR initialisé (profil {profile.name}, délai {profile.startup_delay}s)")
+            # else:
+            #     self.logger.info(f"Entraînement CFR désactivé (profil {profile.name})")
                 
         except Exception as e:
             self.logger.error(f"Erreur initialisation différée CFR: {e}")
@@ -158,7 +160,11 @@ class RTAPStudioManager:
         self.platform_detector.start_monitoring()
     
     def start(self):
-        """Démarre le système d'analyse en temps réel"""
+        """Démarre le système d'analyse en temps réel (DÉSACTIVÉ POUR DEBUG)"""
+        print("🚨 THREADS OCR/CFR DÉSACTIVÉS - Mode debug GUI freeze")
+        self.running = False  # Force désactivation
+        return  # DÉSACTIVATION COMPLÈTE pour debug GUI freeze
+        
         if self.running:
             return
             

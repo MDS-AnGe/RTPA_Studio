@@ -57,7 +57,11 @@ class PlatformDetector:
         self.status_callback = callback
     
     def start_monitoring(self):
-        """Démarre la surveillance automatique"""
+        """Démarre la surveillance automatique (DÉSACTIVÉ POUR DEBUG)"""
+        print("🚨 SURVEILLANCE PLATEFORME DÉSACTIVÉE - Mode debug GUI freeze")
+        self.is_monitoring = False
+        return  # DÉSACTIVATION COMPLÈTE pour debug GUI freeze
+        
         if self.is_monitoring:
             return
         
