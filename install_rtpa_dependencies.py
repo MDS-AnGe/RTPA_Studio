@@ -113,36 +113,55 @@ def compile_rust_cfr():
     try:
         os.chdir(rust_dir)
         
-        # Compilation en mode release pour performance maximale
-        result = subprocess.run(['cargo', 'build', '--release'], 
-                              capture_output=True, text=True, timeout=300)
+        # Essayer différentes commandes cargo
+        cargo_commands = [
+            ['cargo', 'build', '--release'],
+            [os.path.expanduser('~/.cargo/bin/cargo'), 'build', '--release'],
+            [os.path.expanduser('~') + '\\.cargo\\bin\\cargo.exe', 'build', '--release'] if os.name == 'nt' else None,
+        ]
         
-        if result.returncode == 0:
-            print("✅ CFR Engine Rust compilé avec succès")
-            
-            # Vérifier module généré
-            target_release = Path("target/release")
-            lib_patterns = ["librust_cfr_engine.so", "librust_cfr_engine.dylib", "rust_cfr_engine.dll"]
-            
-            for pattern in lib_patterns:
-                lib_path = target_release / pattern
-                if lib_path.exists():
-                    size_mb = lib_path.stat().st_size / (1024 * 1024)
-                    print(f"📦 Module CFR: {lib_path.name} ({size_mb:.1f} MB)")
-                    return True
-            
-            print("⚠️  Module compilé mais fichier bibliothèque introuvable")
+        cargo_commands = [cmd for cmd in cargo_commands if cmd]  # Filtrer None
+        
+        compilation_success = False
+        for cmd in cargo_commands:
+            try:
+                print(f"🔄 Tentative: {' '.join(cmd)}")
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+                
+                if result.returncode == 0:
+                    print("✅ CFR Engine Rust compilé avec succès")
+                    compilation_success = True
+                    break
+                else:
+                    print(f"❌ Erreur avec {cmd[0]}: {result.stderr[:200]}...")
+                    
+            except FileNotFoundError:
+                print(f"❌ Commande non trouvée: {cmd[0]}")
+                continue
+            except subprocess.TimeoutExpired:
+                print(f"⏰ Timeout avec: {cmd[0]}")
+                continue
+        
+        if not compilation_success:
+            print("❌ Aucune commande cargo n'a fonctionné")
             return False
-        else:
-            print(f"❌ Erreur compilation Rust CFR:")
-            print(result.stderr)
-            return False
-            
-    except subprocess.TimeoutExpired:
-        print("⏰ Timeout compilation (>5min)")
+        
+        # Vérifier module généré
+        target_release = Path("target/release")
+        lib_patterns = ["librust_cfr_engine.so", "librust_cfr_engine.dylib", "rust_cfr_engine.dll", "rust_cfr_engine.pyd"]
+        
+        for pattern in lib_patterns:
+            lib_path = target_release / pattern
+            if lib_path.exists():
+                size_mb = lib_path.stat().st_size / (1024 * 1024)
+                print(f"📦 Module CFR: {lib_path.name} ({size_mb:.1f} MB)")
+                return True
+        
+        print("⚠️  Module compilé mais fichier bibliothèque introuvable")
         return False
+            
     except Exception as e:
-        print(f"❌ Erreur: {e}")
+        print(f"❌ Erreur générale: {e}")
         return False
     finally:
         os.chdir("..")

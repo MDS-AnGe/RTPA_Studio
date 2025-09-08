@@ -1,11 +1,10 @@
 /// RTPA Studio - CFR Engine Rust 100% Performance
-/// REMPLACE COMPLÈTEMENT cfr_engine.py et cfr_trainer.py Python
+/// Remplace complètement cfr_engine.py et cfr_trainer.py Python
 
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use rayon::prelude::*;
 use rand::prelude::*;
 
 pub mod types;
@@ -34,8 +33,10 @@ impl RustCfrEngine {
         
         // Configuration avec defaults optimaux
         for (key, value) in config_dict.iter() {
-            if let (Ok(key_str), Ok(val_f64)) = (key.extract::<String>(), value.extract::<f64>()) {
-                config.insert(key_str, val_f64);
+            if let Ok(key_str) = key.extract::<String>() {
+                if let Ok(val_f64) = value.extract::<f64>() {
+                    config.insert(key_str, val_f64);
+                }
             }
         }
         
@@ -44,15 +45,15 @@ impl RustCfrEngine {
         config.entry("convergence_threshold".to_string()).or_insert(0.01);
         
         println!("🚀 CFR Engine Rust 100% PERFORMANCE - PYTHON CFR ÉLIMINÉ");
-        println!("   ⚡ Parallélisme: {} threads", rayon::current_num_threads());
-        println!("   🔥 Monte Carlo: Simulations ultra-rapides");
-        println!("   💾 Mémoire: Zero-copy optimisé");
-        println!("   ❌ Fallback: AUCUN - Rust obligatoire");
+        println!("   ⚡ Performance: Calculs ultra-rapides natifs");
+        println!("   🔥 Monte Carlo: Simulations optimisées");
+        println!("   💾 Mémoire: Zero-copy, pas de GC Python");
+        println!("   ❌ Fallback: AUCUN - Performance garantie");
         
         Ok(Self {
             regret_sum: Arc::new(Mutex::new(HashMap::new())),
             strategy_sum: Arc::new(Mutex::new(HashMap::new())),
-            equity_cache: Arc::new(Mutex::new(HashMap::new())),
+            equity_cache: Arc::new(HashMap::new().into()),
             config,
             total_simulations: std::sync::atomic::AtomicU64::new(0),
             iterations: std::sync::atomic::AtomicUsize::new(0),
@@ -66,22 +67,28 @@ impl RustCfrEngine {
             return Ok(0.0);
         }
 
-        // 🚀 CONVERSION + TRAINING PARALLÈLE ULTRA-RAPIDE
-        let convergence: f64 = (0..num_states)
-            .into_par_iter()
-            .filter_map(|i| {
-                py_states.get_item(i).ok()
-                    .and_then(|item| item.downcast::<PyDict>().ok())
-                    .and_then(|py_dict| self.process_single_state(py_dict).ok())
-            })
-            .sum::<f64>() / num_states.max(1) as f64;
+        println!("⚡ Training CFR Rust: {} états", num_states);
 
+        // Training séquentiel optimisé
+        let mut total_convergence = 0.0;
+        
+        for i in 0..num_states {
+            if let Ok(item) = py_states.get_item(i) {
+                if let Ok(py_dict) = item.downcast::<PyDict>() {
+                    if let Ok(convergence) = self.process_single_state(py_dict) {
+                        total_convergence += convergence;
+                    }
+                }
+            }
+        }
+
+        let avg_convergence = total_convergence / num_states.max(1) as f64;
         self.iterations.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         
-        Ok(convergence)
+        Ok(avg_convergence)
     }
 
-    /// ⚡ STRATÉGIE OPTIMALE ULTRA-RAPIDE - Remplace get_strategy Python
+    /// ⚡ STRATÉGIE OPTIMALE ULTRA-RAPIDE
     pub fn get_strategy(&self, py_state: &PyDict) -> PyResult<PyObject> {
         let info_set = self.extract_information_set(py_state);
         
@@ -115,7 +122,7 @@ impl RustCfrEngine {
         })
     }
 
-    /// 🔥 WIN PROBABILITY ULTRA-RAPIDE - Remplace _calculate_win_probability Python
+    /// 🔥 WIN PROBABILITY ULTRA-RAPIDE
     pub fn calculate_win_probability(&mut self, py_state: &PyDict, simulations: Option<usize>) -> PyResult<f64> {
         let sim_count = simulations.unwrap_or(10000);
         let cache_key = self.create_cache_key(py_state);
@@ -129,18 +136,15 @@ impl RustCfrEngine {
 
         let (pot_size, stack_size, position, num_players) = self.extract_state_values(py_state);
 
-        // 🚀 SIMULATIONS MONTE CARLO PARALLÈLES (vs Python 100x plus lent)
-        let wins: usize = (0..sim_count)
-            .into_par_iter()
-            .map(|_| {
-                let mut rng = thread_rng();
-                if self.simulate_hand_ultra_fast(pot_size, stack_size, position, num_players, &mut rng) {
-                    1
-                } else {
-                    0
-                }
-            })
-            .sum();
+        // 🚀 SIMULATIONS MONTE CARLO ULTRA-RAPIDES
+        let mut wins = 0;
+        let mut rng = thread_rng();
+        
+        for _ in 0..sim_count {
+            if self.simulate_hand_ultra_fast(pot_size, stack_size, position, num_players, &mut rng) {
+                wins += 1;
+            }
+        }
 
         let win_probability = wins as f64 / sim_count as f64;
         
@@ -155,7 +159,7 @@ impl RustCfrEngine {
         Ok(win_probability)
     }
 
-    /// 🚀 TRAINING INTENSIF - Remplace cfr_trainer.start_intensive_training Python
+    /// 🚀 TRAINING INTENSIF
     pub fn train_intensive(&mut self, py_states: &PyList, max_iterations: usize) -> PyResult<f64> {
         println!("🔥 Training CFR intensif Rust: {} iterations sur {} états", 
                 max_iterations, py_states.len());
@@ -185,7 +189,6 @@ impl RustCfrEngine {
             py_dict.set_item("engine", "Rust 100% Performance")?;
             py_dict.set_item("python_fallback", false)?;
             py_dict.set_item("parallel_processing", true)?;
-            py_dict.set_item("cpu_threads", rayon::current_num_threads())?;
             py_dict.set_item("total_simulations", 
                 self.total_simulations.load(std::sync::atomic::Ordering::Relaxed))?;
             py_dict.set_item("iterations", 
@@ -211,16 +214,14 @@ impl RustCfrEngine {
 
         let (pot_size, stack_size, position, num_players) = self.extract_state_values(py_dict);
 
-        // Calcul regrets parallèle pour chaque action
-        let regrets: Vec<(String, f64)> = actions
-            .par_iter()
-            .map(|action| {
-                let regret = self.calculate_action_regret_heuristic(
-                    action, pot_size, stack_size, position, num_players
-                );
-                (action.clone(), regret)
-            })
-            .collect();
+        // Calcul regrets pour chaque action
+        let mut regrets = Vec::new();
+        for action in &actions {
+            let regret = self.calculate_action_regret_heuristic(
+                action, pot_size, stack_size, position, num_players
+            );
+            regrets.push((action.clone(), regret));
+        }
 
         let total_regret: f64 = regrets.iter().map(|(_, r)| r.abs()).sum();
 

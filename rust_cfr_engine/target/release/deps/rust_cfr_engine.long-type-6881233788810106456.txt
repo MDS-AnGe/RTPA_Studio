@@ -1,0 +1,1 @@
+&mut rand::prelude::ThreadRng: PyFunctionArgument<'_, '_>
