@@ -72,6 +72,12 @@ class ScreenCapture:
     def capture_screen_region(self, region: Optional[Dict[str, int]] = None) -> Optional[np.ndarray]:
         """Capture une région spécifique de l'écran"""
         try:
+            # Debug pour Windows
+            if region is None:
+                print("🔍 Capture écran complet...")
+            else:
+                print(f"🔍 Capture région: {region}")
+                
             if region is None:
                 # Capture écran complet
                 region = {'top': 0, 'left': 0, 'width': 1920, 'height': 1080}

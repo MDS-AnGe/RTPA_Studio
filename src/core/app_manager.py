@@ -10,12 +10,39 @@ import yaml
 
 from ..database.memory_db import MemoryDatabase
 import os
-# 🎯 MODE SIMULATION OPTIMISÉ POUR REPLIT
-print("🎯 Environnement Replit détecté - Mode simulation intelligent")
-from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
-print("✅ Mode simulation activé avec données réalistes")
-print("📊 Idéal pour tester l'interface et les fonctionnalités")
-REAL_CAPTURE_ACTIVE = False
+# 🔍 DÉTECTION AUTOMATIQUE D'ENVIRONNEMENT
+import platform
+import sys
+
+# Détection intelligente de l'environnement
+if os.getenv('REPL_SLUG') or os.getenv('REPLIT_ENVIRONMENT'):
+    # Mode Replit - Simulation
+    print("🎯 Environnement Replit détecté - Mode simulation")
+    from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
+    REAL_CAPTURE_ACTIVE = False
+elif platform.system() == 'Windows':
+    # Mode Windows - Vraie capture
+    print("🔍 Environnement Windows détecté - Activation capture d'écran réelle")
+    try:
+        from ..ocr.screen_capture import ScreenCapture
+        print("✅ Capture d'écran réelle activée pour Windows")
+        print("📹 Prêt pour détection Winamax en temps réel")
+        REAL_CAPTURE_ACTIVE = True
+    except Exception as e:
+        print(f"❌ Erreur activation capture réelle: {e}")
+        print("⚠️ Fallback vers simulation")
+        from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
+        REAL_CAPTURE_ACTIVE = False
+else:
+    # Autres environnements - Auto-détection
+    try:
+        from ..ocr.screen_capture import ScreenCapture
+        print("✅ Capture d'écran réelle activée")
+        REAL_CAPTURE_ACTIVE = True
+    except Exception as e:
+        print(f"⚠️ Capture d'écran non disponible: {e}")
+        from ..ocr.screen_capture_headless import ScreenCaptureHeadless as ScreenCapture
+        REAL_CAPTURE_ACTIVE = False
 from ..algorithms.cfr_engine import CFREngine
 from ..utils.logger import get_logger
 from ..config.settings import Settings
@@ -149,17 +176,30 @@ class RTAPStudioManager:
     
     def _ocr_loop(self):
         """Boucle de capture et d'analyse OCR"""
+        ocr_iterations = 0
         while self.running:
             try:
                 # Capture et analyse de l'écran
                 game_data = self.screen_capture.capture_and_analyze()
+                ocr_iterations += 1
+                
+                # Debug pour Windows
+                if REAL_CAPTURE_ACTIVE and ocr_iterations % 20 == 0:
+                    print(f"🔍 OCR itération {ocr_iterations} - Données: {bool(game_data)}")
+                
                 if game_data:
+                    if REAL_CAPTURE_ACTIVE:
+                        print(f"✅ Données OCR reçues: {list(game_data.keys())}")
                     self._update_game_state(game_data)
+                elif REAL_CAPTURE_ACTIVE and ocr_iterations % 50 == 0:
+                    print("⚠️ Aucune donnée OCR détectée - Vérifiez que Winamax est ouvert")
                 
                 time.sleep(0.05)  # 50ms entre les captures pour réactivité maximale
                 
             except Exception as e:
                 self.logger.error(f"Erreur dans la boucle OCR: {e}")
+                if REAL_CAPTURE_ACTIVE:
+                    print(f"❌ Erreur capture OCR: {e}")
                 time.sleep(1)
     
     def _analysis_loop(self):
