@@ -29,7 +29,7 @@ class PlatformDetector:
             },
             'winamax': {
                 'processes': ['Winamax.exe', 'winamax', 'WinamaxPoker.exe'],
-                'window_titles': ['Winamax Poker', 'Winamax - '],
+                'window_titles': ['Winamax Poker', 'Winamax - ', 'Winamax', 'Table', 'NL', 'PL', 'FL', 'SNG', 'MTT'],
                 'name': 'Winamax'
             },
             'pmu': {
@@ -116,10 +116,13 @@ class PlatformDetector:
         result = {
             'detected_platforms': list(platforms),
             'all_processes': [],
-            'matching_processes': []
+            'matching_processes': [],
+            'all_windows': [],
+            'matching_windows': []
         }
         
         try:
+            # Analyse des processus
             for proc in psutil.process_iter(['pid', 'name']):
                 try:
                     proc_name = proc.info['name']
@@ -138,6 +141,30 @@ class PlatformDetector:
                                     result['matching_processes'].append((proc_name, platform_id, pattern_base))
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
+            
+            # Analyse des fenêtres (si disponible)
+            try:
+                import importlib.util
+                spec = importlib.util.find_spec('pygetwindow')
+                if spec is not None:
+                    gw = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(gw)
+                    windows = gw.getAllTitles()
+                    
+                    for window_title in windows:
+                        if window_title.strip():  # Ignorer les titres vides
+                            result['all_windows'].append(window_title)
+                            
+                            # Vérifier correspondance Winamax
+                            if ('winamax' in window_title.lower() or
+                                any(keyword in window_title.lower() for keyword in ['table', 'nl', 'pl', 'fl', 'sng', 'mtt'])):
+                                result['matching_windows'].append((window_title, 'winamax'))
+                                
+            except (ImportError, ModuleNotFoundError, AttributeError):
+                result['all_windows'] = ['pygetwindow non disponible']
+            except Exception as e:
+                result['all_windows'] = [f'Erreur fenêtres: {e}']
+                
         except Exception as e:
             self.logger.error(f"Erreur get_detection_info: {e}")
         
@@ -178,10 +205,21 @@ class PlatformDetector:
                     
                     for window_title in windows:
                         for platform_id, platform_info in self.supported_platforms.items():
-                            if any(title.lower() in window_title.lower() 
-                                  for title in platform_info['window_titles']):
-                                active_platforms.add(platform_id)
-                                break
+                            # Logique spéciale pour Winamax (détection plus inclusive)
+                            if platform_id == 'winamax':
+                                # Détecter Winamax dans le titre de fenêtre (lobby ou table)
+                                if ('winamax' in window_title.lower() or
+                                    (any(keyword in window_title.lower() 
+                                         for keyword in ['table', 'nl', 'pl', 'fl', 'sng', 'mtt']) and 
+                                     len([w for w in windows if 'winamax' in w.lower()]) > 0)):
+                                    active_platforms.add(platform_id)
+                                    break
+                            else:
+                                # Logique normale pour les autres plateformes
+                                if any(title.lower() in window_title.lower() 
+                                      for title in platform_info['window_titles']):
+                                    active_platforms.add(platform_id)
+                                    break
                             
             except (ImportError, ModuleNotFoundError, AttributeError):
                 # pygetwindow non disponible, utiliser seulement les processus
