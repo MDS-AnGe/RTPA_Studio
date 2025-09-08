@@ -1868,7 +1868,7 @@ class RTAPGUIWindow:
     def force_platform_detection(self):
         """Force une nouvelle détection de plateforme"""
         try:
-            print("🔄 Forcing platform re-detection...")
+            print("🔄 Démarrage re-détection des plateformes...")
             
             # Réinitialiser l'affichage
             if hasattr(self, 'detected_platform_label'):
@@ -1910,7 +1910,9 @@ class RTAPGUIWindow:
                         )
                 
         except Exception as e:
-            print(f"Erreur force detection: {e}")
+            print(f"❌ Erreur lors de la re-détection: {e}")
+            import traceback
+            print(f"Détails erreur: {traceback.format_exc()}")
             if hasattr(self, 'detected_platform_label'):
                 self.detected_platform_label.configure(
                     text="Erreur de détection",
@@ -1920,14 +1922,16 @@ class RTAPGUIWindow:
     def show_manual_override(self):
         """Affiche une interface de configuration manuelle"""
         try:
-            print("⚙️ Opening manual configuration...")
+            print("⚙️ Ouverture configuration manuelle OCR...")
             
             # Créer une fenêtre popup pour la configuration manuelle
-            override_window = ctk.CTkToplevel(self)
+            override_window = ctk.CTkToplevel(self.root)
             override_window.title("Configuration Manuelle OCR")
             override_window.geometry("800x600")
             override_window.transient(self.root)
             override_window.grab_set()
+            
+            print("✅ Fenêtre configuration manuelle créée")
             
             # Titre
             title_label = ctk.CTkLabel(
@@ -2000,7 +2004,9 @@ class RTAPGUIWindow:
             cancel_btn.pack(side='right', padx=20)
             
         except Exception as e:
-            print(f"Erreur configuration manuelle: {e}")
+            print(f"❌ Erreur configuration manuelle OCR: {e}")
+            import traceback
+            print(f"Détails erreur: {traceback.format_exc()}")
     
     def load_ocr_preset(self):
         """Charge le preset pour la plateforme sélectionnée"""
@@ -2072,6 +2078,8 @@ class RTAPGUIWindow:
     def test_ocr_zones(self):
         """Teste les zones OCR configurées"""
         try:
+            print("🔍 Démarrage test des zones OCR...")
+            
             if hasattr(self, 'app_manager') and self.app_manager:
                 if hasattr(self.app_manager, 'screen_capture') and self.app_manager.screen_capture:
                     # Test simple des zones
@@ -2099,7 +2107,9 @@ class RTAPGUIWindow:
                 print("⚠️ Gestionnaire d'application non disponible")
                 
         except Exception as e:
-            print(f"Erreur test OCR: {e}")
+            print(f"❌ Erreur lors du test OCR: {e}")
+            import traceback
+            print(f"Détails erreur: {traceback.format_exc()}")
     
     def auto_calibrate_ocr(self):
         """Recalibrage automatique basé sur la détection de plateforme"""
