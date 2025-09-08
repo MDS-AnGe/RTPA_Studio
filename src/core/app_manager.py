@@ -160,19 +160,11 @@ class RTAPStudioManager:
         self.platform_detector.start_monitoring()
     
     def start(self):
-        """Démarre le système d'analyse (OCR SEULEMENT pour test de performance)"""
-        print("🧪 TEST OCR SEUL - CFR reste désactivé")
-        if self.running:
-            return
-            
-        self.running = True
-        self.logger.info("Démarrage OCR SEUL pour test de performance")
-        
-        # Démarrage SEULEMENT du thread OCR (pas de CFR Analysis)
-        self.ocr_thread = threading.Thread(target=self._ocr_loop, daemon=True)
-        self.ocr_thread.start()
-        print("✅ Thread OCR activé - Thread CFR Analysis reste désactivé")
-        return  # Ne pas démarrer analysis_thread pour le moment
+        """Démarre le système d'analyse (OCR DÉSACTIVÉ pour test interface pure)"""
+        print("🚨 OCR DÉSACTIVÉ - Test interface GUI pure")
+        print("💡 Confirmer si freeze vient de OCR ou widgets GUI")
+        self.running = False  # Force désactivation complète
+        return  # DÉSACTIVATION COMPLÈTE OCR pour test interface pure
         
         if self.running:
             return

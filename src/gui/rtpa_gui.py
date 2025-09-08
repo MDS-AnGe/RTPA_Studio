@@ -2623,14 +2623,23 @@ class RTAPGUIWindow:
             }
             real_players.append(hero_player)
         
-        self.create_players_display(real_players)
+        # ✅ CORRECTION: Utiliser mise à jour optimisée au lieu de recréation
+        if hasattr(self, 'player_widgets'):
+            self.update_players_display_optimized(real_players)  
+        else:
+            self.create_players_display(real_players)
     
     def create_players_display(self, players_data=None):
         """Affichage des 9 positions fixes d'une table 9-max"""
         
-        # Effacer l'affichage existant
-        for widget in self.players_list_frame.winfo_children():
-            widget.destroy()
+        # ✅ CORRECTION FREEZE: Ne pas détruire/recréer les widgets !
+        # Plus de destroy() pour éviter les micro-freezes
+        if hasattr(self, 'player_widgets'):
+            self.update_players_display_optimized(players_data)
+            return
+        
+        # Première création des widgets (une seule fois)
+        print("✅ Création UNIQUE des widgets joueurs (pattern optimisé)")
         
         # Définir les 9 positions fixes d'une table 9-max
         positions = [
