@@ -2,7 +2,7 @@
 
 ## Recent Changes
 
-### 2025-09-08 - Migration complète vers C++20 + Qt + OpenCV + Tesseract
+### 2025-09-08 - Version 2.0.0 - Migration complète vers C++20 + Qt + OpenCV + Tesseract
 - **Architecture unifiée** : Migration totale Python/Rust vers C++20 moderne haute performance
 - **Performance maximale** : CFR Engine natif C++ ultra-optimisé (50-200x plus rapide)
 - **Interface Qt6 moderne** : Remplacement CustomTkinter par interface professionnelle native
