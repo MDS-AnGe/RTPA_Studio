@@ -3042,7 +3042,7 @@ class RTAPGUIWindow:
                         
                         self.root.after(0, lambda: self._perform_stable_update(data, update_complete))
                 
-                time.sleep(3.0)  # Mise à jour moins fréquente pour stabilité
+                time.sleep(1.0)  # Mise à jour optimisée pour performance et réactivité
                 
             except Exception as e:
                 print(f"Erreur dans la boucle de mise à jour: {e}")
