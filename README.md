@@ -1,13 +1,14 @@
-# 🎯 RTPA Studio - Real-Time Poker Analysis
+# 🎯 RTPA Studio - Real-Time Poker Assistant
 
-**Logiciel d'analyse de poker en temps réel avec OCR et calculs CFR/Nash**
+**Logiciel d'analyse de poker en temps réel avec OCR automatique et calculs CFR/Nash optimisés**
 
 ## 🚀 Fonctionnalités
 
 ### ✨ Analyse Temps Réel
-- **OCR automatique** : Capture non-intrusive des données de jeu
+- **OCR automatique avec calibrage** : Capture non-intrusive + ajustement manuel précis
+- **Auto-calibrage intelligent** : Détection automatique des plateformes actives  
 - **Calculs CFR/Nash continus** : Recommandations optimales en temps réel
-- **Support multi-clients** : Compatible PokerStars, Winamax, et autres
+- **Support multi-clients** : PokerStars, Winamax, PMU, PartyPoker
 - **Latence ultra-faible** : < 50ms pour l'OCR, calculs en continu
 
 ### 🎮 Types de Jeu Supportés
@@ -29,6 +30,7 @@
 
 ### ⚙️ Interface et Paramètres
 - **Interface moderne** : CustomTkinter élégant et responsive
+- **Calibrage OCR intégré** : Interface complète avec auto-calibrage
 - **Multilingue** : Français et Anglais
 - **Paramètres avancés** : Override manuel du risque, gestion GPU/CPU/RAM
 - **Thèmes** : Mode sombre/clair
@@ -97,11 +99,8 @@
 
 ### Démarrage Rapide
 ```bash
-# Test automatique complet
-python test_final.py
-
-# Lancement interface graphique
-python main_gui.py
+# Lancement principal (recommandé)
+python rtpa.py
 
 # Démonstration console temps réel
 python main_headless.py
@@ -192,39 +191,31 @@ python main_headless.py
 
 ---
 
-## 🔧 Installation Automatique
+## 🔧 Installation et Lancement
 
 ### Étape 1 : Téléchargement
 ```bash
-# Cloner le repository GitHub
+# Cloner le repository
 git clone https://github.com/MDS-AnGe/RTPA_Studio.git
 cd RTPA_Studio
 ```
 
 ### Étape 2 : Installation Automatique
 ```bash
-# Lancer l'installateur automatique
-python setup_installer.py
+# Auto-installation des dépendances au premier lancement
+python rtpa.py
 ```
 
-L'installateur va automatiquement :
+L'auto-installation va automatiquement :
 - ✅ Vérifier Python 3.8+
-- ✅ Installer Tesseract OCR
 - ✅ Installer toutes les dépendances Python  
-- ✅ Configurer les répertoires
-- ✅ Tester l'installation
-- ✅ Créer les raccourcis
+- ✅ Configurer l'environnement
+- ✅ Lancer l'interface moderne
 
-### Étape 3 : Lancement
+### Étape 3 : Utilisation
 ```bash
-# Lancement recommandé (Windows)
-RTPA_Studio.bat
-
-# OU lancement Python cross-platform  
-python launch_rtpa.py
-
-# OU lancement direct
-python main_gui.py
+# Lancement principal (unique)
+python rtpa.py
 ```
 
 ---
@@ -275,11 +266,12 @@ pip install torch>=2.8.0 torchvision>=0.23.0
 ## 🎮 Guide d'Utilisation Détaillé
 
 ### Premier Lancement
-1. **Lancez l'interface** : `python main_gui.py`
-2. **Ouvrez votre client poker** (PokerStars, Winamax, PMU)
+1. **Lancez l'interface** : `python rtpa.py`
+2. **Ouvrez votre client poker** (PokerStars, Winamax, PMU, PartyPoker)
 3. **Joignez une table** de poker
-4. **Accédez à l'onglet "Configuration"**
-5. **Sélectionnez votre client** et lancez le calibrage
+4. **Accédez à l'onglet "🔧 Paramètres"**
+5. **Section "🔍 Calibrage OCR"** : Cliquez "🤖 Auto-Calibrage"
+6. **Validation** : Testez avec le bouton "🔍 Tester OCR"
 
 ### Onglets Interface
 
@@ -303,8 +295,10 @@ pip install torch>=2.8.0 torchvision>=0.23.0
 - **Historique complet** : Toutes les mains analysées
 
 #### ⚙️ Configuration - Paramètres Système
-- **Calibrage OCR** : Zones de capture pour chaque client poker
-- **Sélection client** : PokerStars, Winamax, PMU
+- **🔍 Calibrage OCR** : Interface complète avec auto-calibrage intelligent
+  - Sélecteur de plateforme (PokerStars, Winamax, PMU, PartyPoker)
+  - 4 boutons : Charger Preset, Auto-Calibrage, Appliquer, Tester OCR
+  - 6 zones ajustables : Cartes, Board, Pot, Stack, Blinds, Actions
 - **Paramètres CFR** : Itérations, exploration, discount factor
 - **Thèmes** : Dark/Light mode, couleurs d'accent, polices
 - **Langues** : Français/Anglais
@@ -325,14 +319,8 @@ pip install torch>=2.8.0 torchvision>=0.23.0
 
 #### Mode Interface Graphique
 ```bash
-# Méthode recommandée (Windows)
-RTPA_Studio.bat
-
-# Lanceur cross-platform
-python launch_rtpa.py
-
-# Lancement direct
-python main_gui.py
+# Lancement unique et principal
+python rtpa.py
 ```
 
 #### Mode Console/Démo
@@ -340,22 +328,22 @@ python main_gui.py
 python main_headless.py   # Démonstration temps réel en console
 ```
 
-#### Tests et Validation
-```bash
-python test_final.py                    # Tests complets du système
-python test_algorithms_validation.py    # Validation algorithmes CFR/Nash
-python test_performance_benchmarks.py   # Benchmarks de performance
-```
-
 ---
 
 ## 🎯 Calibrage OCR pour Clients Poker
 
-### Calibrage Automatique
-1. **Client ouvert** avec une table active
-2. **Configuration > Calibrage OCR**
-3. **"Détection Automatique"**
-4. **Validation** des zones détectées
+### Calibrage Automatique (Recommandé)
+1. **Client ouvert** avec une table active  
+2. **Onglet "🔧 Paramètres" > Section "🔍 Calibrage OCR"**
+3. **Sélectionnez votre plateforme** dans le menu déroulant
+4. **Cliquez "🤖 Auto-Calibrage"** (détection automatique)
+5. **Validation** avec "🔍 Tester OCR"
+
+### Calibrage Manuel (Ajustements fins)
+1. **Cliquez "📋 Charger Preset"** pour les coordonnées par défaut
+2. **Ajustez manuellement** les champs Y, X, L, H selon vos besoins
+3. **Cliquez "✅ Appliquer"** pour sauvegarder
+4. **Testez** avec "🔍 Tester OCR"
 
 ### Zones OCR Prédéfinies
 
@@ -438,17 +426,16 @@ RTPA_Studio/
 │   ├── algorithms/          # Moteur CFR et Nash
 │   ├── core/               # Gestionnaire principal  
 │   ├── database/           # Base de données mémoire
-│   ├── gui/                # Interface graphique
-│   ├── ocr/                # Système OCR
+│   ├── gui/                # Interface graphique moderne
+│   ├── ocr/                # Système OCR avec calibrage
 │   ├── config/             # Configuration
-│   └── utils/              # Utilitaires
+│   └── utils/              # Utilitaires et optimisations
 ├── config/                 # Fichiers configuration
-├── logs/                   # Logs d'activité
-├── exports/                # Données exportées
-├── main_gui.py            # Interface graphique
+├── logs/                   # Logs d'activité  
+├── rtpa.py                # Point d'entrée principal
 ├── main_headless.py       # Mode console
-├── setup_installer.py     # Installateur automatique
-└── rtpa_studio.py         # Raccourci de lancement
+├── CALIBRAGE_OCR_README.md # Guide calibrage OCR
+└── README.md              # Documentation complète
 ```
 
 ---
