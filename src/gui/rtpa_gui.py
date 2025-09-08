@@ -2140,10 +2140,14 @@ class RTAPGUIWindow:
                 self.cpu_usage_label.configure(text=f"{usage['cpu_percent']:.1f}%")
                 self.ram_usage_label.configure(text=f"{usage['ram_percent']:.1f}%")
                 
-                if usage['gpu_usage'] > 0:
-                    self.gpu_usage_label.configure(text=f"{usage['gpu_usage']:.1f}%")
+                # Affichage GPU amélioré
+                if usage.get('gpu_available', False):
+                    if usage['gpu_usage'] > 0:
+                        self.gpu_usage_label.configure(text=f"{usage['gpu_usage']:.1f}%")
+                    else:
+                        self.gpu_usage_label.configure(text="0%")  # GPU détecté mais pas utilisé
                 else:
-                    self.gpu_usage_label.configure(text="N/A")
+                    self.gpu_usage_label.configure(text="Indisponible")
                 
                 # Couleurs selon l'utilisation
                 cpu_color = "#ff4444" if usage['cpu_percent'] > 90 else "#00b300" if usage['cpu_percent'] < 70 else "#ff8c00"

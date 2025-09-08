@@ -197,7 +197,7 @@ class CFREngine:
     
     def compute_strategy_regrets(self, utilities, strategy_probs):
         """Calcul optimisé des regrets avec accélération GPU prioritaire"""
-        if self.gpu_accelerator and len(utilities) > 50:  # Seuil abaissé pour plus d'usage GPU
+        if self.gpu_accelerator and len(utilities) > 10:  # Seuil très bas pour utiliser PyTorch même en CPU
             # Utiliser l'accélérateur GPU pour la majorité des calculs
             utilities_batch = utilities.reshape(1, -1)
             strategy_batch = strategy_probs.reshape(1, -1)

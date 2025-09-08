@@ -265,16 +265,25 @@ class SystemOptimizer:
             except:
                 pass
             
+            # Déterminer si GPU est disponible
+            gpu_available = False
+            try:
+                import torch
+                gpu_available = torch.cuda.is_available()
+            except:
+                pass
+            
             return {
                 'cpu_percent': cpu_percent,
                 'ram_percent': ram_percent,
                 'gpu_usage': gpu_usage,
-                'gpu_memory_percent': gpu_memory_percent
+                'gpu_memory_percent': gpu_memory_percent,
+                'gpu_available': gpu_available
             }
             
         except Exception as e:
             self.logger.error(f"Erreur monitoring ressources: {e}")
-            return {'cpu_percent': 0, 'ram_percent': 0, 'gpu_usage': 0, 'gpu_memory_percent': 0}
+            return {'cpu_percent': 0, 'ram_percent': 0, 'gpu_usage': 0, 'gpu_memory_percent': 0, 'gpu_available': False}
     
     def auto_adjust_if_needed(self) -> bool:
         """Ajuste automatiquement si les ressources sont surchargées"""
